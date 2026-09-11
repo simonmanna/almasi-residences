@@ -1,0 +1,45 @@
+.figure {
+  display: grid;
+  gap: 14px;
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+}
+
+.room {
+  fill: var(--surface-raised);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.open {
+  stroke: var(--ink-muted);
+  stroke-width: 1.25;
+  stroke-dasharray: 6 5;
+}
+
+.hatch {
+  stroke: color-mix(in srgb, var(--accent) 45%, transparent);
+  stroke-width: 1;
+}
+
+.shell {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 6;
+}
+
+.name {
+  fill: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.north path {
+  fill: var(--accent);
+}

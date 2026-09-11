@@ -1,0 +1,6 @@
+{
+  "//": "Used when NEXT_DIST_DIR points a second server or build elsewhere: the default .next may hold another server's stale route types.",
+  "extends": "./tsconfig.json",
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", ".next"]
+}

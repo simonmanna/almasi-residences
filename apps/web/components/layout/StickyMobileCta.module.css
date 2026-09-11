@@ -1,0 +1,25 @@
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-cta);
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transform: translateY(110%);
+  transition: transform var(--dur-3) var(--ease-out);
+}
+
+.bar[data-shown='true'] {
+  transform: none;
+}
+
+@media (max-width: 767px) {
+  .bar { display: grid; }
+}

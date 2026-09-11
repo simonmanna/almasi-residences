@@ -1,0 +1,10 @@
+{
+  "extends": "@avida/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "prisma/**/*.ts"]
+}

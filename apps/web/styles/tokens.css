@@ -1,0 +1,99 @@
+/**
+ * Almasi design tokens — quiet stone, warm light.
+ *
+ * Two grounds, each authored by hand rather than derived from a base:
+ *   stone — honed limestone. The default: reading, data, forms.
+ *   night — charcoal at blue hour. Cinematic media, the film, the tour.
+ * A section opts in with data-ground="night"; components only ever read
+ * var(--…) and never compute a colour. The contrast floors are asserted by
+ * tests/tokens.contrast.test.ts — if that test fails, the value here is wrong.
+ *
+ * DECISIONS D-28 records why this replaces the §2.3 time-of-day palette.
+ */
+:root,
+[data-ground="stone"] {
+  --surface:            #EFEBE3;  /* honed limestone — warm, not cream */
+  --surface-raised:     #F7F4EE;
+  --surface-sunk:       #E4DED3;
+  --ink:                #1D1F1B;  /* charcoal with a trace of eucalyptus */
+  --ink-muted:          #55574F;
+  --line:               #CFC7B9;
+  --accent:             #7A5B39;  /* anodised bronze, text-safe */
+  --accent-weak:        #B79C7E;
+  --foliage:            #4B5A43;
+  --scrim:              rgba(29, 31, 27, 0.36);
+  --elev:               0 1px 2px rgba(29, 31, 27, 0.06), 0 18px 48px rgba(29, 31, 27, 0.10);
+  --status-available:   #7A5B39;
+  --status-reserved:    #7E7462;
+  --status-sold:        #6E6C66;
+  --status-unavailable: #858075;
+}
+
+[data-ground="night"] {
+  --surface:            #151613;  /* blue-hour charcoal, never neutral black */
+  --surface-raised:     #1E201C;
+  --surface-sunk:       #0F100E;
+  --ink:                #EFEBE3;
+  --ink-muted:          #A8A396;
+  --line:               #34362F;
+  --accent:             #C9A27A;  /* the same bronze, catching interior light */
+  --accent-weak:        #7E6446;
+  --foliage:            #6B7A5E;
+  --scrim:              rgba(8, 8, 7, 0.55);
+  --elev:               0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 56px rgba(0, 0, 0, 0.45);
+  --status-available:   #C9A27A;
+  --status-reserved:    #A89A82;
+  --status-sold:        #7D7A72;
+  --status-unavailable: #6A675F;
+}
+
+:root {
+  /* Type — Gambetta for display, Supreme for everything a visitor operates. */
+  --font-display: var(--font-display-face, 'Gambetta'), 'Iowan Old Style', Georgia, serif;
+  --font-ui: var(--font-ui-face, 'Supreme'), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --fs-micro:   0.6875rem;                                   /* 11px — marks, gauges */
+  --fs-xs:      0.8125rem;                                   /* 13px — captions, data */
+  --fs-sm:      0.9375rem;                                   /* 15px — secondary body */
+  --fs-base:    1.0625rem;                                   /* 17px — body */
+  --fs-lead:    clamp(1.1875rem, 1.05rem + 0.55vw, 1.5rem);
+  --fs-h3:      clamp(1.5rem, 1.2rem + 1vw, 2.25rem);
+  --fs-h2:      clamp(2.25rem, 1.4rem + 3vw, 4.5rem);
+  --fs-display: clamp(3.25rem, 1.2rem + 7.5vw, 9.5rem);
+  --fs-mega:    clamp(4.25rem, 0.5rem + 13vw, 16rem);
+
+  /* Legacy names still read by pre-redesign components. */
+  --text-2xs: 0.640rem; --text-xs: 0.800rem; --text-sm: 0.900rem; --text-base: 1rem;
+  --text-md: 1.250rem;  --text-lg: 1.563rem; --text-xl: 1.953rem; --text-2xl: 2.441rem;
+  --text-3xl: 3.052rem; --text-4xl: 4.768rem; --text-5xl: 7.451rem;
+
+  /* Space — multiples of 4, widening at the top of the scale. */
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
+  --space-5: 24px;  --space-6: 32px;  --space-7: 48px;  --space-8: 64px;
+  --space-9: 96px;  --space-10: 128px; --space-11: 192px;
+  --section-y: clamp(96px, 12vw, 200px);
+
+  --page-max: 1600px;
+  --page-margin: clamp(20px, 5vw, 88px);
+  --gutter: clamp(16px, 2vw, 28px);
+  --nav-h: 76px;
+
+  /* Corners stay architectural: nearly square. */
+  --radius-1: 2px;
+  --radius-2: 4px;
+
+  /* Motion — one family of curves, used everywhere. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-1: 160ms;
+  --dur-2: 320ms;
+  --dur-3: 640ms;
+  --dur-4: 1100ms;
+
+  --z-canvas: 1;
+  --z-overlay: 20;
+  --z-nav: 50;
+  --z-cta: 60;
+  --z-modal: 100;
+}

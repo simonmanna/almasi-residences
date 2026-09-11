@@ -1,0 +1,6 @@
+# Scripts and container files run on Linux; a CRLF checkout on Windows must
+# not leak into them (bash chokes on `\r`).
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+Caddyfile   text eol=lf
+*.yml       text eol=lf

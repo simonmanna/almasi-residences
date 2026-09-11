@@ -1,0 +1,50 @@
+# Single-VPS front door. With SCHEME=https Caddy obtains and renews Let's
+# Encrypt certificates for every site below; SCHEME=http is for a local dry run.
+{
+	email {$ACME_EMAIL}
+}
+
+(common) {
+	encode zstd gzip
+	header -Server
+}
+
+{$SCHEME}://{$DOMAIN} {
+	import common
+	# Seed placeholder art is written by `pnpm db:seed` into a shared volume.
+	handle /seed-media/* {
+		root * /srv
+		file_server
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+{$SCHEME}://www.{$DOMAIN} {
+	redir {$SCHEME}://{$DOMAIN}{uri} permanent
+}
+
+{$SCHEME}://api.{$DOMAIN} {
+	import common
+	reverse_proxy api:3001
+}
+
+{$SCHEME}://admin.{$DOMAIN} {
+	import common
+	root * /srv/admin
+	header X-Frame-Options DENY
+	header X-Content-Type-Options nosniff
+	try_files {path} /index.html
+	file_server
+}
+
+# MinIO's S3 API stands in for Cloudflare R2. Public media is read from here,
+# and the admin uploads originals here with presigned PUTs. Host is passed
+# through unchanged, which the S3 signature depends on.
+{$SCHEME}://storage.{$DOMAIN} {
+	request_body {
+		max_size 2GB
+	}
+	reverse_proxy minio:9000
+}

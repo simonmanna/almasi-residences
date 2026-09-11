@@ -1,0 +1,32 @@
+/* §2.4 — self-hosted Fontshare faces. No Google Fonts CDN: a third-party
+   connection on the critical path costs LCP on the target network. */
+@font-face {
+  font-family: 'Gambetta';
+  src: url('/fonts/gambetta-400.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Gambetta';
+  src: url('/fonts/gambetta-400-italic.woff2') format('woff2');
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Gambetta';
+  src: url('/fonts/gambetta-700.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Supreme';
+  src: url('/fonts/supreme-400.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Supreme';
+  src: url('/fonts/supreme-500.woff2') format('woff2');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Supreme';
+  src: url('/fonts/supreme-700.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}

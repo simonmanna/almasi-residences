@@ -1,0 +1,214 @@
+.hero {
+  position: relative;
+  isolation: isolate;
+  height: 100svh;
+  min-height: 620px;
+  overflow: hidden;
+  background: #0c0d0b;
+}
+
+.media {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.aperture {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  clip-path: inset(0 0 0 0);
+  will-change: clip-path;
+}
+
+.mediaInner {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.04);
+  will-change: transform;
+}
+
+/* Legibility only: the bottom third and the nav strip, nothing decorative. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to top, rgba(12, 13, 11, 0.8) 0%, rgba(12, 13, 11, 0.34) 34%, rgba(12, 13, 11, 0) 60%),
+    linear-gradient(to bottom, rgba(12, 13, 11, 0.5) 0%, rgba(12, 13, 11, 0) 20%);
+}
+
+.intro {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.introCopy {
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  text-align: center;
+  padding-inline: 24px;
+}
+
+.introTitle {
+  overflow: hidden;
+  font-family: var(--font-ui);
+  font-size: clamp(1.05rem, 0.85rem + 0.8vw, 1.5rem);
+  font-weight: 500;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.52em;
+  margin-right: -0.52em;
+  line-height: 1.4;
+}
+
+.introTitle span {
+  display: inline-block;
+}
+
+.introSub {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.42em;
+  margin-right: -0.42em;
+}
+
+.content {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 32px;
+  padding-bottom: clamp(92px, 12vh, 140px);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-mega);
+  line-height: 0.84;
+  letter-spacing: -0.045em;
+}
+
+.line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.07em;
+}
+
+.line > span {
+  display: inline-block;
+}
+
+.aside {
+  display: grid;
+  justify-items: start;
+  gap: 28px;
+  padding-bottom: 1.4vw;
+}
+
+.lede {
+  max-width: 26ch;
+  font-size: var(--fs-lead);
+  line-height: 1.45;
+}
+
+.ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--page-margin) 26px;
+  color: var(--ink-muted);
+}
+
+.cue {
+  position: relative;
+  width: 1px;
+  height: 44px;
+  overflow: hidden;
+  background: rgba(239, 235, 227, 0.22);
+}
+
+.cue span {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  animation: cue 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes cue {
+  0% { transform: translateY(-100%); }
+  60% { transform: translateY(0); }
+  100% { transform: translateY(100%); }
+}
+
+.skip {
+  position: absolute;
+  right: var(--page-margin);
+  bottom: 26px;
+  z-index: 4;
+  min-height: 44px;
+  padding: 0 4px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.16em;
+}
+
+@media (hover: hover) {
+  .skip:hover { color: var(--ink); }
+}
+
+/* Before hydration on a first visit: dark, a closed aperture, the intro copy.
+   If the script never runs, the fallback animations open the frame anyway. */
+:global(html[data-intro='pending']) .intro,
+:global(html[data-intro='playing']) .intro {
+  visibility: visible;
+}
+
+:global(html[data-intro='pending']) .aperture {
+  clip-path: inset(50% 50% 50% 50%);
+  animation: aperture-fallback 1.6s 6s var(--ease-in-out) forwards;
+}
+
+:global(html[data-intro='pending']) .content,
+:global(html[data-intro='pending']) .foot {
+  opacity: 0;
+  animation: fade-fallback 1s 7s forwards;
+}
+
+@keyframes aperture-fallback {
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes fade-fallback {
+  to { opacity: 1; }
+}
+
+@media (max-width: 860px) {
+  .content {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-bottom: 96px;
+  }
+  .aside { padding-bottom: 0; }
+  .foot :global(.cgi-note) { display: none; }
+}

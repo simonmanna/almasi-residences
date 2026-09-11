@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "almasi-web-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/dev-preview.mjs", "3100"],
+      "port": 3100
+    }
+  ]
+}

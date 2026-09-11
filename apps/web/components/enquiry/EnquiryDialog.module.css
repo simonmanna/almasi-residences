@@ -1,0 +1,104 @@
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.dialog::backdrop {
+  background: rgba(15, 16, 14, 0.56);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.dialog[open]::backdrop {
+  animation: backdrop-in var(--dur-3) var(--ease-out) both;
+}
+
+.sheet {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(580px, 100%);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(28px, 4vw, 52px);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--elev);
+  animation: sheet-in var(--dur-4) var(--ease-out) both;
+}
+
+.head {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  margin-bottom: 36px;
+  padding-right: 60px;
+}
+
+.residence {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+
+.close {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-1);
+  transition: border-color var(--dur-2) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .close:hover { border-color: var(--ink); }
+}
+
+.close span,
+.close span::before {
+  display: block;
+  width: 18px;
+  height: 1px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+.close span::before {
+  content: '';
+  transform: rotate(90deg);
+}
+
+@keyframes sheet-in {
+  from { transform: translateX(48px); opacity: 0; }
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(48px); opacity: 0; }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+}
+
+@media (max-width: 640px) {
+  .sheet {
+    top: auto;
+    left: 0;
+    width: 100%;
+    max-height: 94svh;
+    animation-name: sheet-up;
+  }
+}

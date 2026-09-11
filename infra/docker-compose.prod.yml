@@ -1,0 +1,211 @@
+# Single-VPS production stack — everything on one host, media included.
+# Always run through scripts/vps/deploy.sh, which passes
+# --env-file .env.production for the ${…} values below. See docs/DEPLOY.md.
+#
+# Only Caddy is reachable from outside (80/443). The API is additionally
+# published on the host loopback, because the web build reads live inventory.
+name: avida-prod
+
+x-app-env: &app-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://avida:${POSTGRES_PASSWORD:?}@postgres:5432/avida?schema=public
+  REDIS_URL: redis://redis:6379
+  API_PORT: '3001'
+  WEB_ORIGIN: ${SCHEME}://${DOMAIN}
+  ADMIN_ORIGIN: ${SCHEME}://admin.${DOMAIN}
+  ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?}
+  REVALIDATE_SECRET: ${REVALIDATE_SECRET:?}
+  WEB_REVALIDATE_URL: http://web:3000/api/revalidate
+  # MinIO stands in for R2. The endpoint is the public storage host so that
+  # presigned upload URLs work in the browser; inside the network that host
+  # resolves to Caddy (see the alias below).
+  R2_ACCOUNT_ID: ''
+  R2_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?}
+  R2_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?}
+  R2_BUCKET: avida-media
+  R2_ORIGINALS_BUCKET: avida-originals
+  R2_REGION: us-east-1
+  R2_ENDPOINT: ${SCHEME}://storage.${DOMAIN}
+  R2_PUBLIC_URL: ${SCHEME}://storage.${DOMAIN}/avida-media
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  ENQUIRY_NOTIFY_EMAILS: ${ENQUIRY_NOTIFY_EMAILS:-}
+  ENQUIRY_FROM_EMAIL: ${ENQUIRY_FROM_EMAIL:-}
+  TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+  WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  CONCIERGE_MODEL: ${CONCIERGE_MODEL:-claude-sonnet-5}
+  SKYBOX_API_KEY: ${SKYBOX_API_KEY:-}
+
+x-build: &build
+  context: ..
+  dockerfile: infra/Dockerfile
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: avida
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: avida
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U avida -d avida']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # BullMQ requires noeviction: an evicted job key is a lost job.
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # MinIO no longer publishes community images; this is the last release.
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?}
+      MINIO_BROWSER: 'off'
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Creates the buckets, then exits. Originals stay private (§5.9).
+  minio-init:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: 'no'
+    depends_on:
+      minio: { condition: service_healthy }
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
+      mc mb --ignore-existing local/avida-media &&
+      mc mb --ignore-existing local/avida-originals &&
+      mc anonymous set download local/avida-media
+      "
+
+  api:
+    build: { <<: *build, target: api }
+    image: avida-api
+    restart: unless-stopped
+    environment: *app-env
+    ports:
+      - '127.0.0.1:${API_HOST_PORT:-3001}:3001'
+    volumes:
+      # Only written by `pnpm db:seed`, which deploy.sh runs in this image.
+      - seedmedia:/app/apps/web/public/seed-media
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/api/v1/health/deep').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  worker:
+    build: { <<: *build, target: worker }
+    image: avida-worker
+    restart: unless-stopped
+    environment: *app-env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+
+  web:
+    build:
+      <<: *build
+      target: web
+      # §6.7 — typology pages pre-render from the running API at build time.
+      network: host
+      args:
+        NEXT_PUBLIC_API_URL: ${SCHEME}://api.${DOMAIN}
+        NEXT_PUBLIC_MEDIA_URL: ${SCHEME}://storage.${DOMAIN}/avida-media
+        NEXT_PUBLIC_SITE_URL: ${SCHEME}://${DOMAIN}
+        NEXT_PUBLIC_WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-}
+        NEXT_PUBLIC_UMAMI_ID: ${UMAMI_ID:-}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+        NEXT_PUBLIC_MAP_STYLE_URL: ${MAP_STYLE_URL:-}
+        API_INTERNAL_URL: http://127.0.0.1:${API_HOST_PORT:-3001}
+    image: avida-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_INTERNAL_URL: http://api:3001
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:?}
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/robots.txt').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  caddy:
+    build:
+      <<: *build
+      target: caddy
+      args:
+        VITE_API_URL: ${SCHEME}://api.${DOMAIN}
+    image: avida-caddy
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?}
+      SCHEME: ${SCHEME:?}
+      ACME_EMAIL: ${ACME_EMAIL:?}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - caddydata:/data
+      - caddyconfig:/config
+      - seedmedia:/srv/seed-media:ro
+    networks:
+      default:
+        # API and worker reach MinIO through its public name, so the S3
+        # signature host matches what browsers use for presigned uploads.
+        aliases:
+          - storage.${DOMAIN}
+    depends_on:
+      - web
+      - api
+      - minio
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  caddydata:
+  caddyconfig:
+  seedmedia:

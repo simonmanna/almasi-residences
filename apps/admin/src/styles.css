@@ -1,0 +1,28 @@
+/* Deliberately plain: an internal tool for a handful of people (DECISIONS D-19). */
+:root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, sans-serif; }
+body { margin: 0; }
+.shell { max-width: 1100px; margin: 0 auto; padding: 24px; }
+.bar { display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #ccc; padding-bottom: 12px; }
+.bar h1 { font-size: 18px; font-weight: 500; margin: 0; }
+.bar nav { display: flex; gap: 8px; }
+.bar button, .toolbar button { font: inherit; padding: 6px 12px; cursor: pointer; }
+.bar button[aria-current] { font-weight: 600; }
+.who { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-size: 13px; }
+main { padding: 24px 0; }
+h2 { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid #e5e5e5; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.selected-count { font-size: 13px; opacity: 0.7; }
+.tiles { display: flex; gap: 24px; list-style: none; padding: 0; flex-wrap: wrap; }
+.tiles li { display: grid; }
+.tile-value { font-size: 28px; font-variant-numeric: tabular-nums; }
+.tile-label { font-size: 12px; opacity: 0.7; }
+.error { color: #a11; }
+.ok { color: #161; }
+.flag { font-size: 11px; background: #fde; padding: 1px 4px; margin-left: 6px; border-radius: 2px; }
+.login form { display: grid; gap: 12px; max-width: 320px; }
+.login label { display: grid; gap: 4px; font-size: 13px; }
+.login input { font: inherit; padding: 8px; }
+tr[data-selected] { background: #f2f6ff; }

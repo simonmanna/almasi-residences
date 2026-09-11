@@ -1,0 +1,97 @@
+.section {
+  background: var(--surface);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 32px;
+  margin-bottom: clamp(48px, 6vw, 96px);
+}
+
+.kicker {
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+
+.aside {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gutter);
+}
+
+/* An editorial stagger, stepping down like the building's own terraces. */
+.item:nth-child(2) { margin-top: clamp(40px, 6vw, 96px); }
+.item:nth-child(3) { margin-top: clamp(80px, 12vw, 192px); }
+
+.card {
+  display: grid;
+  gap: 24px;
+}
+
+.media {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: var(--surface-sunk);
+}
+
+@media (hover: hover) {
+  .card:hover .media img {
+    transform: scale(1.05);
+  }
+}
+
+.text {
+  display: grid;
+  gap: 10px;
+}
+
+.size {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.line {
+  max-width: 40ch;
+  color: var(--ink-muted);
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.meta div {
+  display: grid;
+  gap: 2px;
+  padding-top: 12px;
+}
+
+.meta dt {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+
+.meta dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .head { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: 1fr; gap: 64px; }
+  .item:nth-child(n) { margin-top: 0; }
+  .media { aspect-ratio: 4 / 3; }
+}

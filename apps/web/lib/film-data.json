@@ -1,0 +1,68 @@
+{
+  "duration": 49.8,
+  "hd": "/media/almasi/video/almasi-film-hd.mp4",
+  "sd": "/media/almasi/video/almasi-film-sd.mp4",
+  "poster": "/media/almasi/video/almasi-film-poster.jpg",
+  "chapters": [
+    {
+      "t": 3.4,
+      "title": "Kimihurura",
+      "place": "Above Kigali",
+      "scene": "aerial"
+    },
+    {
+      "t": 7.64,
+      "title": "Almasi Residences",
+      "place": "KG 15 Ave",
+      "scene": "street"
+    },
+    {
+      "t": 11.88,
+      "title": "The entrance",
+      "place": "Ground floor",
+      "scene": "arrival"
+    },
+    {
+      "t": 16.13,
+      "title": "Reception",
+      "place": "Ground floor",
+      "scene": "lobby"
+    },
+    {
+      "t": 20.37,
+      "title": "The pool deck",
+      "place": "Level 1",
+      "scene": "pool"
+    },
+    {
+      "t": 24.61,
+      "title": "A residence",
+      "place": "Level 2",
+      "scene": "one-living"
+    },
+    {
+      "t": 28.85,
+      "title": "Space to live",
+      "place": "Two bedroom",
+      "scene": "living-2br"
+    },
+    {
+      "t": 33.09,
+      "title": "The penthouse",
+      "place": "Level 4",
+      "scene": "ph-living"
+    },
+    {
+      "t": 34.92,
+      "title": "The master suite",
+      "place": "Level 4",
+      "scene": "ph-bedroom"
+    },
+    {
+      "t": 39.16,
+      "title": "Your view of Kigali",
+      "place": "The roof",
+      "scene": "ph-terrace"
+    }
+  ]
+}

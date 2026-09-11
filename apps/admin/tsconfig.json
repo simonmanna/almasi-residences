@@ -1,0 +1,5 @@
+{
+  "extends": "@avida/config/tsconfig.next.json",
+  "compilerOptions": { "jsx": "react-jsx", "types": ["vite/client"] },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

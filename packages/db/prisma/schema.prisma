@@ -1,0 +1,624 @@
+// packages/db/prisma/schema.prisma
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../generated/client"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+// Prisma 7 removed `url` from the datasource block: the connection is supplied
+// by a driver adapter at runtime (src/index.ts) and by prisma.config.ts for the
+// CLI. See docs/DECISIONS.md D-02.
+datasource db {
+  provider   = "postgresql"
+  // The postgis/postgis image installs all four of these at database creation.
+  // Declaring only `postgis` makes every `migrate dev` report drift against the
+  // three it did not know about, so they are all declared here.
+  extensions = [postgis, postgis_topology, postgis_tiger_geocoder, fuzzystrmatch]
+}
+
+// ─────────────────────────── Development ───────────────────────────
+
+model Development {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  tagline       String?
+  descriptionMd String   @db.Text
+  city          String
+  country       String
+  addressLine   String?
+  latitude      Float
+  longitude     Float
+  handoverDate  DateTime?
+  currency      String   @default("USD")
+  totalUnits    Int      @default(0)
+  status        DevelopmentStatus @default(SELLING)
+
+  buildings     Building[]
+  typologies    Typology[]
+  amenities     Amenity[]
+  milestones    PaymentMilestone[]
+  landmarks     Landmark[]
+  mediaSets     MediaSet[]
+  tours         Tour[]
+  progress      ProgressUpdate[]
+  faqs          Faq[]
+  seo           SeoMeta?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum DevelopmentStatus {
+  ANNOUNCED
+  SELLING
+  SOLD_OUT
+  COMPLETED
+}
+
+// ─────────────────────────── Building / Units ───────────────────────
+
+model Building {
+  id             String  @id @default(cuid())
+  developmentId  String
+  development    Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name           String
+  floorCount     Int
+  groundLabel    String  @default("Ground")
+  // GLB for the 3D selector — see §8.4
+  modelUrl       String?
+  modelScale     Float   @default(1)
+  floors         Floor[]
+
+  @@index([developmentId])
+}
+
+model Floor {
+  id          String  @id @default(cuid())
+  buildingId  String
+  building    Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  level       Int              // 0 = ground
+  label       String           // "Floor 8", "Penthouse"
+  heightM     Float            // cumulative height above ground, for the view simulator
+  units       Unit[]
+
+  @@unique([buildingId, level])
+  @@index([buildingId])
+}
+
+model Unit {
+  id           String  @id @default(cuid())
+  floorId      String
+  floor        Floor   @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  typologyId   String
+  typology     Typology @relation(fields: [typologyId], references: [id])
+
+  code         String            // "8B"
+  status       UnitStatus @default(AVAILABLE)
+  priceMinor   Int               // store money in minor units, never Float
+  currency     String  @default("USD")
+  areaSqm      Float
+  balconySqm   Float?
+  orientation  Orientation
+  viewTags     String[]          // ["golf", "valley", "city"]
+  positionIndex Int              // left-to-right order on the elevation stack
+  widthRatio   Float   @default(1) // relative width in the stack drawing
+  // maps this unit to a mesh name inside the building GLB
+  meshName     String?
+  notes        String?
+
+  enquiries    EnquiryUnit[]
+  statusLog    UnitStatusLog[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([floorId, code])
+  @@index([status])
+  @@index([typologyId])
+}
+
+enum UnitStatus {
+  AVAILABLE
+  RESERVED
+  BOOKED
+  SOLD
+  NOT_RELEASED
+}
+
+enum Orientation {
+  N
+  NE
+  E
+  SE
+  S
+  SW
+  W
+  NW
+}
+
+model UnitStatusLog {
+  id        String     @id @default(cuid())
+  unitId    String
+  unit      Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  from      UnitStatus
+  to        UnitStatus
+  actor     String
+  createdAt DateTime   @default(now())
+
+  @@index([unitId])
+}
+
+// ─────────────────────────── Typology ───────────────────────────────
+
+model Typology {
+  id            String  @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  slug          String
+  name          String            // "Two-bedroom corner"
+  bedrooms      Int
+  bathrooms     Float             // 2.5 is legal
+  areaSqmMin    Float
+  areaSqmMax    Float
+  descriptionMd String? @db.Text
+
+  floorPlanSvgUrl String?         // interactive plan, see §8.3
+  floorPlanPngUrl String?
+  glbUrl          String?         // per-unit 3D model, F12
+  frameSeqId      String?         // interactive video frame sequence
+
+  units         Unit[]
+  tours         Tour[]
+  mediaSets     MediaSet[]
+
+  @@unique([developmentId, slug])
+}
+
+// ─────────────────────────── Media ──────────────────────────────────
+
+/// A MediaSet groups the SAME view captured across time states.
+/// This is the backbone of the day/night/aerial system (F7).
+model MediaSet {
+  id            String  @id @default(cuid())
+  developmentId String?
+  development   Development? @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  typologyId    String?
+  typology      Typology? @relation(fields: [typologyId], references: [id], onDelete: Cascade)
+
+  key           String            // "hero-exterior", "rooftop", "lobby"
+  label         String
+  kind          MediaSetKind
+  cameraNote    String?           // for the render team: focal length, position
+  sortOrder     Int     @default(0)
+
+  assets        MediaAsset[]
+
+  @@unique([developmentId, key])
+  @@index([typologyId])
+}
+
+enum MediaSetKind {
+  EXTERIOR
+  INTERIOR
+  AERIAL
+  AMENITY
+  CONTEXT
+  PLAN
+}
+
+model MediaAsset {
+  id         String   @id @default(cuid())
+  mediaSetId String
+  mediaSet   MediaSet @relation(fields: [mediaSetId], references: [id], onDelete: Cascade)
+
+  timeState  TimeState
+  role       AssetRole @default(PRIMARY)
+
+  // originals + derivatives, all keys relative to R2 bucket root
+  originalKey String
+  width       Int
+  height      Int
+  variants    Json      // { avif: {400:key,...}, webp: {...} }
+  depthKey    String?   // depth map PNG for parallax (F8)
+  thumbhash   String
+  dominantHex String?
+
+  altText     String?
+  credit      String?
+
+  createdAt   DateTime @default(now())
+
+  @@unique([mediaSetId, timeState, role])
+  @@index([mediaSetId])
+}
+
+enum TimeState {
+  DAWN
+  DAY
+  DUSK
+  NIGHT
+}
+
+enum AssetRole {
+  PRIMARY
+  ALTERNATE
+  DETAIL
+}
+
+// ─────────────────────────── Video ──────────────────────────────────
+
+model VideoAsset {
+  id           String @id @default(cuid())
+  key          String @unique          // "walkthrough-2bed", "timelapse-hero"
+  label        String
+  kind         VideoKind
+  typologyId   String?
+
+  posterKey    String
+  hlsKey       String?                 // .m3u8 master
+  mp4Key       String?                 // fallback, h.264 720p
+  durationSec  Float
+  width        Int
+  height       Int
+
+  chapters     VideoChapter[]
+
+  createdAt    DateTime @default(now())
+}
+
+enum VideoKind {
+  WALKTHROUGH
+  TIMELAPSE
+  AERIAL
+  AMBIENT
+}
+
+model VideoChapter {
+  id           String @id @default(cuid())
+  videoAssetId String
+  videoAsset   VideoAsset @relation(fields: [videoAssetId], references: [id], onDelete: Cascade)
+  label        String
+  startSec     Float
+  thumbKey     String?
+  /// optional: jump into the panorama tour at this point
+  linkedSceneId String?
+
+  @@index([videoAssetId])
+}
+
+/// Scroll-driven interactive video (F11, F12). Stored as a frame ladder,
+/// not a video file — see §8.5 for why.
+model FrameSequence {
+  id          String @id @default(cuid())
+  key         String @unique          // "building-orbit", "typo-2bed-orbit"
+  label       String
+  kind        FrameSeqKind
+  frameCount  Int
+  // Multiple resolution ladders: { "480": {prefix, ext}, "960": {...} }
+  ladders     Json
+  loopable    Boolean @default(true)
+  /// maps a frame index range to a unit / hotspot for click targeting
+  hotspots    Json?
+
+  createdAt   DateTime @default(now())
+}
+
+enum FrameSeqKind {
+  ORBIT
+  DOLLY
+  TIMELAPSE
+  ASSEMBLY
+}
+
+// ─────────────────────────── Virtual tour ───────────────────────────
+
+model Tour {
+  id            String @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  typologyId    String?
+  typology      Typology? @relation(fields: [typologyId], references: [id])
+
+  slug          String
+  name          String
+  startSceneId  String?
+  scenes        Scene[]
+
+  @@unique([developmentId, slug])
+}
+
+model Scene {
+  id        String @id @default(cuid())
+  tourId    String
+  tour      Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  key       String            // "living", "kitchen", "master-bed"
+  label     String
+  sortOrder Int    @default(0)
+
+  /// Panoramas per time state — the tour respects the global time selector
+  panoramas PanoramaAsset[]
+
+  /// initial camera
+  yawDeg    Float @default(0)
+  pitchDeg  Float @default(0)
+  fovDeg    Float @default(70)
+
+  /// position on the floor plan SVG, in plan viewBox coordinates
+  planX     Float?
+  planY     Float?
+  planRotDeg Float?
+
+  hotspots  Hotspot[]
+  linksFrom Hotspot[] @relation("HotspotTarget")
+
+  @@unique([tourId, key])
+}
+
+model PanoramaAsset {
+  id         String    @id @default(cuid())
+  sceneId    String
+  scene      Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  timeState  TimeState
+  /// low-res immediate preview, equirect 1024x512
+  previewKey String
+  /// full equirect original
+  originalKey String
+  /// cube-face tile manifest: { faceSize, levels:[{size,tileSize,prefix}] }
+  tiles      Json
+  width      Int
+  height     Int
+
+  @@unique([sceneId, timeState])
+}
+
+model Hotspot {
+  id            String @id @default(cuid())
+  sceneId       String
+  scene         Scene  @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  kind          HotspotKind
+  yawDeg        Float
+  pitchDeg      Float
+  label         String?
+  targetSceneId String?
+  targetScene   Scene? @relation("HotspotTarget", fields: [targetSceneId], references: [id])
+  infoMd        String? @db.Text
+  mediaAssetId  String?
+
+  @@index([sceneId])
+}
+
+enum HotspotKind {
+  NAVIGATE
+  INFO
+  MEASURE
+  VIEW_OUT
+}
+
+// ─────────────────────────── Commercial ─────────────────────────────
+
+model PaymentMilestone {
+  id            String @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  sortOrder     Int
+  label         String            // "On reservation", "On completion of structure"
+  percent       Float             // 10 = 10%
+  triggerType   MilestoneTrigger
+  triggerDate   DateTime?
+  triggerNote   String?
+
+  @@index([developmentId])
+}
+
+enum MilestoneTrigger {
+  ON_RESERVATION
+  ON_SIGNING
+  ON_DATE
+  ON_CONSTRUCTION_STAGE
+  ON_HANDOVER
+}
+
+model Amenity {
+  id            String @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name          String
+  descriptionMd String?
+  iconKey       String?
+  mediaAssetId  String?
+  sortOrder     Int    @default(0)
+}
+
+model Landmark {
+  id            String @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name          String
+  category       LandmarkCategory
+  latitude      Float
+  longitude     Float
+  /// computed by PostGIS at seed/update time, not hardcoded
+  distanceM     Int?
+  driveMinutes  Int?
+  walkMinutes   Int?
+
+  @@index([developmentId])
+}
+
+enum LandmarkCategory {
+  SCHOOL
+  EMBASSY
+  HOSPITAL
+  SHOPPING
+  AIRPORT
+  LEISURE
+  BUSINESS
+}
+
+// ─────────────────────────── Leads ──────────────────────────────────
+
+model Enquiry {
+  id         String @id @default(cuid())
+  name       String
+  email      String
+  phone      String
+  countryIso String?
+  message    String? @db.Text
+  intent     EnquiryIntent @default(INFORMATION)
+
+  units      EnquiryUnit[]
+
+  source     String?          // "unit-panel", "footer", "floating-cta"
+  utmSource  String?
+  utmMedium  String?
+  utmCampaign String?
+  referrer   String?
+  landingPath String?
+  userAgent  String?
+
+  status     EnquiryStatus @default(NEW)
+  assignedTo String?
+  internalNote String? @db.Text
+
+  // §6.7 — Turnstile unreachable: keep the lead, flag it for manual review
+  // rather than dropping it. Never silently trust an unverified submission.
+  verificationSkipped Boolean @default(false)
+
+  // §5.9 — PII retention. Set to createdAt + 24 months on write, moved forward
+  // on any status change. The nightly job hard-deletes rows past this date.
+  purgeAfter DateTime
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([purgeAfter])
+}
+
+enum EnquiryIntent {
+  INFORMATION
+  VIEWING
+  RESERVATION
+  BROKER
+}
+
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  WON
+  LOST
+  SPAM
+}
+
+model EnquiryUnit {
+  enquiryId String
+  enquiry   Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  unitId    String
+  unit      Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@id([enquiryId, unitId])
+}
+
+// ─────────────────────────── Content ────────────────────────────────
+
+model ProgressUpdate {
+  id            String @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  capturedOn    DateTime
+  title         String
+  bodyMd        String? @db.Text
+  percentComplete Int?
+  mediaAssetIds String[]
+  splatUrl      String?
+
+  @@index([developmentId, capturedOn])
+}
+
+model Faq {
+  id            String @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  question      String
+  answerMd      String @db.Text
+  sortOrder     Int    @default(0)
+}
+
+model SeoMeta {
+  id            String @id @default(cuid())
+  developmentId String @unique
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  ogImageKey    String?
+  keywords      String[]
+}
+
+// ─────────────────────────── Ops ────────────────────────────────────
+
+model MediaJob {
+  id         String @id @default(cuid())
+  kind       String            // "variants" | "depth" | "tile" | "hls" | "frames"
+  refType    String
+  refId      String
+  status     JobStatus @default(QUEUED)
+  attempts   Int    @default(0)
+  error      String? @db.Text
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([status])
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+model AdminUser {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String
+  name         String
+  role         AdminRole @default(SALES)
+  totpSecret   String?
+  // §5.9 — issued once at enrolment, stored hashed, single use.
+  totpEnrolledAt   DateTime?
+  recoveryCodeHashes String[] @default([])
+  // §5.9 — login throttle state, per account (the per-IP limit is in the gateway).
+  failedLoginCount Int      @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  auditLogs    AdminAuditLog[]
+}
+
+// §5.9 — exporting the customer list is an audited action, not a convenience.
+// Also records status changes made outside UnitStatusLog and every media delete.
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     AdminUser @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  action    String    // "enquiry.export", "media.delete", "unit.bulk-status"
+  target    String?   // resource id or filter description
+  rowCount  Int?      // how many records the action touched
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  @@index([actorId])
+  @@index([action, createdAt])
+}
+
+enum AdminRole {
+  OWNER
+  MARKETING
+  SALES
+}

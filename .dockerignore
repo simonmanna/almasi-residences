@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+packages/db/generated
+apps/web/public/seed-media
+apps/worker/tmp
+Real-Estate-Website-phase-0-foundation
+.git
+.github
+.env
+.env.*
+!.env.example

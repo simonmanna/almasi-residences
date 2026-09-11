@@ -1,0 +1,151 @@
+.section {
+  --p: 0;
+  background: var(--surface-raised);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 32px;
+  margin-bottom: clamp(56px, 7vw, 112px);
+}
+
+.kicker {
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+
+.aside {
+  display: grid;
+  gap: 24px;
+}
+
+.types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gutter);
+  padding-top: 40px;
+}
+
+.track {
+  position: absolute;
+  top: 7px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform: scaleX(var(--p));
+  transform-origin: 0 50%;
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.dot {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-raised);
+  transition:
+    background-color 0.5s var(--ease-out),
+    border-color 0.5s var(--ease-out);
+}
+
+.stage[data-active='true'] .dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.percent {
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 2rem + 4.5vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  transition: color 0.6s var(--ease-out);
+}
+
+.stage[data-active='true'] .percent {
+  color: var(--ink);
+}
+
+.label {
+  font-size: var(--fs-lead);
+}
+
+.note {
+  max-width: 28ch;
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+}
+
+.amount {
+  margin-top: 6px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: clamp(48px, 6vw, 80px);
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.handover {
+  font-family: var(--font-display);
+  font-size: var(--fs-h3);
+}
+
+@media (max-width: 900px) {
+  .head { grid-template-columns: 1fr; }
+  .timeline {
+    grid-template-columns: 1fr;
+    gap: 44px;
+    padding-top: 0;
+    padding-left: 40px;
+  }
+  .track {
+    top: 0;
+    bottom: 0;
+    left: 7px;
+    right: auto;
+    width: 1px;
+    height: auto;
+  }
+  .fill {
+    transform: scaleY(var(--p));
+    transform-origin: 50% 0;
+  }
+  .dot {
+    top: 6px;
+    left: -40px;
+  }
+}

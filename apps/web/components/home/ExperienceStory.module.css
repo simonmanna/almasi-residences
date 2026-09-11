@@ -1,0 +1,210 @@
+.story {
+  position: relative;
+  background: #0c0d0b;
+}
+
+.stage {
+  position: relative;
+  height: 100svh;
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  clip-path: inset(0 0 0 0);
+  will-change: clip-path;
+}
+
+.inner {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.04);
+  will-change: transform;
+}
+
+.shade {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background:
+    linear-gradient(to top, rgba(12, 13, 11, 0.8) 0%, rgba(12, 13, 11, 0.24) 40%, rgba(12, 13, 11, 0) 62%),
+    linear-gradient(to bottom, rgba(12, 13, 11, 0.5) 0%, rgba(12, 13, 11, 0) 20%);
+}
+
+.head {
+  position: absolute;
+  z-index: 21;
+  top: calc(var(--nav-h) + 16px);
+  left: var(--page-margin);
+  right: var(--page-margin);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.head :global(.mark) {
+  color: var(--accent);
+}
+
+.counter {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter span {
+  color: var(--ink);
+}
+
+.captions {
+  position: absolute;
+  z-index: 21;
+  left: var(--page-margin);
+  bottom: clamp(72px, 12vh, 128px);
+  width: min(700px, calc(100vw - 2 * var(--page-margin) - 140px));
+}
+
+.caption {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.caption :global(.mark) {
+  color: var(--accent);
+}
+
+.title {
+  margin: 14px 0 18px;
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  line-height: 0.98;
+  letter-spacing: -0.028em;
+}
+
+.text {
+  max-width: 40ch;
+  font-size: var(--fs-lead);
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
+}
+
+.gauge {
+  position: absolute;
+  z-index: 21;
+  top: 50%;
+  right: var(--page-margin);
+  transform: translateY(-50%);
+}
+
+.gauge ol {
+  display: grid;
+  gap: 12px;
+}
+
+.gauge li {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  color: rgba(239, 235, 227, 0.36);
+  font-size: 0.8125rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.16em;
+  transition: color 0.6s var(--ease-out);
+}
+
+.gauge li::after {
+  content: '';
+  width: 16px;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.6s var(--ease-out), background-color 0.6s var(--ease-out);
+}
+
+.gauge li[data-active='true'] {
+  color: var(--ink);
+}
+
+.gauge li[data-active='true']::after {
+  width: 48px;
+  background: var(--accent);
+}
+
+.note {
+  position: absolute;
+  z-index: 21;
+  right: var(--page-margin);
+  bottom: 22px;
+}
+
+.progress {
+  position: absolute;
+  z-index: 21;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(239, 235, 227, 0.1);
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+@media (max-width: 760px) {
+  .gauge li span {
+    display: none;
+  }
+  .captions {
+    width: calc(100vw - 2 * var(--page-margin) - 56px);
+  }
+}
+
+/* ─── Reduced motion: the same passage as a quiet sequence ─────────── */
+.static {
+  padding-top: var(--section-y);
+  background: #0c0d0b;
+}
+
+.staticItem {
+  position: relative;
+  height: 88svh;
+  min-height: 520px;
+  margin-top: 40px;
+  overflow: hidden;
+}
+
+.staticMedia {
+  position: absolute;
+  inset: 0;
+}
+
+.staticItem::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(12, 13, 11, 0.8), rgba(12, 13, 11, 0) 55%);
+}
+
+.staticCaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 48px;
+  z-index: 1;
+}
+
+.staticCaption :global(.mark) {
+  color: var(--accent);
+}

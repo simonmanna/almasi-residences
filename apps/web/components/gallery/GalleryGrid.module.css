@@ -1,0 +1,114 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.grid {
+  columns: 3 320px;
+  column-gap: var(--gutter);
+  padding-bottom: var(--section-y);
+}
+
+.item {
+  break-inside: avoid;
+  margin-bottom: var(--gutter);
+}
+
+.open {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  background: var(--surface-sunk);
+}
+
+.frame img {
+  transition: transform 1.2s var(--ease-out) !important;
+}
+
+@media (hover: hover) {
+  .open:hover .frame img { transform: scale(1.04); }
+}
+
+.caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-sm);
+}
+
+/* ─── Lightbox ─────────────────────────────────────────────────────── */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.lightbox::backdrop {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.lightbox[open] {
+  animation: fade-in var(--dur-3) var(--ease-out) both;
+}
+
+.lightInner {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100%;
+}
+
+.lightImage {
+  position: relative;
+  margin: 24px var(--page-margin) 0;
+}
+
+.lightImage img {
+  object-fit: contain !important;
+}
+
+.lightBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px var(--page-margin) 24px;
+}
+
+.lightTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+}
+
+.lightActions {
+  display: flex;
+  gap: 20px;
+}
+
+.lightActions button {
+  min-height: 44px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.16em;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}
