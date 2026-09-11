@@ -24,6 +24,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: clip;
+  /* Prevent double-tap zoom on mobile — touch interactions are designed */
+  touch-action: manipulation;
 }
 
 img, video, canvas, svg { display: block; max-width: 100%; }
@@ -32,6 +34,9 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 a { color: inherit; text-decoration: none; }
 p, h1, h2, h3, h4, h5, figure, blockquote, dl, dd { margin: 0; }
 h1, h2, h3, h4, h5 { font-weight: 400; }
+/* World-class micro-typography: balanced wrapping on display headings,
+   no widows. Intentional manual line-breaks (<br />) are always kept. */
+h1.display, h2.display, .display, .h2, .h3 { text-wrap: balance; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 table { border-collapse: collapse; }
 
@@ -41,7 +46,7 @@ table { border-collapse: collapse; }
 ::selection { background: var(--accent); color: var(--surface); }
 
 /* Always visible, never removed without a replacement. */
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ─── Lenis ─────────────────────────────────────────────────────────── */
 html.lenis, html.lenis body { height: auto; }
@@ -268,6 +273,11 @@ html.lenis, html.lenis body { height: auto; }
   outline: none;
   border-bottom-color: var(--accent);
   box-shadow: 0 1px 0 0 var(--accent);
+  background: transparent;
+}
+/* Elevate the focused field with a subtle glow from the accent */
+.field input:focus-visible, .field select:focus-visible {
+  box-shadow: 0 1px 0 0 var(--accent), 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 .field [aria-invalid='true'] { border-bottom-color: #9B3B2E; }
 .field-error { font-size: var(--fs-xs); color: #9B3B2E; }

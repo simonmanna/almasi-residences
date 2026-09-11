@@ -97,3 +97,21 @@
   --z-cta: 60;
   --z-modal: 100;
 }
+
+/* ─── Print: quiet stone on white, no nav, no motion ──────────── */
+@media print {
+  :root {
+    --surface: #fff;
+    --ink: #111;
+    --ink-muted: #555;
+    --line: #ccc;
+    --accent: #555;
+    --nav-h: 0;
+    --section-y: 48px;
+  }
+  [data-ground] { background: var(--surface) !important; color: var(--ink) !important; }
+  header, footer, .hero, .ctas, .grain, .motion-media, nav, [data-cursor], [class*="sticky"] { display: none !important; }
+  a[href]::after { content: " (" attr(href) ")"; font-size: 0.75em; color: #555; }
+  a[href^="#"]::after, a[href^="javascript"]::after { content: ""; }
+  .display, .h2, .h3 { text-wrap: pretty; }
+}

@@ -107,6 +107,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <noscript>
           <style>{NOSCRIPT_CSS}</style>
         </noscript>
+        {/* §5.2 — preconnect to the API origin (the rewrite is same-origin
+            in production, but tooling and preview servers may differ). */}
+        {process.env.API_INTERNAL_URL && (
+          <link rel="dns-prefetch" href={new URL(process.env.API_INTERNAL_URL).origin} />
+        )}
       </head>
       <body>
         <a href="#main" className="skip-link">

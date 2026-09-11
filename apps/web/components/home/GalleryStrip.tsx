@@ -61,6 +61,8 @@ export function GalleryStrip() {
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     el.addEventListener('click', click, true);
+    /* Prevent scroll interference during drag. */
+    el.style.touchAction = 'pan-y pinch-zoom';
     return () => {
       el.removeEventListener('pointerdown', down);
       window.removeEventListener('pointermove', move);
