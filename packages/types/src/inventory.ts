@@ -1,35 +1,38 @@
-/** §5.5 — status transition rules. Encoded here, enforced by the API, never by the UI. */
+/** §5.5 — residence status rules. Encoded here, enforced by the API, never by the UI. */
 
 export const UNIT_STATUSES = [
   'AVAILABLE',
   'RESERVED',
-  'BOOKED',
+  'ON_HOLD',
   'SOLD',
-  'NOT_RELEASED',
+  'OCCUPIED',
+  'UNAVAILABLE',
 ] as const;
 export type UnitStatus = (typeof UNIT_STATUSES)[number];
 
 export const ORIENTATIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
 export type Orientation = (typeof ORIENTATIONS)[number];
 
-/**
- * §5.5. SOLD is terminal for everyone except an OWNER, who may reverse a
- * mistake — that exception is enforced by the role guard, not by this map.
- */
-const TRANSITIONS: Record<UnitStatus, UnitStatus[]> = {
-  NOT_RELEASED: ['AVAILABLE'],
-  AVAILABLE: ['RESERVED', 'NOT_RELEASED'],
-  RESERVED: ['BOOKED', 'AVAILABLE'],
-  BOOKED: ['SOLD', 'AVAILABLE'],
-  SOLD: [],
-};
+/** A residence that has changed hands. Leaving this set undoes a sale. */
+const CLOSED: ReadonlySet<UnitStatus> = new Set(['SOLD', 'OCCUPIED']);
 
-export function allowedTransitions(from: UnitStatus): UnitStatus[] {
-  return TRANSITIONS[from];
+/**
+ * D-34 — the sales team moves a residence between the open statuses freely
+ * (availability changes daily; a rigid pipeline made the admin fight them).
+ * The one guarded edge is undoing a sale: SOLD or OCCUPIED back to an open
+ * status needs the `residence.reverse-sale` permission, so a sold home cannot
+ * become available by accident. SOLD ↔ OCCUPIED is a move-in/out, not a reversal.
+ */
+export function isSaleReversal(from: UnitStatus, to: UnitStatus): boolean {
+  return CLOSED.has(from) && !CLOSED.has(to);
 }
 
-export function canTransition(from: UnitStatus, to: UnitStatus): boolean {
-  return from === to || TRANSITIONS[from].includes(to);
+export function allowedTransitions(from: UnitStatus, canReverseSale = false): UnitStatus[] {
+  return UNIT_STATUSES.filter((to) => to !== from && (canReverseSale || !isSaleReversal(from, to)));
+}
+
+export function canTransition(from: UnitStatus, to: UnitStatus, canReverseSale = false): boolean {
+  return from === to || allowedTransitions(from, canReverseSale).includes(to);
 }
 
 /** Statuses a visitor can act on. Everything else is shown but not sellable. */
@@ -37,25 +40,41 @@ export function isSellable(status: UnitStatus): boolean {
   return status === 'AVAILABLE';
 }
 
-/** §2.5 — status is shown by fill treatment as well as hue, so it survives
- * colour-blindness and all four time states. */
+/** §2.5 — status is shown by fill treatment as well as hue, so it survives colour-blindness. */
 export type StatusFill = 'solid' | 'hatch' | 'outline' | 'faint';
 
 export const STATUS_FILL: Record<UnitStatus, StatusFill> = {
   AVAILABLE: 'solid',
   RESERVED: 'hatch',
-  BOOKED: 'hatch',
+  ON_HOLD: 'hatch',
   SOLD: 'outline',
-  NOT_RELEASED: 'faint',
+  OCCUPIED: 'outline',
+  UNAVAILABLE: 'faint',
 };
 
 /** §2.7 — sentence case, no exclamation marks, no scarcity language. */
 export const STATUS_LABEL: Record<UnitStatus, string> = {
   AVAILABLE: 'Available',
   RESERVED: 'Reserved',
-  BOOKED: 'Booked',
+  ON_HOLD: 'On hold',
   SOLD: 'Sold',
-  NOT_RELEASED: 'Not released',
+  OCCUPIED: 'Occupied',
+  UNAVAILABLE: 'Unavailable',
+};
+
+/**
+ * What a visitor is told. ON_HOLD is a sale being negotiated — not buyable, not
+ * final — so it reads "reserved". OCCUPIED is a sold home someone lives in.
+ */
+export type PublicUnitStatus = 'available' | 'reserved' | 'sold' | 'unavailable';
+
+export const PUBLIC_UNIT_STATUS: Record<UnitStatus, PublicUnitStatus> = {
+  AVAILABLE: 'available',
+  RESERVED: 'reserved',
+  ON_HOLD: 'reserved',
+  SOLD: 'sold',
+  OCCUPIED: 'sold',
+  UNAVAILABLE: 'unavailable',
 };
 
 export interface UnitFilterState {
@@ -99,4 +118,29 @@ export function isFilterActive(f: UnitFilterState): boolean {
     f.orientations.length > 0 ||
     f.priceMinorMax !== null
   );
+}
+
+// ─── Pricing helpers ─────────────────────────────────────────────────────
+
+export interface PricedUnit {
+  priceMinor: number;
+  discountMinor?: number | null;
+  promoPriceMinor?: number | null;
+  promoEndsAt?: string | Date | null;
+}
+
+/**
+ * The price a buyer pays today: an unexpired promotional price wins, then the
+ * list price less any discount. Never below zero.
+ */
+export function effectivePriceMinor(u: PricedUnit, now: Date = new Date()): number {
+  const promoLive =
+    u.promoPriceMinor != null && (u.promoEndsAt == null || new Date(u.promoEndsAt) > now);
+  if (promoLive) return Math.max(0, u.promoPriceMinor!);
+  return Math.max(0, u.priceMinor - (u.discountMinor ?? 0));
+}
+
+/** Price per m², minor units, rounded to the whole minor unit. Null for a zero area. */
+export function pricePerSqmMinor(priceMinor: number, areaSqm: number): number | null {
+  return areaSqm > 0 ? Math.round(priceMinor / areaSqm) : null;
 }

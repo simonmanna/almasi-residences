@@ -38,6 +38,22 @@ const PLANS: Record<ResidenceType, { w: number; h: number; rooms: Room[] }> = {
       { x: 20, y: 390, w: 720, h: 60, name: 'Balcony', open: true },
     ],
   },
+  'three-bedroom': {
+    w: 820,
+    h: 470,
+    rooms: [
+      { x: 20, y: 20, w: 170, h: 160, name: 'Bedroom 2' },
+      { x: 190, y: 20, w: 170, h: 160, name: 'Bedroom 3' },
+      { x: 360, y: 20, w: 100, h: 160, name: 'Bath' },
+      { x: 460, y: 20, w: 120, h: 160, name: 'Entry' },
+      { x: 580, y: 20, w: 110, h: 160, name: 'En-suite' },
+      { x: 690, y: 20, w: 110, h: 160, name: 'Walk-in' },
+      { x: 20, y: 180, w: 360, h: 210, name: 'Living and dining' },
+      { x: 380, y: 180, w: 180, h: 210, name: 'Kitchen' },
+      { x: 560, y: 180, w: 240, h: 210, name: 'Main bedroom' },
+      { x: 20, y: 390, w: 780, h: 60, name: 'Balcony', open: true },
+    ],
+  },
   penthouse: {
     w: 900,
     h: 540,

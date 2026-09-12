@@ -1,13 +1,13 @@
 import { Body, Controller, Get, Param, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
-import { AdminGuard, Roles } from '../admin/admin.guard.js';
+import { AdminGuard, RequirePermission } from '../admin/admin.guard.js';
 import { CompleteUploadDto, UploadUrlDto } from './media.dto.js';
 import { MediaService } from './media.service.js';
 
-/** §5.4 — all media administration. Marketing and owners only. */
+/** §5.4 — the time-state render pipeline (presigned upload → worker). Media editors only. */
 @Controller('admin/media')
 @UseGuards(AdminGuard)
-@Roles('OWNER', 'MARKETING')
+@RequirePermission('media.edit')
 @UseInterceptors(NoStoreInterceptor)
 export class MediaController {
   constructor(private readonly media: MediaService) {}

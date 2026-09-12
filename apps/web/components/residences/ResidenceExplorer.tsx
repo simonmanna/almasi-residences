@@ -7,7 +7,7 @@ import {
   EMPTY_FILTER,
   ORIENTATION_TEXT,
   PUBLIC_STATUSES,
-  RESIDENCE_TYPES,
+  typesPresent,
   SIZE_BANDS,
   SORT_TEXT,
   STATUS_TEXT,
@@ -85,12 +85,12 @@ export function ResidenceExplorer({
           <span className="italic">{summary.available} available.</span>
         </h1>
         <p className="lead">
-          One- and two-bedroom apartments and three penthouses for sale in Kimihurura, Kigali, from{' '}
+          {typesPresent(summary).map((t) => `${summary.byType[t].total} ${t === 'penthouse' ? 'penthouses' : `${TYPE_TEXT[t].toLowerCase()} apartments`}`).join(', ')} for sale in Kimihurura, Kigali, from{' '}
           {Math.min(...residences.map((r) => r.areaSqm))} to {Math.max(...residences.map((r) => r.areaSqm))} m².
           Availability is live from the sales team’s own records.
         </p>
         <dl className={styles.counts}>
-          {RESIDENCE_TYPES.map((t) => (
+          {typesPresent(summary).map((t) => (
             <div key={t}>
               <dt>{TYPE_TEXT[t]}</dt>
               <dd>
@@ -112,7 +112,7 @@ export function ResidenceExplorer({
             <div className={styles.groups}>
               <fieldset className={styles.group}>
                 <legend>Residence</legend>
-                {RESIDENCE_TYPES.map((t) => (
+                {typesPresent(summary).map((t) => (
                   <button key={t} type="button" className="chip" aria-pressed={filter.types.includes(t)} onClick={() => flip('types', t)}>
                     {TYPE_TEXT[t]}
                   </button>

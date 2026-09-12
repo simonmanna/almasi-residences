@@ -1,6 +1,9 @@
 /**
  * Server-side API client. §6.7 — the build fails rather than shipping a page
  * with no inventory, but a revalidate-time failure serves the last good render.
+ *
+ * D-33 — the admin database is the source of truth. Everything a visitor reads
+ * about the property arrives through these calls; nothing here is a fixture.
  */
 import type { Orientation, UnitStatus } from '@avida/types';
 
@@ -58,6 +61,24 @@ export interface MediaSetDto {
   assets: Partial<Record<MediaAssetDto['timeState'], MediaAssetDto>>;
 }
 
+/** A file from the admin's media library, as the public API describes it. */
+export interface PublicMediaDto {
+  id: string;
+  kind: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'MODEL';
+  category: string;
+  title: string | null;
+  caption: string | null;
+  altText: string | null;
+  width: number | null;
+  height: number | null;
+  /** API-relative (`/api/v1/files/…`, same-origin through the rewrite) or absolute (R2). */
+  url: string;
+  thumbUrl: string;
+  srcSet: string | null;
+  blurDataUrl: string | null;
+  mimeType: string;
+}
+
 export interface TypologyDto {
   id: string;
   slug: string;
@@ -67,6 +88,7 @@ export interface TypologyDto {
   areaSqmMin: number;
   areaSqmMax: number;
   descriptionMd: string | null;
+  isPenthouse?: boolean;
   floorPlanSvgUrl: string | null;
   summary: { total: number; available: number; priceMinorFrom: number | null };
   mediaSets?: MediaSetDto[];
@@ -93,6 +115,25 @@ export interface LandmarkDto {
   walkMinutes: number | null;
 }
 
+export interface ContactDto {
+  phone: string | null;
+  email: string | null;
+  whatsapp: string | null;
+  officeAddress: string | null;
+  officeHours: string | null;
+  socials: Record<string, string>;
+}
+
+export interface AmenitySummaryDto {
+  id: string;
+  slug: string | null;
+  name: string;
+  shortDescription: string | null;
+  descriptionMd: string | null;
+  iconKey: string | null;
+  location: string | null;
+}
+
 export interface DevelopmentDto {
   id: string;
   slug: string;
@@ -105,11 +146,16 @@ export interface DevelopmentDto {
   handoverDate: string | null;
   latitude: number;
   longitude: number;
+  // Added by the admin platform; optional so older payloads and fixtures still type-check.
+  buildingConfig?: string | null;
+  developerName?: string | null;
+  architect?: string | null;
+  contact?: ContactDto;
   typologies: TypologyDto[];
-  amenities: { id: string; name: string; descriptionMd: string | null; iconKey: string | null }[];
+  amenities: AmenitySummaryDto[];
   landmarks: LandmarkDto[];
   milestones: MilestoneDto[];
-  faqs: { id: string; question: string; answerMd: string }[];
+  faqs: { id: string; question: string; answerMd: string; category?: string }[];
   seo: { title: string; description: string; keywords: string[] } | null;
   mediaSets: MediaSetDto[];
   summary: {
@@ -126,16 +172,22 @@ export interface StackUnitDto {
   id: string;
   code: string;
   status: UnitStatus;
+  /** The price a buyer pays today (promotion or discount applied). */
   priceMinor: number;
+  /** The list price, when a promotion or discount is running. */
+  listPriceMinor?: number | null;
   currency: string;
   areaSqm: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  featured?: boolean;
   orientation: Orientation;
   viewTags: string[];
   positionIndex: number;
   widthRatio: number;
   /** Maps the unit to a named volume in the building model (3D selector). */
   meshName?: string | null;
-  typology: { slug: string; name: string; bedrooms: number };
+  typology: { slug: string; name: string; bedrooms: number; isPenthouse?: boolean };
 }
 
 /** §5.3 — the status-only delta the client polls; never cached. */
@@ -155,6 +207,7 @@ export interface StackFloorDto {
   id: string;
   level: number;
   label: string;
+  displayName?: string | null;
   heightM: number;
   units: StackUnitDto[];
 }
@@ -180,7 +233,8 @@ export interface ScheduleRowDto {
 
 export interface UnitDetailDto extends StackUnitDto {
   balconySqm: number | null;
-  notes: string | null;
+  terraceSqm?: number | null;
+  interiorSqm?: number | null;
   floor: { level: number; label: string; heightM: number };
   typology: StackUnitDto['typology'] & {
     id: string;
@@ -196,6 +250,61 @@ export interface UnitDetailDto extends StackUnitDto {
     cumulative: number[];
   };
 }
+
+/** A residence as the public residence endpoint describes it (§22). */
+export interface PublicResidenceDto {
+  id: string;
+  code: string;
+  label: string;
+  slug: string;
+  floor: { id: string; level: number; label: string };
+  type: { id: string; slug: string; name: string; isPenthouse: boolean; description: string | null };
+  bedrooms: number;
+  bathrooms: number;
+  areaSqm: number;
+  interiorSqm: number | null;
+  balconySqm: number | null;
+  terraceSqm: number | null;
+  status: 'available' | 'reserved' | 'sold' | 'unavailable';
+  priceMinor: number | null;
+  listPriceMinor: number | null;
+  currency: string;
+  featured: boolean;
+  shortDescription: string | null;
+  description: string | null;
+  parkingIncluded: number;
+  hasStorage: boolean;
+  cover: PublicMediaDto | null;
+  images: PublicMediaDto[];
+  videos: PublicMediaDto[];
+  floorPlans: PublicMediaDto[];
+  features: { name: string; category: string; iconKey: string | null }[];
+  rooms: { id: string; name: string; type: string; areaSqm: number | null; description: string | null }[];
+}
+
+export interface PublicAmenityDto {
+  id: string;
+  slug: string | null;
+  name: string;
+  shortDescription: string | null;
+  descriptionMd: string | null;
+  iconKey: string | null;
+  location: string | null;
+  specifications: { label: string; value: string }[];
+  images: PublicMediaDto[];
+  videos: PublicMediaDto[];
+}
+
+export interface PublicGalleryDto {
+  slug: string;
+  title: string;
+  description: string | null;
+  cover: PublicMediaDto | null;
+  items: PublicMediaDto[];
+}
+
+/** Page copy from the CMS, keyed by page then field (§21). Any key may be absent. */
+export type PagesDto = Record<string, Record<string, unknown>>;
 
 // ─── Reads ───────────────────────────────────────────────────────────────
 
@@ -214,6 +323,31 @@ export const getTypology = (typoSlug: string, slug: string = DEVELOPMENT_SLUG) =
   );
 
 export const getUnit = (id: string) => get<UnitDetailDto>(`/unit/${id}`, 60);
+
+export const getPublicResidence = (code: string) => get<PublicResidenceDto>(`/residences/${encodeURIComponent(code)}`, 60);
+
+/** A residence card: what the featured section and residence lists need. */
+export type PublicResidenceCardDto = Pick<
+  PublicResidenceDto,
+  'id' | 'code' | 'label' | 'slug' | 'floor' | 'bedrooms' | 'bathrooms' | 'areaSqm' | 'status' | 'priceMinor' | 'currency' | 'featured' | 'shortDescription' | 'cover'
+> & { type: { id: string; slug: string; name: string; isPenthouse: boolean } };
+
+/** §48 — residences the admin marked as featured. Never a list in code. */
+export const getFeatured = () => get<PublicResidenceCardDto[]>('/residences/featured', 60);
+export const getAmenities = () => get<PublicAmenityDto[]>('/amenities');
+export const getGalleries = () => get<PublicGalleryDto[]>('/galleries');
+export const getPages = () => get<PagesDto>('/pages');
+
+/** CMS copy never blocks a page: the component's own text stands in for any missing key. */
+export async function getPagesSafe(): Promise<PagesDto> {
+  return getPages().catch(() => ({}));
+}
+
+/** A string field from the CMS, or the fallback when the admin left it empty. */
+export function copy(pages: PagesDto, page: string, key: string, fallback: string): string {
+  const v = pages[page]?.[key];
+  return typeof v === 'string' && v.trim() !== '' ? v : fallback;
+}
 
 export interface ProgressUpdateDto {
   id: string;

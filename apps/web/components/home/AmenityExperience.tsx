@@ -1,27 +1,50 @@
 'use client';
 
 import { useState } from 'react';
+import type { PublicMediaDto } from '../../lib/api';
 import { PROVENANCE_NOTE, scene, type SceneId } from '../../lib/media-manifest';
+import { ApiImage } from '../ui/ApiImage';
 import { RevealText } from '../ui/RevealText';
 import { SceneImage } from '../ui/SceneImage';
 import styles from './AmenityExperience.module.css';
 
+/** An amenity as the API sends it. Only the name is required. */
 export interface AmenityInput {
+  id?: string;
+  slug?: string | null;
   name: string;
+  shortDescription?: string | null;
   descriptionMd: string | null;
   iconKey: string | null;
+  images?: PublicMediaDto[];
 }
 
-/** The order a resident meets them, each tied to the API's amenity by its icon key. */
-const ITEMS: { key: string; iconKey: string; title: string; scene: SceneId; fallback: string }[] = [
-  { key: 'pool', iconKey: 'pool', title: 'Swimming pool', scene: 'pool', fallback: 'A fifteen-metre pool on the amenity deck.' },
-  { key: 'restaurant', iconKey: 'restaurant', title: 'Restaurant', scene: 'restaurant', fallback: 'A ground-floor restaurant for residents and their guests.' },
-  { key: 'fitness', iconKey: 'gym', title: 'Fitness', scene: 'gym', fallback: 'A gym with a view of the hills.' },
-  { key: 'wellness', iconKey: 'spa', title: 'Wellness', scene: 'wellness', fallback: 'A sauna and a massage room.' },
-  { key: 'cowork', iconKey: 'work', title: 'Co-working', scene: 'cowork', fallback: 'About 60 m² of shared working space.' },
-  { key: 'reception', iconKey: 'concierge', title: 'Reception', scene: 'lobby', fallback: 'A staffed reception and lobby.' },
-  { key: 'parking', iconKey: 'parking', title: 'Parking', scene: 'parking', fallback: 'A basement bay for every residence.' },
-];
+/**
+ * Artwork for an amenity that has no photograph in the media library yet,
+ * paired by its handle or icon. Presentation only: which amenities exist, in
+ * what order and with what words, is decided in the admin (§19).
+ */
+const SCENE_BY_KEY: Record<string, SceneId> = {
+  'swimming-pool': 'pool',
+  pool: 'pool',
+  restaurant: 'restaurant',
+  gym: 'gym',
+  fitness: 'gym',
+  sauna: 'wellness',
+  'massage-room': 'wellness',
+  spa: 'wellness',
+  wellness: 'wellness',
+  'co-working': 'cowork',
+  'residents-working-space': 'cowork',
+  work: 'cowork',
+  reception: 'lobby',
+  lobby: 'lobby',
+  concierge: 'lobby',
+  'basement-parking': 'parking',
+  parking: 'parking',
+};
+
+const sceneFor = (a: AmenityInput): SceneId => SCENE_BY_KEY[a.slug ?? ''] ?? SCENE_BY_KEY[a.iconKey ?? ''] ?? 'lobby';
 
 /**
  * 06 — The art of living. Not a grid of icons: the names are set large, and
@@ -31,34 +54,38 @@ const ITEMS: { key: string; iconKey: string; title: string; scene: SceneId; fall
 export function AmenityExperience({
   amenities,
   id = 'amenities',
+  kicker = 'Amenities',
+  lines = ['The art', 'of living'],
+  lead = 'Everything a resident uses every day is inside the gate, from the pool deck on level one to the parking bay below.',
 }: {
   amenities: AmenityInput[];
   id?: string;
+  kicker?: string;
+  lines?: string[];
+  lead?: string;
 }) {
   const [active, setActive] = useState(0);
-  const describe = (iconKey: string, fallback: string) =>
-    amenities.find((a) => a.iconKey === iconKey)?.descriptionMd ?? fallback;
-  const current = ITEMS[active]!;
+  const items = amenities.map((a, i) => ({ ...a, key: a.slug ?? a.id ?? String(i), photo: a.images?.find((m) => m.kind === 'IMAGE') ?? null }));
+  if (items.length === 0) return null;
+  const current = items[Math.min(active, items.length - 1)]!;
+  const note = (it: (typeof items)[number]) => (it.photo ? (it.photo.caption ?? '') : PROVENANCE_NOTE[scene(sceneFor(it)).provenance]);
+  const media = (it: (typeof items)[number], sizes: string) =>
+    it.photo ? <ApiImage m={it.photo} sizes={sizes} /> : <SceneImage id={sceneFor(it)} sizes={sizes} />;
 
   return (
     <section id={id} className={`section ${styles.section}`} data-ground="night" aria-labelledby={`${id}-title`}>
       <div className="container">
         <header className={styles.head}>
-          <p className={`mark ${styles.kicker}`}>Amenities</p>
-          <RevealText as="h2" id={`${id}-title`} className="h2" lines={['The art', 'of living']} />
-          <p className="lead">
-            Everything a resident uses every day is inside the gate, from the pool deck on level one to
-            the parking bay below.
-          </p>
+          <p className={`mark ${styles.kicker}`}>{kicker}</p>
+          <RevealText as="h2" id={`${id}-title`} className="h2" lines={lines} />
+          <p className="lead">{lead}</p>
         </header>
 
         <div className={styles.layout}>
           <ul className={styles.list}>
-            {ITEMS.map((it, i) => (
+            {items.map((it, i) => (
               <li key={it.key} className={styles.entry} data-active={i === active ? 'true' : 'false'}>
-                <div className={styles.mobileMedia}>
-                  <SceneImage id={it.scene} sizes="82vw" />
-                </div>
+                <div className={styles.mobileMedia}>{media(it, '82vw')}</div>
                 <button
                   type="button"
                   className={styles.item}
@@ -68,11 +95,11 @@ export function AmenityExperience({
                   onFocus={() => setActive(i)}
                   onClick={() => setActive(i)}
                 >
-                  <span className={styles.name}>{it.title}</span>
+                  <span className={styles.name}>{it.name}</span>
                 </button>
                 <div id={`${id}-${it.key}`} className={styles.desc}>
                   <div>
-                    <p>{describe(it.iconKey, it.fallback)}</p>
+                    <p>{it.shortDescription ?? it.descriptionMd ?? ''}</p>
                   </div>
                 </div>
               </li>
@@ -80,12 +107,12 @@ export function AmenityExperience({
           </ul>
 
           <div className={styles.frame} aria-hidden="true">
-            {ITEMS.map((it, i) => (
+            {items.map((it, i) => (
               <div key={it.key} className={styles.slide} data-active={i === active ? 'true' : 'false'}>
-                <SceneImage id={it.scene} sizes="(max-width: 900px) 100vw, 56vw" />
+                {media(it, '(max-width: 900px) 100vw, 56vw')}
               </div>
             ))}
-            <p className={`cgi-note ${styles.note}`}>{PROVENANCE_NOTE[scene(current.scene).provenance]}</p>
+            <p className={`cgi-note ${styles.note}`}>{note(current)}</p>
           </div>
         </div>
       </div>

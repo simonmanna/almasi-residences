@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import Redis from 'ioredis';
+import { effectivePriceMinor } from '@avida/types';
 import { PrismaService } from '../../common/prisma.service.js';
 
-/** §4.5 — the hottest query on the site. Cached 30s, busted on any status write. */
+/** §4.5 — the hottest query on the site. Cached 30s, busted on any admin write. */
 const CACHE_TTL_SECONDS = 30;
 const cacheKey = (slug: string) => `inventory:stack:${slug}`;
+
+/** §32 — only residences the admin has published, and not archived, reach a visitor. */
+const LIVE = { published: true, archivedAt: null } as const;
 
 @Injectable()
 export class InventoryService {
@@ -41,27 +45,36 @@ export class InventoryService {
         floors: {
           // §2.5 — ground floor at the bottom of the drawing; the client
           // reverses for rendering, the API stays in building order.
+          where: { published: true },
           orderBy: { level: 'asc' },
           select: {
             id: true,
             level: true,
             label: true,
+            displayName: true,
             heightM: true,
             units: {
+              where: LIVE,
               orderBy: { positionIndex: 'asc' },
               select: {
                 id: true,
                 code: true,
                 status: true,
                 priceMinor: true,
+                discountMinor: true,
+                promoPriceMinor: true,
+                promoEndsAt: true,
                 currency: true,
                 areaSqm: true,
+                bedrooms: true,
+                bathrooms: true,
                 orientation: true,
                 viewTags: true,
                 positionIndex: true,
                 widthRatio: true,
                 meshName: true,
-                typology: { select: { slug: true, name: true, bedrooms: true } },
+                featured: true,
+                typology: { select: { slug: true, name: true, bedrooms: true, isPenthouse: true } },
               },
             },
           },
@@ -69,7 +82,19 @@ export class InventoryService {
       },
     });
 
-    const units = buildings.flatMap((b) => b.floors.flatMap((f) => f.units));
+    // The price a visitor sees is the price they would pay today (§10).
+    const shaped = buildings.map((b) => ({
+      ...b,
+      floors: b.floors.map((f) => ({
+        ...f,
+        units: f.units.map(({ discountMinor, promoPriceMinor, promoEndsAt, ...u }) => {
+          const now = effectivePriceMinor({ priceMinor: u.priceMinor, discountMinor, promoPriceMinor, promoEndsAt });
+          return { ...u, priceMinor: now, listPriceMinor: now !== u.priceMinor ? u.priceMinor : null };
+        }),
+      })),
+    }));
+
+    const units = shaped.flatMap((b) => b.floors.flatMap((f) => f.units));
     const available = units.filter((u) => u.status === 'AVAILABLE');
     const byStatus = units.reduce<Record<string, number>>((acc, u) => {
       acc[u.status] = (acc[u.status] ?? 0) + 1;
@@ -79,14 +104,14 @@ export class InventoryService {
     const payload = {
       slug,
       currency: dev.currency,
-      buildings,
+      buildings: shaped,
       // §4.4 — derived at query time.
       summary: {
         total: units.length,
         byStatus,
         available: available.length,
         percentSold: units.length
-          ? Math.round(((byStatus.SOLD ?? 0) + (byStatus.BOOKED ?? 0)) / units.length * 100)
+          ? Math.round((((byStatus.SOLD ?? 0) + (byStatus.OCCUPIED ?? 0)) / units.length) * 100)
           : 0,
         priceMinorMin: available.length ? Math.min(...available.map((u) => u.priceMinor)) : null,
         priceMinorMax: available.length ? Math.max(...available.map((u) => u.priceMinor)) : null,
@@ -104,16 +129,20 @@ export class InventoryService {
    */
   async live(slug: string) {
     const units = await this.prisma.client.unit.findMany({
-      where: { floor: { building: { development: { slug } } } },
-      select: { id: true, status: true, priceMinor: true },
+      where: { development: { slug }, ...LIVE, floor: { published: true } },
+      select: { id: true, status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true },
       orderBy: { code: 'asc' },
     });
-    return { units, generatedAt: new Date().toISOString() };
+    return {
+      units: units.map((u) => ({ id: u.id, status: u.status, priceMinor: effectivePriceMinor(u) })),
+      generatedAt: new Date().toISOString(),
+    };
   }
 
-  /** Called on every status transition (§5.5). */
+  /** Called on every admin write a visitor could see (§37). */
   async bustCache(slug: string): Promise<void> {
     try {
+      if (this.redis?.status === 'wait') await this.redis.connect();
       await this.redis?.del(cacheKey(slug));
     } catch {
       /* a failed bust means a stale read for <=30s, not an error for the caller */

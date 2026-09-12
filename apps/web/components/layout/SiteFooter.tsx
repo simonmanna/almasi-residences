@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ADDRESS_LINES, SALES, mailtoHref, telHref, whatsappHref } from '../../lib/contact';
+import { getDevelopment } from '../../lib/api';
+import { addressLines, contactFrom, mailtoHref, telHref, whatsappHref } from '../../lib/contact';
 import { EnquireButton } from '../enquiry/ContactActions';
 import { Wordmark } from './Wordmark';
 import styles from './SiteFooter.module.css';
@@ -19,10 +20,16 @@ const EXPLORE_LINKS = [
   { href: '/location', label: 'Location' },
 ];
 
-export function SiteFooter() {
-  const wa = whatsappHref();
-  const tel = telHref();
-  const mail = mailtoHref();
+const SOCIAL_LABEL: Record<string, string> = { instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', youtube: 'YouTube', x: 'X', tiktok: 'TikTok' };
+
+/** Contact details come from the property record the admin edits (§21), not from this file. */
+export async function SiteFooter() {
+  const dev = await getDevelopment().catch(() => null);
+  const contact = contactFrom(dev?.contact);
+  const wa = whatsappHref(contact);
+  const tel = telHref(contact);
+  const mail = mailtoHref(contact);
+  const socials = Object.entries(contact.socials);
 
   return (
     <footer className={styles.footer} data-ground="night" data-hide-sticky-cta>
@@ -42,9 +49,10 @@ export function SiteFooter() {
               <Wordmark />
             </Link>
             <address className={styles.address}>
-              {ADDRESS_LINES.map((line) => (
+              {addressLines(contact).map((line) => (
                 <span key={line}>{line}</span>
               ))}
+              {contact.officeHours && <span>{contact.officeHours}</span>}
             </address>
           </div>
 
@@ -80,14 +88,14 @@ export function SiteFooter() {
                   </a>
                 </li>
               )}
-              {tel && SALES.phone && (
+              {tel && contact.phone && (
                 <li>
-                  <a href={tel}>{SALES.phone}</a>
+                  <a href={tel}>{contact.phone}</a>
                 </li>
               )}
-              {mail && SALES.email && (
+              {mail && contact.email && (
                 <li>
-                  <a href={mail}>{SALES.email}</a>
+                  <a href={mail}>{contact.email}</a>
                 </li>
               )}
               <li>
@@ -96,6 +104,13 @@ export function SiteFooter() {
               <li>
                 <Link href="/enquire#viewing">Book a viewing</Link>
               </li>
+              {socials.map(([k, url]) => (
+                <li key={k}>
+                  <a href={url} target="_blank" rel="noopener noreferrer">
+                    {SOCIAL_LABEL[k] ?? k}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -107,7 +122,7 @@ export function SiteFooter() {
         <div className={styles.legal}>
           <p>
             Images are artist&rsquo;s impressions. Layouts, specification and prices are indicative and may
-            change before contract. Handover is planned for Q2 2028.
+            change before contract.
           </p>
           <p>&copy; {new Date().getFullYear()} Almasi Residences, Kimihurura, Kigali</p>
         </div>

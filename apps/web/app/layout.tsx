@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { formatQuarter } from '@avida/types';
 import { DEVELOPMENT_SLUG, getDevelopment, getInventory } from '../lib/api';
 import { SmoothScroll } from '../components/layout/SmoothScroll';
 import { InventoryProvider } from '../components/providers/InventoryProvider';
+import { ContactProvider } from '../components/providers/ContactProvider';
+import { contactFrom } from '../lib/contact';
 import { EnquiryProvider } from '../components/enquiry/EnquiryProvider';
 import { SiteNav } from '../components/layout/SiteNav';
 import { RouteFade } from '../components/layout/RouteFade';
@@ -44,14 +47,14 @@ const INTRO_SCRIPT = `try{var d=document.documentElement;if(location.pathname===
 const NOSCRIPT_CSS =
   '.reveal .reveal-word{transform:none!important}.reveal-media{clip-path:none!important}.reveal-media>*{transform:none!important}';
 
-export const metadata: Metadata = {
+const BASE_METADATA: Metadata = {
   metadataBase: new URL(SITE),
   title: {
     default: 'Almasi Residences — Luxury apartments and penthouses in Kimihurura, Kigali',
     template: '%s — Almasi Residences, Kigali',
   },
   description:
-    'Almasi Residences: 28 private residences in Kimihurura, Kigali — one- and two-bedroom apartments and three penthouses, with pool, gym, sauna, restaurant and basement parking. Handover Q2 2028.',
+    'Almasi Residences: private residences in Kimihurura, Kigali — apartments and penthouses with pool, gym, sauna, restaurant and basement parking.',
   applicationName: 'Almasi Residences',
   keywords: [
     'Almasi Residences',
@@ -71,6 +74,17 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
 };
+
+/** The default description counts from the live record, so it never promises a number the admin has changed. */
+export async function generateMetadata(): Promise<Metadata> {
+  const dev = await getDevelopment().catch(() => null);
+  if (!dev) return BASE_METADATA;
+  const handover = dev.handoverDate ? ` Handover ${formatQuarter(dev.handoverDate)}.` : '';
+  return {
+    ...BASE_METADATA,
+    description: `${dev.name}: ${dev.summary.total} private residences in Kimihurura, Kigali — apartments and penthouses with pool, gym, sauna, restaurant and basement parking.${handover}`,
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -118,13 +132,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Skip to content
         </a>
         <SmoothScroll>
-          <InventoryProvider initial={inventory} bathrooms={bathrooms} slug={DEVELOPMENT_SLUG}>
-            <EnquiryProvider>
-              <SiteNav />
-              <RouteFade>{children}</RouteFade>
-              <StickyMobileCta />
-            </EnquiryProvider>
-          </InventoryProvider>
+          <ContactProvider contact={contactFrom(dev?.contact)}>
+            <InventoryProvider initial={inventory} bathrooms={bathrooms} slug={DEVELOPMENT_SLUG}>
+              <EnquiryProvider>
+                <SiteNav />
+                <RouteFade>{children}</RouteFade>
+                <StickyMobileCta />
+              </EnquiryProvider>
+            </InventoryProvider>
+          </ContactProvider>
         </SmoothScroll>
         <CursorLabel />
       </body>

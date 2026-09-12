@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { computeSchedule } from '@avida/types';
+import { computeSchedule, effectivePriceMinor } from '@avida/types';
 import { PrismaService } from '../../common/prisma.service.js';
+
+const milestoneSelect = { milestones: { orderBy: { sortOrder: 'asc' as const } } };
 
 @Injectable()
 export class PricingService {
@@ -8,7 +10,8 @@ export class PricingService {
 
   /**
    * §5.6 — the API resolves the data; the arithmetic lives in the shared pure
-   * function so the client calculator and the server cannot disagree.
+   * function so the client calculator and the server cannot disagree. The
+   * residence's own payment plan wins; otherwise the property's default plan.
    */
   async scheduleForUnit(unitId: string, startDate?: string) {
     const unit = await this.prisma.client.unit.findUnique({
@@ -17,29 +20,24 @@ export class PricingService {
         id: true,
         code: true,
         priceMinor: true,
+        discountMinor: true,
+        promoPriceMinor: true,
+        promoEndsAt: true,
         currency: true,
-        floor: {
-          select: {
-            building: {
-              select: {
-                development: {
-                  select: {
-                    handoverDate: true,
-                    milestones: { orderBy: { sortOrder: 'asc' } },
-                  },
-                },
-              },
-            },
-          },
-        },
+        developmentId: true,
+        paymentPlan: { select: milestoneSelect },
+        development: { select: { handoverDate: true } },
       },
     });
     if (!unit) throw new NotFoundException(`No unit with id "${unitId}"`);
 
-    const dev = unit.floor.building.development;
+    const plan =
+      unit.paymentPlan ??
+      (await this.prisma.client.paymentPlan.findFirst({ where: { developmentId: unit.developmentId, isDefault: true }, select: milestoneSelect }));
+
     const schedule = computeSchedule(
-      { priceMinor: unit.priceMinor, currency: unit.currency },
-      dev.milestones.map((m) => ({
+      { priceMinor: effectivePriceMinor(unit), currency: unit.currency },
+      (plan?.milestones ?? []).map((m) => ({
         id: m.id,
         sortOrder: m.sortOrder,
         label: m.label,
@@ -48,7 +46,7 @@ export class PricingService {
         triggerDate: m.triggerDate,
         triggerNote: m.triggerNote,
       })),
-      dev.handoverDate,
+      unit.development.handoverDate,
       startDate ? new Date(startDate) : new Date(),
     );
 

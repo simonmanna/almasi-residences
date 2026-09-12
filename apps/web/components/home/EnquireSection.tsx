@@ -1,32 +1,41 @@
-import { ADDRESS_LINES, SALES, mailtoHref, telHref, whatsappHref } from '../../lib/contact';
+import { copy, getDevelopment, getPagesSafe } from '../../lib/api';
+import { addressLines, contactFrom, mailtoHref, telHref, whatsappHref } from '../../lib/contact';
+import { twoLines } from '../../lib/text';
 import { EnquiryForm } from '../enquiry/EnquiryForm';
 import { RevealText } from '../ui/RevealText';
 import styles from './EnquireSection.module.css';
 
-/** 11 — the enquiry, in the page rather than behind a button. */
-export function EnquireSection({
+const DEFAULT_TITLE = 'Arrange a private viewing.';
+const DEFAULT_BODY =
+  'Viewings are by appointment with the sales team. Tell us which residences interest you and when suits you, and we will reply within one working day.';
+
+/**
+ * 11 — the enquiry, in the page rather than behind a button. The heading and
+ * text come from the CMS (Contact information), the channels from the property.
+ */
+export async function EnquireSection({
   id = 'enquire',
-  heading = ['Arrange a', 'private viewing.'],
+  heading,
   source = 'home',
 }: {
   id?: string;
   heading?: string[];
   source?: string;
 }) {
-  const wa = whatsappHref();
-  const tel = telHref();
-  const mail = mailtoHref();
+  const [dev, pages] = await Promise.all([getDevelopment().catch(() => null), getPagesSafe()]);
+  const contact = contactFrom(dev?.contact);
+  const wa = whatsappHref(contact);
+  const tel = telHref(contact);
+  const mail = mailtoHref(contact);
+  const lines = heading ?? twoLines(copy(pages, 'contact', 'enquireTitle', DEFAULT_TITLE));
 
   return (
     <section id={id} className={`section ${styles.section}`} data-hide-sticky-cta aria-labelledby={`${id}-title`}>
       <div className={`container ${styles.layout}`}>
         <div className={styles.text}>
           <p className={`mark ${styles.kicker}`}>Enquire</p>
-          <RevealText as="h2" id={`${id}-title`} className="h2" lines={heading} />
-          <p className="lead">
-            Viewings are by appointment with the sales team. Tell us which residences interest you and
-            when suits you, and we will reply within one working day.
-          </p>
+          <RevealText as="h2" id={`${id}-title`} className="h2" lines={lines} />
+          <p className="lead">{copy(pages, 'contact', 'enquireBody', DEFAULT_BODY)}</p>
           <ul className={styles.channels}>
             {wa && (
               <li>
@@ -36,25 +45,25 @@ export function EnquireSection({
                 </a>
               </li>
             )}
-            {tel && SALES.phone && (
+            {tel && contact.phone && (
               <li>
                 <span className={styles.label}>Telephone</span>
                 <a className="link-line" href={tel}>
-                  {SALES.phone}
+                  {contact.phone}
                 </a>
               </li>
             )}
-            {mail && SALES.email && (
+            {mail && contact.email && (
               <li>
                 <span className={styles.label}>Email</span>
                 <a className="link-line" href={mail}>
-                  {SALES.email}
+                  {contact.email}
                 </a>
               </li>
             )}
             <li>
               <span className={styles.label}>Address</span>
-              <address>{ADDRESS_LINES.join(', ')}</address>
+              <address>{addressLines(contact).join(', ')}</address>
             </li>
           </ul>
         </div>

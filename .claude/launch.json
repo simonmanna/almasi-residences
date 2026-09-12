@@ -6,6 +6,18 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["scripts/dev-preview.mjs", "3100"],
       "port": 3100
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@avida/api", "dev"],
+      "port": 3011
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@avida/admin", "dev"],
+      "port": 3002
     }
   ]
 }

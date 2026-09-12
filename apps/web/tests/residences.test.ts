@@ -58,7 +58,7 @@ const inventory: InventoryDto = {
               id: 'e2',
               code: 'E2',
               areaSqm: 126,
-              status: 'BOOKED',
+              status: 'ON_HOLD',
               positionIndex: 4,
               priceMinor: 177_000_00,
               typology: { slug: 'two-bed-corner', name: 'Two bedroom corner', bedrooms: 2 },
@@ -83,7 +83,7 @@ const inventory: InventoryDto = {
               code: 'PH-C',
               areaSqm: 390,
               positionIndex: 2,
-              status: 'NOT_RELEASED',
+              status: 'UNAVAILABLE',
               priceMinor: 480_000_00,
               typology: { slug: 'penthouse-three', name: 'Three bedroom penthouse', bedrooms: 3 },
             }),
@@ -109,7 +109,7 @@ describe('residence model', () => {
     expect(ph.bathrooms).toBe(2);
   });
 
-  it('shows a booked unit as reserved and a held-back unit as unavailable', () => {
+  it('shows a unit on hold as reserved and an unavailable unit as unavailable', () => {
     expect(residences.find((r) => r.code === 'E2')!.publicStatus).toBe('reserved');
     expect(residences.find((r) => r.code === 'PH-C')!.publicStatus).toBe('unavailable');
   });

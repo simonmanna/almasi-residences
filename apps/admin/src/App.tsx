@@ -1,66 +1,81 @@
-import { useCallback, useEffect, useState } from 'react';
-import { api, AdminApiError, type AdminUser } from './api';
+import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
+import { useAuth } from './lib/auth';
+import { match, useLocation } from './lib/router';
+import { ConfirmProvider, LoadingPage } from './components/ui';
+import { Shell } from './layout/Shell';
 import { Login } from './pages/Login';
-import { Units } from './pages/Units';
-import { Enquiries } from './pages/Enquiries';
-import { Dashboard } from './pages/Dashboard';
 
-type Tab = 'dashboard' | 'units' | 'enquiries';
+type Page = LazyExoticComponent<ComponentType<{ params: Record<string, string> }>>;
+const page = (load: () => Promise<{ default: ComponentType<{ params: Record<string, string> }> }>): Page => lazy(load);
+
+/** Every screen, by path. Order matters only where two patterns could match. */
+const ROUTES: [string, Page][] = [
+  ['/', page(() => import('./pages/Dashboard'))],
+  ['/property', page(() => import('./pages/Property'))],
+  ['/floors', page(() => import('./pages/Floors'))],
+  ['/floors/:id', page(() => import('./pages/FloorDetail'))],
+  ['/residences', page(() => import('./pages/Residences'))],
+  ['/residences/new', page(() => import('./pages/ResidenceWizard'))],
+  ['/residences/:id', page(() => import('./pages/ResidenceDetail'))],
+  ['/types', page(() => import('./pages/Types'))],
+  ['/rooms', page(() => import('./pages/Rooms'))],
+  ['/parking', page(() => import('./pages/Parking'))],
+  ['/amenities', page(() => import('./pages/Amenities'))],
+  ['/residents', page(() => import('./pages/Residents'))],
+  ['/residents/:id', page(() => import('./pages/ResidentDetail'))],
+  ['/buyers', page(() => import('./pages/Buyers'))],
+  ['/buyers/:id', page(() => import('./pages/BuyerDetail'))],
+  ['/enquiries', page(() => import('./pages/Enquiries'))],
+  ['/media', page(() => import('./pages/MediaLibrary'))],
+  ['/videos', page(() => import('./pages/MediaLibrary'))],
+  ['/floor-plans', page(() => import('./pages/MediaLibrary'))],
+  ['/designs', page(() => import('./pages/MediaLibrary'))],
+  ['/galleries', page(() => import('./pages/Galleries'))],
+  ['/galleries/:id', page(() => import('./pages/GalleryDetail'))],
+  ['/availability', page(() => import('./pages/Availability'))],
+  ['/pricing', page(() => import('./pages/Pricing'))],
+  ['/reservations', page(() => import('./pages/Reservations'))],
+  ['/payment-plans', page(() => import('./pages/PaymentPlans'))],
+  ['/sales', page(() => import('./pages/SalesOverview'))],
+  ['/content/:key', page(() => import('./pages/ContentEditor'))],
+  ['/faqs', page(() => import('./pages/Faqs'))],
+  ['/progress', page(() => import('./pages/Progress'))],
+  ['/users', page(() => import('./pages/Users'))],
+  ['/audit', page(() => import('./pages/Audit'))],
+  ['/settings', page(() => import('./pages/Settings'))],
+];
+
+const NotFound = page(() => import('./pages/NotFound'));
 
 /**
- * §9 Phase 1 task 2 — the sales console: unit status, enquiry inbox, CSV
- * export. Deliberately small (DECISIONS D-19): the whole app is three screens
- * over an API that already enforces every rule.
+ * §1 — the developer's command centre. The API enforces every rule; this app
+ * presents the property and gets out of the way.
  */
 export function App() {
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [checking, setChecking] = useState(true);
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const { user, checking } = useAuth();
+  const { path } = useLocation();
 
-  useEffect(() => {
-    api
-      .me()
-      .then(setUser)
-      .catch((e: unknown) => {
-        if (!(e instanceof AdminApiError && e.status === 401)) console.error(e);
-      })
-      .finally(() => setChecking(false));
-  }, []);
+  if (checking) return <LoadingPage />;
+  if (!user) return <Login />;
 
-  const signOut = useCallback(() => {
-    void api.logout().finally(() => setUser(null));
-  }, []);
-
-  if (checking) return <main className="shell">Checking your session…</main>;
-  if (!user) return <Login onSignedIn={setUser} />;
+  let Screen: Page = NotFound;
+  let params: Record<string, string> = {};
+  for (const [pattern, component] of ROUTES) {
+    const m = match(pattern, path);
+    if (m) {
+      Screen = component;
+      params = m;
+      break;
+    }
+  }
 
   return (
-    <div className="shell">
-      <header className="bar">
-        <h1>Kivu Ridge — sales</h1>
-        <nav>
-          {(['dashboard', 'units', 'enquiries'] as Tab[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              aria-current={tab === t ? 'page' : undefined}
-            >
-              {t[0]!.toUpperCase() + t.slice(1)}
-            </button>
-          ))}
-        </nav>
-        <span className="who">
-          {user.name} ({user.role.toLowerCase()})
-          <button type="button" onClick={signOut}>
-            Sign out
-          </button>
-        </span>
-      </header>
-
-      {tab === 'dashboard' && <Dashboard />}
-      {tab === 'units' && <Units />}
-      {tab === 'enquiries' && <Enquiries role={user.role} />}
-    </div>
+    <ConfirmProvider>
+      <Shell>
+        <Suspense fallback={<LoadingPage />}>
+          <Screen key={path} params={params} />
+        </Suspense>
+      </Shell>
+    </ConfirmProvider>
   );
 }

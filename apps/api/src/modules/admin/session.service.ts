@@ -14,6 +14,16 @@ export const SESSION_COOKIE = 'avida_admin';
 const ABSOLUTE_MS = 12 * 60 * 60 * 1000;
 const IDLE_MS = 60 * 60 * 1000;
 
+const COOKIE_ATTRS = 'Path=/; HttpOnly; SameSite=Strict';
+
+/** The Set-Cookie value for a session token; an empty token clears the cookie. */
+export function sessionCookie(token: string): string {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  return token
+    ? `${SESSION_COOKIE}=${token}; ${COOKIE_ATTRS}${secure}`
+    : `${SESSION_COOKIE}=; ${COOKIE_ATTRS}; Max-Age=0${secure}`;
+}
+
 /**
  * §5.9 — a signed, stateless session cookie. Stateless because the staff list is
  * tiny and a revoked user is handled by the role guard's fresh database read on

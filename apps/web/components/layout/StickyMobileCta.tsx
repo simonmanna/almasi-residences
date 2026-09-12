@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { whatsappHref } from '../../lib/contact';
+import { useContact } from '../providers/ContactProvider';
 import { track } from '../../lib/analytics';
 import { useEnquiry } from '../enquiry/EnquiryProvider';
 import styles from './StickyMobileCta.module.css';
@@ -42,7 +43,7 @@ export function StickyMobileCta() {
     };
   }, []);
 
-  const wa = whatsappHref();
+  const wa = whatsappHref(useContact());
   const shown = past && !suppressed;
 
   return (

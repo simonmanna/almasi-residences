@@ -1,8 +1,13 @@
 /**
  * §4.6 — idempotent seed. Run it twice, get the same database.
  *
- * Two rules it enforces rather than assumes, because both are cheap here and
- * expensive at launch:
+ * D-33 — the admin is the source of truth. The seed writes the FIRST state of
+ * each record and never overwrites one that exists: prices, statuses,
+ * amenities, FAQs and page copy edited in the admin survive a re-seed. Only
+ * reference data the admin does not manage (landmarks, the time-state media
+ * sets, tours) is reconciled on every run.
+ *
+ * Rules it enforces rather than assumes:
  *   1. Payment milestones sum to exactly 100% (§5.6 rule 5).
  *   2. Every EXTERIOR/AERIAL media set has all four time states, every
  *      INTERIOR set has at least DAY and NIGHT (§4.3). Incomplete sets throw.
@@ -13,22 +18,31 @@ import { assertPercentagesSumTo100 } from '@avida/types';
 import {
   Prisma,
   type MediaSetKind,
-  type Orientation,
   type TimeState,
   type UnitStatus,
 } from '../generated/client/client.js';
 import { prisma } from '../src/index.js';
+import { contentDefaults } from './content-defaults.js';
 import {
   amenities,
   building,
+  defaultPaymentPlan,
   development,
   DEV_SLUG,
   faqs,
+  featuredCodes,
+  features,
+  featuresFor,
+  floorDetails,
   floorUnitCodes,
   floorUnitTypology,
+  galleries,
   landmarks,
+  LEGACY_DEV_SLUGS,
   mediaSets,
   milestones,
+  roomsFor,
+  seedAdmins,
   statusDistribution,
   tourScenes,
   typologies,
@@ -37,7 +51,6 @@ import {
   unitPrices,
   viewTagsByOrientation,
 } from './seed-data.js';
-
 
 /**
  * Phase 0 placeholders live in the web app's public dir — see DECISIONS D-07.
@@ -103,6 +116,18 @@ function rng(seed: number): () => number {
   };
 }
 
+/** Removes the Phase 0 placeholder development (D-15) and everything under it. */
+async function removeLegacyDevelopments() {
+  for (const slug of LEGACY_DEV_SLUGS) {
+    const legacy = await prisma.development.findUnique({ where: { slug }, select: { id: true } });
+    if (!legacy) continue;
+    // Units first: a floor refuses to go while residences stand on it (D-34).
+    await prisma.unit.deleteMany({ where: { developmentId: legacy.id } });
+    await prisma.development.delete({ where: { id: legacy.id } });
+    console.log(`› removed placeholder development "${slug}"`);
+  }
+}
+
 async function main() {
   console.log('› seeding');
 
@@ -121,12 +146,25 @@ async function main() {
     throw new Error(`Almasi has 28 units, status distribution sums to ${totalUnits}`);
   }
 
+  await removeLegacyDevelopments();
+
   // ── Development ────────────────────────────────────────────────────────
-  // Almasi Residences — real project data replaces the old seed-dev fixture.
+  // Created once; afterwards Property overview in the admin owns every field.
   const dev = await prisma.development.upsert({
     where: { slug: DEV_SLUG },
-    create: { ...development, totalUnits, status: 'SELLING' },
-    update: { ...development, totalUnits, status: 'SELLING' },
+    create: { ...development, status: 'SELLING' },
+    update: {},
+  });
+  // Fill the fields the admin platform added, where an older row lacks them.
+  await prisma.development.update({
+    where: { id: dev.id },
+    data: {
+      buildingConfig: dev.buildingConfig ?? development.buildingConfig,
+      officeAddress: dev.officeAddress ?? development.officeAddress,
+      contactPhone: dev.contactPhone ?? (process.env.NEXT_PUBLIC_SALES_PHONE || null),
+      contactEmail: dev.contactEmail ?? (process.env.NEXT_PUBLIC_SALES_EMAIL || null),
+      whatsappNumber: dev.whatsappNumber ?? (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || null),
+    },
   });
 
   await prisma.seoMeta.upsert({
@@ -140,148 +178,306 @@ async function main() {
     update: {},
   });
 
-  // ── Typologies ─────────────────────────────────────────────────────────
-  const typologyByslug = new Map<string, string>();
-  for (const t of typologies) {
-    const row = await prisma.typology.upsert({
+  // ── Residence types ────────────────────────────────────────────────────
+  const typologyBySlug = new Map<string, { id: string; bedrooms: number; bathrooms: number; isPenthouse: boolean }>();
+  for (const [i, t] of typologies.entries()) {
+    const existing = await prisma.typology.findUnique({
       where: { developmentId_slug: { developmentId: dev.id, slug: t.slug } },
-      create: {
-        developmentId: dev.id,
-        slug: t.slug,
-        name: t.name,
-        bedrooms: t.bedrooms,
-        bathrooms: t.bathrooms,
-        areaSqmMin: t.areaSqmMin,
-        areaSqmMax: t.areaSqmMax,
-        descriptionMd: t.descriptionMd,
-      },
-      update: { name: t.name, areaSqmMin: t.areaSqmMin, areaSqmMax: t.areaSqmMax },
     });
-    typologyByslug.set(t.slug, row.id);
+    const row = existing
+      ? await prisma.typology.update({
+          where: { id: existing.id },
+          // Only the columns the platform added; the admin owns the rest.
+          data: existing.sortOrder === 0 && i > 0 ? { isPenthouse: t.isPenthouse, sortOrder: i } : {},
+        })
+      : await prisma.typology.create({
+          data: {
+            developmentId: dev.id,
+            slug: t.slug,
+            name: t.name,
+            bedrooms: t.bedrooms,
+            bathrooms: t.bathrooms,
+            areaSqmMin: t.areaSqmMin,
+            areaSqmMax: t.areaSqmMax,
+            descriptionMd: t.descriptionMd,
+            isPenthouse: t.isPenthouse,
+            sortOrder: i,
+          },
+        });
+    typologyBySlug.set(t.slug, row);
   }
 
-  // ── Building, floors, units ────────────────────────────────────────────
-  const existingBuilding = await prisma.building.findFirst({
-    where: { developmentId: dev.id, name: building.name },
-  });
-  const bld = existingBuilding
-    ? await prisma.building.update({ where: { id: existingBuilding.id }, data: building })
-    : await prisma.building.create({ data: { ...building, developmentId: dev.id } });
+  // ── Payment plan ───────────────────────────────────────────────────────
+  let plan = await prisma.paymentPlan.findFirst({ where: { developmentId: dev.id, isDefault: true } });
+  if (!plan) {
+    plan = await prisma.paymentPlan.create({
+      data: { developmentId: dev.id, isDefault: true, ...defaultPaymentPlan },
+    });
+  } else if (!plan.description) {
+    plan = await prisma.paymentPlan.update({
+      where: { id: plan.id },
+      data: {
+        description: defaultPaymentPlan.description,
+        depositPercent: plan.depositPercent ?? defaultPaymentPlan.depositPercent,
+        installmentCount: plan.installmentCount ?? defaultPaymentPlan.installmentCount,
+      },
+    });
+  }
+  if ((await prisma.paymentMilestone.count({ where: { paymentPlanId: plan.id } })) === 0) {
+    await prisma.paymentMilestone.createMany({
+      data: milestones.map((m) => ({ ...m, developmentId: dev.id, paymentPlanId: plan.id })),
+    });
+  }
+
+  // ── Building, floors, residences ───────────────────────────────────────
+  const existingBuilding = await prisma.building.findFirst({ where: { developmentId: dev.id } });
+  const bld = existingBuilding ?? (await prisma.building.create({ data: { ...building, developmentId: dev.id } }));
 
   // Floor −1 is the basement (parking, storage, plant rooms). No sellable units.
-  // Floor 0 is the ground floor (lobby, restaurant, co-working). Sanity: the
-  // brief describes a B+G+4 building, which in level terms is −1 through 4.
+  // Floor 0 is the ground floor (lobby, restaurant, co-working). The brief
+  // describes a B+G+4 building, which in level terms is −1 through 4.
   const FLOOR_HEIGHT_M = 3.2;
-  // floorCount counts ground + 4, so the storeys above the basement are 0 … floorCount − 1.
-  const LEVELS = [-1, ...Array.from({ length: building.floorCount }, (_, i) => i)]; // [-1, 0, 1, 2, 3, 4]
+  const LEVELS = [-1, ...Array.from({ length: building.floorCount }, (_, i) => i)];
   for (const level of LEVELS) {
     const label =
-      level === -1
-        ? 'Basement'
-        : level === 0
-          ? building.groundLabel
-          : level === building.floorCount - 1
-            ? 'Penthouse'
-            : `Floor ${level}`;
-    await prisma.floor.upsert({
-      where: { buildingId_level: { buildingId: bld.id, level } },
-      create: { buildingId: bld.id, level, label, heightM: (level + 1) * FLOOR_HEIGHT_M },
-      update: { label, heightM: (level + 1) * FLOOR_HEIGHT_M },
-    });
+      level === -1 ? 'Basement' : level === 0 ? building.groundLabel : level === building.floorCount - 1 ? 'Penthouse' : `Floor ${level}`;
+    const details = floorDetails[level];
+    const existing = await prisma.floor.findUnique({ where: { buildingId_level: { buildingId: bld.id, level } } });
+    if (!existing) {
+      await prisma.floor.create({
+        data: {
+          buildingId: bld.id,
+          level,
+          label,
+          heightM: (level + 1) * FLOOR_HEIGHT_M,
+          displayName: details?.displayName ?? null,
+          description: details?.description ?? null,
+          sortOrder: level,
+        },
+      });
+    } else if (existing.description === null && details) {
+      await prisma.floor.update({
+        where: { id: existing.id },
+        data: { description: details.description, displayName: existing.displayName ?? details.displayName ?? null, sortOrder: level },
+      });
+    }
   }
   const floors = await prisma.floor.findMany({ where: { buildingId: bld.id }, orderBy: { level: 'asc' } });
 
   // Units are defined explicitly by the brief's apartment schedule — not generated.
-  // floorUnitCodes and floorUnitTypology in seed-data.ts enumerate all 28.
   const planned = floors.flatMap((floor) => {
     const codes = floorUnitCodes[floor.level];
     if (!codes) return [];
     return codes.map((code, positionIndex) => {
       const typologySlug = floorUnitTypology[code]!;
-      const areaSqm = unitAreas[code]!;
-      const orientation = unitOrientations[code]!;
+      const typo = typologies.find((x) => x.slug === typologySlug)!;
       // Height premium: 1.5% per floor above ground. Deterministic.
       const premium = 1 + Math.max(0, floor.level) * 0.015;
-      const base = typologies.find((x) => x.slug === typologySlug)!.basePriceMinor;
-      const priceMinor = unitPrices[code] ?? Math.round((base * premium) / 1000) * 1000;
+      const priceMinor = unitPrices[code] ?? Math.round((typo.basePriceMinor * premium) / 1000) * 1000;
       return {
         level: floor.level,
         code,
         typologySlug,
         positionIndex,
-        orientation,
-        areaSqm,
+        orientation: unitOrientations[code]!,
+        areaSqm: unitAreas[code]!,
         priceMinor,
-        widthRatio: typologies.find((x) => x.slug === typologySlug)!.widthRatio,
+        widthRatio: typo.widthRatio,
       };
     });
   });
+  if (planned.length !== 28) throw new Error(`Planned ${planned.length} units, expected 28`);
 
-  if (planned.length !== 28) {
-    throw new Error(`Planned ${planned.length} units, expected 28`);
-  }
-
-  // Status assignment: sold from the bottom up (that is how buildings sell),
-  // available concentrated higher. Deterministic — the same unit gets the same
-  // status on every seed run. Ground floor mostly sold/reserved, penthouses
-  // available.
-  const statusOrder: UnitStatus[] = [
-    ...Array<UnitStatus>(statusDistribution.SOLD).fill('SOLD'),
-    ...Array<UnitStatus>(statusDistribution.BOOKED).fill('BOOKED'),
-    ...Array<UnitStatus>(statusDistribution.RESERVED).fill('RESERVED'),
-    ...Array<UnitStatus>(statusDistribution.AVAILABLE).fill('AVAILABLE'),
-    ...Array<UnitStatus>(statusDistribution.NOT_RELEASED).fill('NOT_RELEASED'),
-  ];
-  // Sort by floor ascending (basement excluded, ground first) so lower floors
-  // sell first.
-  const byHeight = [...planned].sort(
-    (a, b) => a.level - b.level || a.positionIndex - b.positionIndex,
+  // Status assignment: sold from the bottom up (that is how buildings sell).
+  const statusOrder: UnitStatus[] = (['SOLD', 'ON_HOLD', 'RESERVED', 'AVAILABLE', 'OCCUPIED', 'UNAVAILABLE'] as UnitStatus[]).flatMap(
+    (s) => Array<UnitStatus>(statusDistribution[s]).fill(s),
   );
+  const byHeight = [...planned].sort((a, b) => a.level - b.level || a.positionIndex - b.positionIndex);
 
+  let createdUnits = 0;
   for (const [i, p] of byHeight.entries()) {
     const floor = floors.find((f) => f.level === p.level)!;
-    const status = statusOrder[i]!;
-    const data = {
-      typologyId: typologyByslug.get(p.typologySlug)!,
-      status,
-      priceMinor: p.priceMinor,
-      currency: development.currency,
-      areaSqm: p.areaSqm,
-      balconySqm: Math.round(p.areaSqm * 0.12 * 10) / 10,
-      orientation: p.orientation,
-      viewTags: viewTagsByOrientation[p.orientation],
-      positionIndex: p.positionIndex,
-      widthRatio: p.widthRatio,
-      meshName: `unit_${p.code.replace('-', '_')}`,
-    };
-    await prisma.unit.upsert({
-      where: { floorId_code: { floorId: floor.id, code: p.code } },
-      create: { floorId: floor.id, code: p.code, ...data },
-      update: data,
+    const typo = typologyBySlug.get(p.typologySlug)!;
+    const existing = await prisma.unit.findUnique({ where: { developmentId_code: { developmentId: dev.id, code: p.code } } });
+    if (existing) continue; // the admin owns it now
+    const balconySqm = Math.round(p.areaSqm * 0.12 * 10) / 10;
+    await prisma.unit.create({
+      data: {
+        developmentId: dev.id,
+        floorId: floor.id,
+        typologyId: typo.id,
+        code: p.code,
+        status: statusOrder[i]!,
+        priceMinor: p.priceMinor,
+        currency: development.currency,
+        bedrooms: typo.bedrooms,
+        bathrooms: typo.bathrooms,
+        areaSqm: p.areaSqm,
+        interiorSqm: Math.round((p.areaSqm - balconySqm) * 10) / 10,
+        balconySqm: typo.isPenthouse ? null : balconySqm,
+        terraceSqm: typo.isPenthouse ? balconySqm : null,
+        parkingIncluded: typo.isPenthouse ? 2 : 1,
+        hasStorage: true,
+        orientation: p.orientation,
+        viewTags: viewTagsByOrientation[p.orientation],
+        positionIndex: p.positionIndex,
+        widthRatio: p.widthRatio,
+        meshName: `unit_${p.code.replace('-', '_')}`,
+        paymentPlanId: plan.id,
+        featured: featuredCodes.includes(p.code),
+      },
+    });
+    createdUnits++;
+  }
+
+  // Residences from before the platform: fill what the migration could not know.
+  const units = await prisma.unit.findMany({
+    where: { developmentId: dev.id },
+    include: { typology: true, _count: { select: { rooms: true, features: true } } },
+  });
+  for (const u of units) {
+    if (u.paymentPlanId === null && u.interiorSqm === null) {
+      const penthouse = u.typology.isPenthouse;
+      const outdoor = u.balconySqm ?? Math.round(u.areaSqm * 0.12 * 10) / 10;
+      await prisma.unit.update({
+        where: { id: u.id },
+        data: {
+          paymentPlanId: plan.id,
+          interiorSqm: Math.round((u.areaSqm - outdoor) * 10) / 10,
+          balconySqm: penthouse ? null : outdoor,
+          terraceSqm: penthouse ? outdoor : null,
+          parkingIncluded: penthouse ? 2 : 1,
+          hasStorage: true,
+          featured: featuredCodes.includes(u.code),
+        },
+      });
+    }
+  }
+
+  // ── Features ───────────────────────────────────────────────────────────
+  for (const [i, f] of features.entries()) {
+    await prisma.feature.upsert({
+      where: { developmentId_name: { developmentId: dev.id, name: f.name } },
+      create: { ...f, developmentId: dev.id, sortOrder: i },
+      update: {},
+    });
+  }
+  const featureIds = new Map(
+    (await prisma.feature.findMany({ where: { developmentId: dev.id } })).map((f) => [f.name, f.id]),
+  );
+
+  // ── Rooms & residence features, for residences that have none yet ─────
+  for (const u of units) {
+    if (u._count.rooms === 0) {
+      const interior = u.interiorSqm ?? u.areaSqm * 0.88;
+      const outdoor = (u.balconySqm ?? 0) + (u.terraceSqm ?? 0) || u.areaSqm * 0.12;
+      await prisma.room.createMany({
+        data: roomsFor(u.bedrooms, u.bathrooms, u.typology.isPenthouse).map((r, i) => ({
+          unitId: u.id,
+          name: r.name,
+          type: r.type,
+          areaSqm: r.share === 0 ? Math.round(outdoor * 10) / 10 : Math.round(interior * r.share * 10) / 10,
+          sortOrder: i,
+        })),
+      });
+    }
+    if (u._count.features === 0) {
+      await prisma.unitFeature.createMany({
+        data: featuresFor(u.typology.slug)
+          .map((name) => featureIds.get(name))
+          .filter((id): id is string => Boolean(id))
+          .map((featureId) => ({ unitId: u.id, featureId })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
+  // ── Amenities ──────────────────────────────────────────────────────────
+  // Pre-platform amenities had no slug. If that is all there is, replace them
+  // with the brief's ten; once any amenity has a slug the admin owns the list.
+  const withSlug = await prisma.amenity.count({ where: { developmentId: dev.id, slug: { not: null } } });
+  if (withSlug === 0) {
+    await prisma.amenity.deleteMany({ where: { developmentId: dev.id } });
+    await prisma.amenity.createMany({
+      data: amenities.map((a, i) => ({
+        ...a,
+        specifications: (a.specifications ?? []) as Prisma.InputJsonValue,
+        developmentId: dev.id,
+        sortOrder: i,
+      })),
     });
   }
 
-  // ── Commercial ─────────────────────────────────────────────────────────
-  await prisma.paymentMilestone.deleteMany({ where: { developmentId: dev.id } });
-  await prisma.paymentMilestone.createMany({
-    data: milestones.map((m) => ({ ...m, developmentId: dev.id })),
-  });
+  if ((await prisma.faq.count({ where: { developmentId: dev.id } })) === 0) {
+    await prisma.faq.createMany({ data: faqs.map((f, i) => ({ ...f, developmentId: dev.id, sortOrder: i })) });
+  }
 
-  await prisma.amenity.deleteMany({ where: { developmentId: dev.id } });
-  await prisma.amenity.createMany({
-    data: amenities.map((a, i) => ({ ...a, developmentId: dev.id, sortOrder: i })),
-  });
+  // ── Parking: one bay per included space, plus visitor bays ─────────────
+  if ((await prisma.parkingSpace.count({ where: { developmentId: dev.id } })) === 0) {
+    const sorted = [...units].sort((a, b) => a.code.localeCompare(b.code, 'en', { numeric: true }));
+    let n = 0;
+    const bays: Prisma.ParkingSpaceCreateManyInput[] = [];
+    for (const u of sorted) {
+      const fresh = await prisma.unit.findUniqueOrThrow({ where: { id: u.id }, select: { status: true, parkingIncluded: true } });
+      for (let k = 0; k < Math.max(1, fresh.parkingIncluded); k++) {
+        n++;
+        bays.push({
+          developmentId: dev.id,
+          code: `P-${String(n).padStart(2, '0')}`,
+          level: 'Basement',
+          type: n % 10 === 0 ? 'EV' : 'STANDARD',
+          sizeSqm: 12.5,
+          unitId: u.id,
+          status:
+            fresh.status === 'SOLD' || fresh.status === 'OCCUPIED'
+              ? 'SOLD'
+              : fresh.status === 'RESERVED' || fresh.status === 'ON_HOLD'
+                ? 'RESERVED'
+                : 'ASSIGNED',
+        });
+      }
+    }
+    for (let v = 1; v <= 6; v++) {
+      bays.push({
+        developmentId: dev.id,
+        code: `V-${String(v).padStart(2, '0')}`,
+        level: 'Ground',
+        type: v === 1 ? 'ACCESSIBLE' : 'VISITOR',
+        sizeSqm: v === 1 ? 18 : 12.5,
+        status: 'AVAILABLE',
+      });
+    }
+    await prisma.parkingSpace.createMany({ data: bays });
+  }
 
-  await prisma.faq.deleteMany({ where: { developmentId: dev.id } });
-  await prisma.faq.createMany({
-    data: faqs.map((f, i) => ({ ...f, developmentId: dev.id, sortOrder: i })),
-  });
+  // ── Galleries (images are added by `pnpm media:import`) ─────────────────
+  for (const [i, g] of galleries.entries()) {
+    await prisma.gallery.upsert({
+      where: { developmentId_slug: { developmentId: dev.id, slug: g.slug } },
+      create: { ...g, developmentId: dev.id, sortOrder: i },
+      update: {},
+    });
+  }
+
+  // ── Website content: fill any key that is missing, never overwrite ─────
+  for (const [key, page] of Object.entries(contentDefaults)) {
+    const existing = await prisma.contentPage.findUnique({
+      where: { developmentId_key: { developmentId: dev.id, key } },
+    });
+    const current = (existing?.content ?? {}) as Record<string, unknown>;
+    const merged = { ...page.content, ...current };
+    if (!existing) {
+      await prisma.contentPage.create({
+        data: { developmentId: dev.id, key, title: page.title, content: merged as Prisma.InputJsonValue },
+      });
+    } else if (Object.keys(merged).length !== Object.keys(current).length) {
+      await prisma.contentPage.update({ where: { id: existing.id }, data: { content: merged as Prisma.InputJsonValue } });
+    }
+  }
 
   // ── Landmarks, with PostGIS distances (§4.5 — never computed in JS) ─────
   await prisma.landmark.deleteMany({ where: { developmentId: dev.id } });
-  await prisma.landmark.createMany({
-    data: landmarks.map((l) => ({ ...l, developmentId: dev.id })),
-  });
+  await prisma.landmark.createMany({ data: landmarks.map((l) => ({ ...l, developmentId: dev.id })) });
   await prisma.$executeRaw`
     UPDATE "Landmark" l
     SET "distanceM" = ROUND(
@@ -303,23 +499,17 @@ async function main() {
     WHERE "developmentId" = ${dev.id}
   `;
 
-  // ── Media sets and assets ──────────────────────────────────────────────
+  // ── Media sets and assets (time-state system) ──────────────────────────
   for (const set of mediaSets) {
     const row = await prisma.mediaSet.upsert({
       where: { developmentId_key: { developmentId: dev.id, key: set.key } },
       create: { ...set, developmentId: dev.id },
       update: { label: set.label, kind: set.kind, cameraNote: set.cameraNote },
     });
-
-    // §4.6 asks for four sets × four states = sixteen placeholder assets, so
-    // every set gets all four here. requiredStates() below stays the minimum
-    // the real renders must meet (§4.3), which is a lower bar for interiors.
     for (const state of TIME_STATES) {
       const key = writePlaceholder(set.key, set.label, state);
       await prisma.mediaAsset.upsert({
-        where: {
-          mediaSetId_timeState_role: { mediaSetId: row.id, timeState: state, role: 'PRIMARY' },
-        },
+        where: { mediaSetId_timeState_role: { mediaSetId: row.id, timeState: state, role: 'PRIMARY' } },
         create: {
           mediaSetId: row.id,
           timeState: state,
@@ -336,53 +526,30 @@ async function main() {
       });
     }
   }
-
-  // §4.3 — verify completeness rather than trusting the loop above.
-  for (const set of await prisma.mediaSet.findMany({
-    where: { developmentId: dev.id },
-    include: { assets: true },
-  })) {
+  for (const set of await prisma.mediaSet.findMany({ where: { developmentId: dev.id }, include: { assets: true } })) {
     const have = new Set(set.assets.map((a) => a.timeState));
     const missing = requiredStates(set.kind).filter((s) => !have.has(s));
     if (missing.length > 0) {
-      throw new Error(
-        `Media set "${set.key}" (${set.kind}) is missing time states: ${missing.join(', ')} (§4.3)`,
-      );
+      throw new Error(`Media set "${set.key}" (${set.kind}) is missing time states: ${missing.join(', ')} (§4.3)`);
     }
   }
 
   // ── Tours: two tours, five scenes each, hotspots forming a connected graph ─
   for (const typoSlug of ['two-bed-corner', 'penthouse-three']) {
-    const typologyId = typologyByslug.get(typoSlug)!;
+    const typologyId = typologyBySlug.get(typoSlug)!.id;
     const tour = await prisma.tour.upsert({
       where: { developmentId_slug: { developmentId: dev.id, slug: typoSlug } },
-      create: {
-        developmentId: dev.id,
-        typologyId,
-        slug: typoSlug,
-        name: `${typologies.find((t) => t.slug === typoSlug)!.name} tour`,
-      },
+      create: { developmentId: dev.id, typologyId, slug: typoSlug, name: `${typologies.find((t) => t.slug === typoSlug)!.name} tour` },
       update: { typologyId },
     });
-
     const sceneIds: string[] = [];
     for (const [i, s] of tourScenes.entries()) {
       const scene = await prisma.scene.upsert({
         where: { tourId_key: { tourId: tour.id, key: s.key } },
-        create: {
-          tourId: tour.id,
-          key: s.key,
-          label: s.label,
-          sortOrder: i,
-          yawDeg: s.yawDeg,
-          planX: s.planX,
-          planY: s.planY,
-        },
+        create: { tourId: tour.id, key: s.key, label: s.label, sortOrder: i, yawDeg: s.yawDeg, planX: s.planX, planY: s.planY },
         update: { label: s.label, sortOrder: i, yawDeg: s.yawDeg },
       });
       sceneIds.push(scene.id);
-
-      // Panorama placeholders: DAY and NIGHT, per §4.3's interior minimum.
       for (const state of ['DAY', 'NIGHT'] as TimeState[]) {
         await prisma.panoramaAsset.upsert({
           where: { sceneId_timeState: { sceneId: scene.id, timeState: state } },
@@ -399,11 +566,8 @@ async function main() {
         });
       }
     }
-
     await prisma.tour.update({ where: { id: tour.id }, data: { startSceneId: sceneIds[0] } });
-
-    // Connected graph: each scene links forward and back, so no scene is a
-    // dead end and a keyboard user can reach every node (§6.5).
+    // Connected graph: each scene links forward and back, so no scene is a dead end (§6.5).
     await prisma.hotspot.deleteMany({ where: { sceneId: { in: sceneIds } } });
     for (const [i, sceneId] of sceneIds.entries()) {
       const links = [sceneIds[i + 1], sceneIds[i - 1]].filter(Boolean) as string[];
@@ -422,62 +586,83 @@ async function main() {
     }
   }
 
-  // ── Enquiries: 25 across all statuses (§4.6) ────────────────────────────
-  const units = await prisma.unit.findMany({ where: { floor: { buildingId: bld.id } }, take: 28 });
-  const statuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'WON', 'LOST', 'SPAM'] as const;
-  const pick = rng(4242);
-  const RETENTION_MONTHS = 24; // §5.9
+  // ── Buyers, for the residences already sold or held ────────────────────
+  const soldOrHeld = await prisma.unit.findMany({
+    where: { developmentId: dev.id, status: { in: ['SOLD', 'RESERVED', 'ON_HOLD'] }, buyerId: null },
+    orderBy: { code: 'asc' },
+  });
+  if ((await prisma.buyer.count({ where: { developmentId: dev.id } })) === 0) {
+    for (const [i, u] of soldOrHeld.entries()) {
+      const stage = u.status === 'SOLD' ? 'BUYER' : 'RESERVATION';
+      const buyer = await prisma.buyer.create({
+        data: {
+          developmentId: dev.id,
+          fullName: `Seed buyer ${i + 1}`,
+          email: `seed-buyer-${i + 1}@example.invalid`,
+          phone: `+25078${String(2000000 + i).slice(0, 7)}`,
+          countryIso: i % 3 === 0 ? 'KE' : 'RW',
+          stage,
+          source: i % 2 === 0 ? 'Website enquiry' : 'Referral',
+          notes: 'Placeholder buyer created by the seed. TODO(content)',
+          interests: { create: [{ unitId: u.id }] },
+        },
+      });
+      await prisma.unit.update({ where: { id: u.id }, data: { buyerId: buyer.id } });
+    }
+  }
 
-  await prisma.enquiryUnit.deleteMany({});
-  await prisma.enquiry.deleteMany({});
-  for (let i = 0; i < 25; i++) {
-    const createdAt = new Date(Date.UTC(2026, 2 + (i % 6), 1 + (i % 27), 9, 30));
-    const purgeAfter = new Date(createdAt);
-    purgeAfter.setMonth(purgeAfter.getMonth() + RETENTION_MONTHS);
-    const unit = units[Math.floor(pick() * units.length)]!;
-    await prisma.enquiry.create({
-      data: {
-        name: `Seed enquirer ${i + 1}`,
-        email: `seed-enquirer-${i + 1}@example.invalid`,
-        phone: `+25078${String(1000000 + i).slice(0, 7)}`,
-        countryIso: 'RW',
-        message: i % 3 === 0 ? 'Placeholder enquiry message. TODO(content)' : null,
-        intent: i % 4 === 0 ? 'VIEWING' : 'INFORMATION',
-        source: ['unit-panel', 'footer', 'floating-cta'][i % 3]!,
-        utmSource: i % 2 === 0 ? 'google' : 'direct',
-        utmMedium: i % 2 === 0 ? 'cpc' : null,
-        landingPath: '/',
-        status: statuses[i % statuses.length]!,
-        createdAt,
-        purgeAfter,
-        units: { create: [{ unitId: unit.id }] },
-      },
-    });
+  // ── Enquiries: 25 across all statuses (§4.6), only into an empty inbox ──
+  if ((await prisma.enquiry.count()) === 0) {
+    const statuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'VIEWING', 'NEGOTIATION', 'RESERVED', 'CONVERTED', 'LOST', 'SPAM'] as const;
+    const pick = rng(4242);
+    const RETENTION_MONTHS = 24; // §5.9
+    for (let i = 0; i < 25; i++) {
+      const createdAt = new Date(Date.UTC(2026, 2 + (i % 6), 1 + (i % 27), 9, 30));
+      const purgeAfter = new Date(createdAt);
+      purgeAfter.setMonth(purgeAfter.getMonth() + RETENTION_MONTHS);
+      const unit = units[Math.floor(pick() * units.length)]!;
+      await prisma.enquiry.create({
+        data: {
+          name: `Seed enquirer ${i + 1}`,
+          email: `seed-enquirer-${i + 1}@example.invalid`,
+          phone: `+25078${String(1000000 + i).slice(0, 7)}`,
+          countryIso: 'RW',
+          message: i % 3 === 0 ? 'Placeholder enquiry message. TODO(content)' : null,
+          intent: i % 4 === 0 ? 'VIEWING' : 'INFORMATION',
+          source: ['unit-panel', 'footer', 'floating-cta'][i % 3]!,
+          utmSource: i % 2 === 0 ? 'google' : 'direct',
+          utmMedium: i % 2 === 0 ? 'cpc' : null,
+          landingPath: '/',
+          status: statuses[i % statuses.length]!,
+          createdAt,
+          purgeAfter,
+          units: { create: [{ unitId: unit.id }] },
+        },
+      });
+    }
   }
 
   // ── Admin users ────────────────────────────────────────────────────────
   // §5.9 — TOTP is mandatory in production; the seed accounts have no secret
   // enrolled, and AuthService refuses a TOTP-less login when NODE_ENV is
-  // production. They exist so Phase 1 is usable locally, not to ship — so a
-  // production seed skips them; apps/api/scripts/create-admin.mjs makes real ones.
+  // production. They exist so the platform is usable locally, not to ship — so
+  // a production seed skips them; apps/api/scripts/create-admin.mjs makes real ones.
   if (process.env.NODE_ENV !== 'production') {
     const { hash } = await import('@node-rs/argon2');
     const seedPassword = process.env.SEED_ADMIN_PASSWORD ?? 'phase-one-local-only';
     const passwordHash = await hash(seedPassword);
-    for (const [email, name, role] of [
-      ['owner@example.invalid', 'Seed owner', 'OWNER'],
-      ['sales@example.invalid', 'Seed sales agent', 'SALES'],
-    ] as const) {
+    for (const [email, name, role] of seedAdmins) {
       await prisma.adminUser.upsert({
         where: { email },
         create: { email, name, role, passwordHash },
-        update: { name, role, passwordHash },
+        update: { passwordHash },
       });
     }
   }
 
-  const counts = await prisma.unit.groupBy({ by: ['status'], _count: true });
-  console.log('› units by status:', Object.fromEntries(counts.map((c) => [c.status, c._count])));
+  const counts = await prisma.unit.groupBy({ by: ['status'], where: { developmentId: dev.id }, _count: true });
+  console.log(`› residences created this run: ${createdUnits}`);
+  console.log('› residences by status:', Object.fromEntries(counts.map((c) => [c.status, c._count])));
   console.log(`› seeded ${development.name} (${DEV_SLUG})`);
 }
 

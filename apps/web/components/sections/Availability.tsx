@@ -6,6 +6,7 @@ import {
   formatCount,
   formatMoneyRange,
   isFilterActive,
+  STATUS_FILL,
   STATUS_LABEL,
   unitMatches,
   UNIT_STATUSES,
@@ -140,7 +141,7 @@ export function Availability({ inventory }: { inventory: InventoryDto }) {
             {UNIT_STATUSES.map((s) => (
               <li key={s}>
                 <svg width="18" height="12" aria-hidden="true" className="legend-swatch">
-                  <g className="elevation-unit" data-fill={s === 'AVAILABLE' ? 'solid' : s === 'SOLD' ? 'outline' : s === 'NOT_RELEASED' ? 'faint' : 'hatch'}>
+                  <g className="elevation-unit" data-fill={STATUS_FILL[s]}>
                     <rect width="18" height="12" />
                   </g>
                 </svg>

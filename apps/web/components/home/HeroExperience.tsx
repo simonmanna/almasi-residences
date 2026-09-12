@@ -32,7 +32,21 @@ const chars = (text: string) =>
  * The pending state is set by an inline script in <head> before first paint,
  * so the full-frame server render never flashes before the intro begins.
  */
-export function HeroExperience() {
+export function HeroExperience({
+  kicker = 'Kimihurura · Kigali',
+  title = 'Almasi Residences',
+  subtitle = 'Contemporary residences in the heart of Kimihurura.',
+  primary = { label: 'Explore residences', href: '/residences' },
+  secondary = { label: 'Take the 3D tour', href: '/tour' },
+}: {
+  kicker?: string;
+  title?: string;
+  subtitle?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+} = {}) {
+  const [lineA, ...rest] = title.trim().split(/s+/);
+  const lineB = rest.join(' ');
   const root = useRef<HTMLElement>(null);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   // Decided once per mount. React's development double-run of effects must not
@@ -146,9 +160,9 @@ export function HeroExperience() {
 
       <div className={styles.intro} data-intro aria-hidden="true">
         <div className={styles.introCopy} data-intro-copy>
-          <p className={styles.introTitle}>{chars('Almasi Residences')}</p>
+          <p className={styles.introTitle}>{chars(title)}</p>
           <p className={styles.introSub} data-intro-sub>
-            Kimihurura · Kigali
+            {kicker}
           </p>
         </div>
       </div>
@@ -156,27 +170,27 @@ export function HeroExperience() {
       <div className={`container ${styles.content}`} data-hero-content>
         <h1 id="hero-title" className={styles.title}>
           <span className={styles.line}>
-            <span data-hero-line>Almasi</span>
+            <span data-hero-line>{lineA}</span>
           </span>
           <span className={styles.line}>
             <span data-hero-line className="italic">
-              Residences
+              {lineB}
             </span>
           </span>
         </h1>
         <div className={styles.aside}>
           <p className={styles.lede} data-hero-fade>
-            Contemporary residences in the heart of Kimihurura.
+            {subtitle}
           </p>
           <div className={styles.ctas} data-hero-fade>
             <Magnetic>
-              <Link href="/residences" className="btn btn--solid">
-                Explore residences
+              <Link href={primary.href} className="btn btn--solid">
+                {primary.label}
               </Link>
             </Magnetic>
             <Magnetic>
-              <Link href="/tour" className="btn btn--ghost">
-                Take the 3D tour
+              <Link href={secondary.href} className="btn btn--ghost">
+                {secondary.label}
               </Link>
             </Magnetic>
           </div>

@@ -23,7 +23,7 @@ export class DevelopmentController {
   @PublicCache()
   progress(@Param('slug') slug: string) {
     return this.prisma.client.progressUpdate.findMany({
-      where: { development: { slug } },
+      where: { development: { slug }, published: true },
       orderBy: { capturedOn: 'desc' },
     });
   }

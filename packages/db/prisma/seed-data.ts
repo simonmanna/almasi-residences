@@ -5,16 +5,24 @@
  * floor, bed count and size is real. Statuses and prices are illustrative
  * (sold/bottom-up, reserved top-down) and replaced by the sales team using the
  * admin panel once the site is live.
+ *
+ * D-33 — this file is the FIRST state of the database, never a second source of
+ * truth. The seed only creates what is missing; once a row exists the admin
+ * owns it and a re-seed leaves it alone.
  */
 import type {
   LandmarkCategory,
   MediaSetKind,
   MilestoneTrigger,
   Orientation,
+  RoomType,
   UnitStatus,
 } from '../generated/client/client.js';
 
 export const DEV_SLUG = 'almasi-residences';
+
+/** The Phase 0 placeholder development. Removed by the seed if still present (D-15). */
+export const LEGACY_DEV_SLUGS = ['seed-dev'];
 
 export const development = {
   slug: DEV_SLUG,
@@ -47,6 +55,10 @@ export const development = {
   longitude: 30.0740,
   handoverDate: new Date('2028-06-30T00:00:00Z'),
   currency: 'USD',
+  propertyType: 'Residential apartments',
+  buildingConfig: 'B + G + 4',
+  constructionStatus: 'STRUCTURE' as const,
+  officeAddress: 'KG 15 Ave, Kimihurura, Kigali, Rwanda',
 };
 
 export const building = {
@@ -55,8 +67,18 @@ export const building = {
   groundLabel: 'Ground',
 };
 
+/** Floor copy, keyed by level. */
+export const floorDetails: Record<number, { displayName?: string; description: string }> = {
+  [-1]: { description: 'Basement parking with one bay per residence, private storage rooms and plant.' },
+  0: { description: 'The lobby and reception, the residents’ restaurant, the co-working room and four residences.' },
+  1: { description: 'Seven residences and the amenity deck: pool, gym, sauna and massage room.' },
+  2: { description: 'Seven residences — one- and two-bedroom plans, every one a corner or an end.' },
+  3: { description: 'Seven residences with the widest views over Kimihurura.' },
+  4: { displayName: 'Penthouse level', description: 'Three penthouses, the largest opening to a private roof terrace.' },
+};
+
 /**
- * Three typologies matching the brief. Per-floor counts sum to the known
+ * Residence types matching the brief. Per-floor counts sum to the known
  * distribution per the apartment schedule.
  */
 export interface TypologySeed {
@@ -67,8 +89,7 @@ export interface TypologySeed {
   areaSqmMin: number;
   areaSqmMax: number;
   descriptionMd: string;
-  /** how many of this typology sit on each standard floor */
-  perFloor: number;
+  isPenthouse: boolean;
   basePriceMinor: number;
   widthRatio: number;
 }
@@ -90,7 +111,7 @@ export const typologies: TypologySeed[] = [
       'end (A and D on the ground floor, A and G on the upper floors) offer a',
       'separate kitchen rather than a galley.',
     ].join('\n'),
-    perFloor: 3, // ground: A, C; floor 1+: A1, B1, C1 are 1BR → actually A, B, C on upper floors
+    isPenthouse: false,
     basePriceMinor: 95_000_00, // $95,000 in cents
     widthRatio: 0.8,
   },
@@ -109,8 +130,8 @@ export const typologies: TypologySeed[] = [
       'All two-bedroom apartments face the quiet side of the building. The larger',
       'corner units on each floor benefit from dual-aspect light.',
     ].join('\n'),
-    perFloor: 3, // ground: B, D; floor 1+: D, E, F, G → wait, need to count per the brief
-    basePriceMinor: 155_000_00, // $155,000 in cents
+    isPenthouse: false,
+    basePriceMinor: 155_000_00,
     widthRatio: 1.15,
   },
   {
@@ -128,8 +149,8 @@ export const typologies: TypologySeed[] = [
       'Like the standard two-bedroom, the master bedroom has an en-suite bathroom',
       'and a walk-in wardrobe. These units are the most popular on every floor.',
     ].join('\n'),
-    perFloor: 1, // the corner 2BR on each floor
-    basePriceMinor: 175_000_00, // $175,000 in cents
+    isPenthouse: false,
+    basePriceMinor: 175_000_00,
     widthRatio: 1.3,
   },
   {
@@ -146,8 +167,8 @@ export const typologies: TypologySeed[] = [
       '',
       'This apartment has its own private entrance from the lift lobby.',
     ].join('\n'),
-    perFloor: 0, // top floor only
-    basePriceMinor: 240_000_00, // $240,000 in cents
+    isPenthouse: true,
+    basePriceMinor: 240_000_00,
     widthRatio: 1.6,
   },
   {
@@ -164,8 +185,8 @@ export const typologies: TypologySeed[] = [
       '',
       'Both penthouses have their own private lift access from the basement parking.',
     ].join('\n'),
-    perFloor: 0, // top floor only
-    basePriceMinor: 320_000_00, // $320,000 in cents, PH C will be higher separately
+    isPenthouse: true,
+    basePriceMinor: 320_000_00,
     widthRatio: 2.4,
   },
 ];
@@ -175,11 +196,12 @@ export const typologies: TypologySeed[] = [
  * ground floor mostly sold/reserved, upper floors available.
  */
 export const statusDistribution: Record<UnitStatus, number> = {
-  AVAILABLE: 18,
-  RESERVED: 4,
-  BOOKED: 3,
   SOLD: 3,
-  NOT_RELEASED: 0,
+  ON_HOLD: 3,
+  RESERVED: 4,
+  AVAILABLE: 18,
+  OCCUPIED: 0,
+  UNAVAILABLE: 0,
 };
 
 /**
@@ -227,12 +249,13 @@ export const unitAreas: Record<string, number> = {
  * Default = typology basePriceMinor * height premium.
  */
 export const unitPrices: Record<string, number> = {
-  // PH C is the biggest unit in the building
-  'PH-C': 480_000_00, // $480,000
-  // PH A gets a separate price (2BR penthouse)
+  'PH-C': 480_000_00,
   'PH-A': 240_000_00,
   'PH-B': 320_000_00,
 };
+
+/** Residences the homepage features on first launch. The admin changes this. */
+export const featuredCodes = ['PH-C', 'E3', 'A1'];
 
 /** Orientation per unit, compass-wise around the building. */
 export const unitOrientations: Record<string, Orientation> = {
@@ -288,43 +311,163 @@ export const milestones: {
   },
 ];
 
-export const amenities: { name: string; descriptionMd: string; iconKey: string }[] = [
+export const defaultPaymentPlan = {
+  name: 'Standard plan',
+  description: 'Paid in four stages as construction reaches each milestone, from signing to handover.',
+  depositPercent: 30,
+  installmentCount: 4,
+};
+
+/** The ten amenities of the brief. `slug` pairs each with its artwork on the public site. */
+export const amenities: {
+  slug: string;
+  name: string;
+  shortDescription: string;
+  descriptionMd: string;
+  iconKey: string;
+  location: string;
+  specifications?: { label: string; value: string }[];
+}[] = [
   {
-    name: 'Reception and lobby',
-    descriptionMd: 'A manned reception desk on the ground floor, with a seating area and a waiting lounge for guests.',
-    iconKey: 'concierge',
-  },
-  {
-    name: 'Swimming pool',
-    descriptionMd: 'A 15-metre pool on the amenity deck, surrounded by sun loungers and shaded seating.',
-    iconKey: 'pool',
-  },
-  {
-    name: 'Restaurant',
-    descriptionMd: 'A ground-floor restaurant open to residents and their guests, serving breakfast and lunch daily.',
-    iconKey: 'restaurant',
-  },
-  {
-    name: 'Gym',
-    descriptionMd: 'An air-conditioned gym on the amenity deck with cardio machines, free weights, and a stretching area.',
-    iconKey: 'gym',
-  },
-  {
-    name: 'Sauna and massage room',
-    descriptionMd: 'A Finnish sauna and a separate massage room, bookable by the hour through the concierge.',
-    iconKey: 'spa',
-  },
-  {
-    name: 'Co-working space',
-    descriptionMd: 'Approximately 60 sqm of shared working space on the ground floor, with desks, power outlets, and wi-fi.',
-    iconKey: 'work',
-  },
-  {
+    slug: 'basement-parking',
     name: 'Basement parking',
+    shortDescription: 'A basement bay for every residence.',
     descriptionMd: 'One parking bay per apartment, with additional visitor bays at ground level. EV charging points available.',
     iconKey: 'parking',
+    location: 'Basement',
+  },
+  {
+    slug: 'reception',
+    name: 'Reception',
+    shortDescription: 'A staffed reception desk.',
+    descriptionMd: 'A manned reception desk on the ground floor that receives guests and deliveries.',
+    iconKey: 'concierge',
+    location: 'Ground floor',
+  },
+  {
+    slug: 'lobby',
+    name: 'Lobby',
+    shortDescription: 'A double-height arrival hall.',
+    descriptionMd: 'A seating area and waiting lounge for guests, off the porte-cochère.',
+    iconKey: 'lobby',
+    location: 'Ground floor',
+  },
+  {
+    slug: 'swimming-pool',
+    name: 'Swimming pool',
+    shortDescription: 'A fifteen-metre pool on the amenity deck.',
+    descriptionMd: 'A 15-metre pool on the amenity deck, surrounded by sun loungers and shaded seating.',
+    iconKey: 'pool',
+    location: 'Amenity deck, level 1',
+    specifications: [{ label: 'Length', value: '15 m' }],
+  },
+  {
+    slug: 'restaurant',
+    name: 'Restaurant',
+    shortDescription: 'A ground-floor restaurant for residents and their guests.',
+    descriptionMd: 'A ground-floor restaurant open to residents and their guests, serving breakfast and lunch daily.',
+    iconKey: 'restaurant',
+    location: 'Ground floor',
+  },
+  {
+    slug: 'gym',
+    name: 'Gym',
+    shortDescription: 'A gym with a view of the hills.',
+    descriptionMd: 'An air-conditioned gym on the amenity deck with cardio machines, free weights, and a stretching area.',
+    iconKey: 'gym',
+    location: 'Amenity deck, level 1',
+  },
+  {
+    slug: 'sauna',
+    name: 'Sauna',
+    shortDescription: 'A Finnish sauna.',
+    descriptionMd: 'A Finnish sauna beside the gym, bookable by the hour through reception.',
+    iconKey: 'spa',
+    location: 'Amenity deck, level 1',
+  },
+  {
+    slug: 'massage-room',
+    name: 'Massage room',
+    shortDescription: 'A private treatment room.',
+    descriptionMd: 'A separate massage room, bookable by the hour through reception.',
+    iconKey: 'spa',
+    location: 'Amenity deck, level 1',
+  },
+  {
+    slug: 'residents-working-space',
+    name: 'Residents’ working space',
+    shortDescription: 'Quiet desks for residents only.',
+    descriptionMd: 'A quiet room with desks and meeting booths reserved for residents.',
+    iconKey: 'work',
+    location: 'Ground floor',
+  },
+  {
+    slug: 'co-working',
+    name: 'Co-working space',
+    shortDescription: 'About 60 m² of shared working space.',
+    descriptionMd: 'Approximately 60 sqm of shared working space on the ground floor, with desks, power outlets, and wi-fi.',
+    iconKey: 'work',
+    location: 'Ground floor',
+    specifications: [{ label: 'Area', value: 'About 60 m²' }],
   },
 ];
+
+/** The feature catalogue. Assigned to residences by type below. */
+export const features: { name: string; category: string; iconKey: string }[] = [
+  { name: 'Private balcony', category: 'Outdoor', iconKey: 'balcony' },
+  { name: 'Private roof terrace', category: 'Outdoor', iconKey: 'terrace' },
+  { name: 'Fitted kitchen', category: 'Kitchen', iconKey: 'kitchen' },
+  { name: 'Granite worktops', category: 'Kitchen', iconKey: 'kitchen' },
+  { name: 'Built-in wardrobes', category: 'Bedrooms', iconKey: 'wardrobe' },
+  { name: 'Walk-in wardrobe', category: 'Bedrooms', iconKey: 'wardrobe' },
+  { name: 'En-suite bathroom', category: 'Bathrooms', iconKey: 'bath' },
+  { name: 'Double glazing', category: 'Building', iconKey: 'window' },
+  { name: 'Dual-aspect light', category: 'Building', iconKey: 'sun' },
+  { name: 'Basement parking', category: 'Parking & storage', iconKey: 'parking' },
+  { name: 'Private storage room', category: 'Parking & storage', iconKey: 'storage' },
+  { name: 'Private lift access', category: 'Building', iconKey: 'lift' },
+  { name: 'Standby power circuit', category: 'Building', iconKey: 'power' },
+];
+
+export function featuresFor(typologySlug: string): string[] {
+  const base = ['Fitted kitchen', 'Granite worktops', 'Built-in wardrobes', 'Double glazing', 'Basement parking', 'Private storage room', 'Standby power circuit'];
+  if (typologySlug === 'one-bed') return [...base, 'Private balcony'];
+  if (typologySlug === 'two-bed') return [...base, 'Private balcony', 'En-suite bathroom', 'Walk-in wardrobe'];
+  if (typologySlug === 'two-bed-corner') return [...base, 'Private balcony', 'En-suite bathroom', 'Walk-in wardrobe', 'Dual-aspect light'];
+  if (typologySlug === 'penthouse-two') return [...base, 'Private roof terrace', 'En-suite bathroom', 'Walk-in wardrobe', 'Dual-aspect light'];
+  return [...base, 'Private roof terrace', 'En-suite bathroom', 'Walk-in wardrobe', 'Dual-aspect light', 'Private lift access'];
+}
+
+/** Rooms by type, as fractions of the interior area. */
+export function roomsFor(bedrooms: number, bathrooms: number, penthouse: boolean): { name: string; type: RoomType; share: number }[] {
+  const rooms: { name: string; type: RoomType; share: number }[] = [
+    { name: 'Entrance hall', type: 'HALL', share: 0.06 },
+    { name: 'Living room', type: 'LIVING', share: penthouse ? 0.24 : 0.28 },
+    { name: 'Kitchen', type: 'KITCHEN', share: 0.1 },
+  ];
+  for (let i = 1; i <= bedrooms; i++) {
+    rooms.push({ name: i === 1 && bedrooms > 1 ? 'Main bedroom' : `Bedroom ${i}`, type: 'BEDROOM', share: i === 1 ? 0.16 : 0.12 });
+  }
+  for (let i = 1; i <= Math.ceil(bathrooms); i++) {
+    rooms.push({ name: i === 1 && bedrooms > 1 ? 'En-suite bathroom' : `Bathroom ${i}`, type: 'BATHROOM', share: 0.05 });
+  }
+  rooms.push({ name: penthouse ? 'Terrace' : 'Balcony', type: penthouse ? 'TERRACE' : 'BALCONY', share: 0 });
+  rooms.push({ name: 'Storage', type: 'STORAGE', share: 0.02 });
+  return rooms;
+}
+
+/** The galleries the brief names. Images are added by `pnpm media:import`. */
+export const galleries: { slug: string; title: string; description: string }[] = [
+  { slug: 'project-exterior', title: 'Project exterior', description: 'The building from the street, the gate and the air.' },
+  { slug: 'luxury-interiors', title: 'Luxury interiors', description: 'Living rooms, kitchens and bedrooms across the residence types.' },
+  { slug: 'amenities', title: 'Amenities', description: 'The pool deck, gym, wellness rooms, restaurant and co-working.' },
+  { slug: 'construction-progress', title: 'Construction progress', description: 'Site photographs as the building rises.' },
+  { slug: '3d-renders', title: '3D renders', description: 'Architectural visualisations of the finished building.' },
+  { slug: 'lifestyle', title: 'Lifestyle', description: 'Life at Almasi, from arrival to the roof terrace.' },
+  { slug: 'architecture', title: 'Architecture', description: 'Plans, elevations and the thinking behind the design.' },
+];
+
+export const amenitiesSeed = amenities;
 
 /** Real Kimihurura-area landmarks. */
 export const landmarks: {
@@ -360,34 +503,41 @@ export const mediaSets: {
   { key: 'pool-deck', label: 'Pool and sun deck', kind: 'AMENITY', cameraNote: 'From the shallow end looking south (§7.1)', sortOrder: 5 },
 ];
 
-export const faqs: { question: string; answerMd: string }[] = [
+export const faqs: { question: string; answerMd: string; category: string }[] = [
   {
     question: 'When is handover?',
     answerMd: 'Handover is planned for the second quarter of 2028. We will provide a more specific timeline as construction progresses.',
+    category: 'Construction',
   },
   {
     question: 'What is the reservation process?',
     answerMd: 'Choose your apartment from the availability page, contact the sales team to confirm it is available, and sign the reservation agreement. A 30% deposit is due on signing, with the balance paid in stages as construction reaches each milestone.',
+    category: 'Buying',
   },
   {
     question: 'Can I buy as a non-resident?',
     answerMd: 'Yes. Foreign buyers may purchase property in Rwanda. The developer will assist with the required documentation. Payment is accepted in USD.',
+    category: 'Buying',
   },
   {
     question: 'What is included in the finish?',
     answerMd: 'Every apartment is finished to a premium standard: tiled floors throughout, fitted kitchen with granite worktops, built-in wardrobes, modern bathroom fixtures, and double-glazed windows. Specific finishes can be reviewed with the sales team.',
+    category: 'Residences',
   },
   {
     question: 'Is parking included?',
     answerMd: 'Yes. Every apartment includes one basement parking bay. There are additional visitor parking spaces at ground level.',
+    category: 'Residences',
   },
   {
     question: 'What are the service charges?',
     answerMd: 'Service charges cover building maintenance, security, the concierge, swimming pool, gym, and common area utilities. The exact amount will be confirmed at handover and is calculated per square metre.',
+    category: 'Ownership',
   },
   {
     question: 'Is there backup power?',
     answerMd: 'Yes. The building has a standby generator that covers common areas, lifts, and water pumps. Individual apartments have a dedicated power circuit for lighting and essential outlets during outages.',
+    category: 'Residences',
   },
 ];
 
@@ -430,3 +580,15 @@ export const tourScenes = [
   { key: 'bedroom', label: 'Main bedroom', yawDeg: 200, planX: 880, planY: 300 },
   { key: 'balcony', label: 'Balcony', yawDeg: 270, planX: 420, planY: 160 },
 ];
+
+/**
+ * Seed accounts, one per role, for local development only. Production refuses
+ * a login without TOTP (§5.9), and the seed skips these when NODE_ENV=production.
+ */
+export const seedAdmins = [
+  ['owner@example.invalid', 'Seed owner', 'SUPER_ADMIN'],
+  ['property@example.invalid', 'Seed property manager', 'PROPERTY_MANAGER'],
+  ['sales@example.invalid', 'Seed sales manager', 'SALES_MANAGER'],
+  ['content@example.invalid', 'Seed content manager', 'CONTENT_MANAGER'],
+  ['viewer@example.invalid', 'Seed viewer', 'VIEWER'],
+] as const;

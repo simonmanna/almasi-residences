@@ -17,8 +17,11 @@ datasource db {
   extensions = [postgis, postgis_topology, postgis_tiger_geocoder, fuzzystrmatch]
 }
 
-// ─────────────────────────── Development ───────────────────────────
+// ─────────────────────────── Development (the property) ────────────
 
+/// The property. The admin's "Property Overview" edits this row; every public
+/// page reads it. Counts (residences, availability, value) are never stored
+/// here — they are derived from Unit rows at query time (D-33).
 model Development {
   id            String   @id @default(cuid())
   slug          String   @unique
@@ -32,19 +35,57 @@ model Development {
   longitude     Float
   handoverDate  DateTime?
   currency      String   @default("USD")
+  /// Legacy, unused: the residence count is derived. Kept so old rows load.
   totalUnits    Int      @default(0)
   status        DevelopmentStatus @default(SELLING)
+
+  propertyType        String   @default("Residential apartments")
+  /// "B + G + 4" — how the developer describes the stack.
+  buildingConfig      String?
+  constructionStatus  ConstructionStatus @default(STRUCTURE)
+  constructionPercent Int?
+  developerName       String?
+  architect           String?
+  contractor          String?
+  yearStarted         Int?
+
+  logoMediaId   String?
+  logoMedia     Media?   @relation("DevelopmentLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+  heroMediaId   String?
+  heroMedia     Media?   @relation("DevelopmentHero", fields: [heroMediaId], references: [id], onDelete: SetNull)
+  mainMediaId   String?
+  mainMedia     Media?   @relation("DevelopmentMain", fields: [mainMediaId], references: [id], onDelete: SetNull)
+  videoMediaId  String?
+  videoMedia    Media?   @relation("DevelopmentVideo", fields: [videoMediaId], references: [id], onDelete: SetNull)
+
+  // Contact — one place, read by the footer, the enquiry panel and WhatsApp links.
+  contactPhone    String?
+  contactEmail    String?
+  whatsappNumber  String?
+  officeAddress   String?
+  officeHours     String?
+  /// { instagram, facebook, linkedin, youtube, x, tiktok } — URLs.
+  socials         Json?
 
   buildings     Building[]
   typologies    Typology[]
   amenities     Amenity[]
   milestones    PaymentMilestone[]
+  paymentPlans  PaymentPlan[]
   landmarks     Landmark[]
   mediaSets     MediaSet[]
   tours         Tour[]
   progress      ProgressUpdate[]
   faqs          Faq[]
   seo           SeoMeta?
+  units         Unit[]
+  features      Feature[]
+  parkingSpaces ParkingSpace[]
+  residents     Resident[]
+  buyers        Buyer[]
+  media         Media[]        @relation("DevelopmentMedia")
+  galleries     Gallery[]
+  pages         ContentPage[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -57,7 +98,18 @@ enum DevelopmentStatus {
   COMPLETED
 }
 
-// ─────────────────────────── Building / Units ───────────────────────
+enum ConstructionStatus {
+  PLANNING
+  SITE_PREPARATION
+  FOUNDATION
+  STRUCTURE
+  ENVELOPE
+  FINISHES
+  HANDOVER
+  COMPLETED
+}
+
+// ─────────────────────────── Building / Floors / Residences ────────
 
 model Building {
   id             String  @id @default(cuid())
@@ -78,53 +130,111 @@ model Floor {
   id          String  @id @default(cuid())
   buildingId  String
   building    Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  level       Int              // 0 = ground
-  label       String           // "Floor 8", "Penthouse"
+  level       Int              // 0 = ground, -1 = basement
+  label       String           // "Floor 1", "Penthouse"
+  displayName String?          // "Penthouse level" — what visitors read, when it differs
+  description String?  @db.Text
   heightM     Float            // cumulative height above ground, for the view simulator
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  // A floor holding residences cannot be deleted: they must be moved first (D-34).
   units       Unit[]
+  media       Media[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@unique([buildingId, level])
   @@index([buildingId])
 }
 
+/// A residence. "Unit" is the historical table name; the admin calls it a residence.
 model Unit {
-  id           String  @id @default(cuid())
-  floorId      String
-  floor        Floor   @relation(fields: [floorId], references: [id], onDelete: Cascade)
-  typologyId   String
-  typology     Typology @relation(fields: [typologyId], references: [id])
+  id            String  @id @default(cuid())
+  /// Denormalised from floor → building so the unit code can be unique per property.
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  floorId       String
+  // Restrict: deleting a floor never silently deletes the homes on it.
+  floor         Floor   @relation(fields: [floorId], references: [id], onDelete: Restrict)
+  typologyId    String
+  typology      Typology @relation(fields: [typologyId], references: [id], onDelete: Restrict)
 
-  code         String            // "8B"
-  status       UnitStatus @default(AVAILABLE)
-  priceMinor   Int               // store money in minor units, never Float
-  currency     String  @default("USD")
-  areaSqm      Float
-  balconySqm   Float?
-  orientation  Orientation
-  viewTags     String[]          // ["golf", "valley", "city"]
+  code          String            // "A1", "PH-A"
+  status        UnitStatus @default(AVAILABLE)
+  priceMinor    Int               // store money in minor units, never Float
+  currency      String  @default("USD")
+  /// Optional list-price reduction, minor units. Public price = price − discount.
+  discountMinor       Int?
+  /// A time-boxed promotional price, shown instead of the list price when set.
+  promoPriceMinor     Int?
+  promoEndsAt         DateTime?
+  reservationFeeMinor Int?
+  depositPercent      Float?
+
+  bedrooms      Int
+  bathrooms     Float
+  areaSqm       Float             // total saleable size
+  interiorSqm   Float?
+  exteriorSqm   Float?
+  balconySqm    Float?
+  terraceSqm    Float?
+  parkingIncluded Int   @default(0)
+  hasStorage    Boolean @default(false)
+  storageNote   String?
+  orientation   Orientation
+  viewTags      String[]          // ["hills", "city"]
+  availabilityDate DateTime?
+
+  shortDescription String?
+  description   String? @db.Text
+
   positionIndex Int              // left-to-right order on the elevation stack
-  widthRatio   Float   @default(1) // relative width in the stack drawing
+  widthRatio    Float   @default(1) // relative width in the stack drawing
   // maps this unit to a mesh name inside the building GLB
-  meshName     String?
-  notes        String?
+  meshName      String?
 
-  enquiries    EnquiryUnit[]
-  statusLog    UnitStatusLog[]
+  paymentPlanId String?
+  paymentPlan   PaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: SetNull)
+  buyerId       String?
+  buyer         Buyer?  @relation("UnitBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  published     Boolean @default(true)
+  featured      Boolean @default(false)
+  archivedAt    DateTime?
+  tags          String[] @default([])
+  /// PRIVATE — never selected by a public endpoint.
+  notes         String? @db.Text
 
+  enquiries     EnquiryUnit[]
+  statusLog     UnitStatusLog[]
+  priceHistory  PriceHistory[]
+  rooms         Room[]
+  features      UnitFeature[]
+  media         Media[]
+  residents     Resident[]
+  residencies   Residency[]
+  parkingSpaces ParkingSpace[]
+  interests     BuyerInterest[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([developmentId, code])
   @@unique([floorId, code])
   @@index([status])
   @@index([typologyId])
+  @@index([floorId])
+  @@index([published, archivedAt])
 }
 
 enum UnitStatus {
   AVAILABLE
   RESERVED
-  BOOKED
+  ON_HOLD
   SOLD
-  NOT_RELEASED
+  OCCUPIED
+  UNAVAILABLE
 }
 
 enum Orientation {
@@ -144,14 +254,94 @@ model UnitStatusLog {
   unit      Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
   from      UnitStatus
   to        UnitStatus
+  /// AdminUser id, or "system".
   actor     String
+  note      String?
   createdAt DateTime   @default(now())
+
+  @@index([unitId])
+  @@index([createdAt])
+}
+
+model PriceHistory {
+  id         String   @id @default(cuid())
+  unitId     String
+  unit       Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  fromMinor  Int
+  toMinor    Int
+  currency   String
+  actor      String
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  @@index([unitId, createdAt])
+}
+
+/// A space inside a residence: living room, bedroom 1, balcony…
+model Room {
+  id          String   @id @default(cuid())
+  unitId      String
+  unit        Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  name        String
+  type        RoomType
+  areaSqm     Float?
+  description String?  @db.Text
+  features    String[] @default([])
+  /// Position on the residence plan, in plan coordinates.
+  planX       Float?
+  planY       Float?
+  sortOrder   Int      @default(0)
+  media       Media[]
 
   @@index([unitId])
 }
 
-// ─────────────────────────── Typology ───────────────────────────────
+enum RoomType {
+  LIVING
+  DINING
+  KITCHEN
+  BEDROOM
+  BATHROOM
+  WC
+  STUDY
+  BALCONY
+  TERRACE
+  STORAGE
+  LAUNDRY
+  HALL
+  OTHER
+}
 
+/// The feature catalogue — "Fitted kitchen", "Walk-in wardrobe"… — assigned per residence.
+model Feature {
+  id            String  @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name          String
+  category      String  @default("General")
+  iconKey       String?
+  sortOrder     Int     @default(0)
+  units         UnitFeature[]
+
+  @@unique([developmentId, name])
+}
+
+model UnitFeature {
+  unitId    String
+  unit      Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  featureId String
+  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  note      String?
+
+  @@id([unitId, featureId])
+  @@index([featureId])
+}
+
+// ─────────────────────────── Residence types ────────────────────────
+
+/// A residence type ("One bedroom", "Three bedroom penthouse"). Editable in the
+/// admin — the public site groups by `isPenthouse` and bedroom count, never by
+/// a list in code.
 model Typology {
   id            String  @id @default(cuid())
   developmentId String
@@ -163,6 +353,9 @@ model Typology {
   areaSqmMin    Float
   areaSqmMax    Float
   descriptionMd String? @db.Text
+  isPenthouse   Boolean @default(false)
+  sortOrder     Int     @default(0)
+  published     Boolean @default(true)
 
   floorPlanSvgUrl String?         // interactive plan, see §8.3
   floorPlanPngUrl String?
@@ -172,11 +365,122 @@ model Typology {
   units         Unit[]
   tours         Tour[]
   mediaSets     MediaSet[]
+  media         Media[]
 
   @@unique([developmentId, slug])
 }
 
-// ─────────────────────────── Media ──────────────────────────────────
+// ─────────────────────────── Media library ──────────────────────────
+
+/// Every uploaded file the admin manages: photos, renders, videos, floor plans,
+/// architectural drawings. One table, attached to at most one owner (unit,
+/// floor, amenity, room, typology) — or to none, which means "the project".
+model Media {
+  id            String   @id @default(cuid())
+  developmentId String
+  development   Development @relation("DevelopmentMedia", fields: [developmentId], references: [id], onDelete: Cascade)
+
+  kind          MediaKind
+  collection    MediaCollection @default(LIBRARY)
+  /// Validated against the lists in @avida/types (IMAGE_CATEGORIES, DESIGN_CATEGORIES…).
+  category      String   @default("OTHER")
+
+  title         String?
+  caption       String?
+  altText       String?
+
+  storageKey    String   @unique
+  mimeType      String
+  sizeBytes     Int
+  width         Int?
+  height        Int?
+  durationSec   Float?
+  /// { "400": key, "800": key, "1600": key } — web-friendly WebP renditions.
+  variants      Json?
+  posterKey     String?
+  blurDataUrl   String?  @db.Text
+  dominantHex   String?
+
+  published     Boolean  @default(true)
+  isCover       Boolean  @default(false)
+  sortOrder     Int      @default(0)
+
+  unitId        String?
+  unit          Unit?     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  floorId       String?
+  floor         Floor?    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  amenityId     String?
+  amenity       Amenity?  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  roomId        String?
+  room          Room?     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  typologyId    String?
+  typology      Typology? @relation(fields: [typologyId], references: [id], onDelete: Cascade)
+
+  uploadedById  String?
+
+  galleryItems  GalleryItem[]
+  galleryCovers Gallery[]  @relation("GalleryCover")
+  residents     Resident[]
+  logoFor       Development[] @relation("DevelopmentLogo")
+  heroFor       Development[] @relation("DevelopmentHero")
+  mainFor       Development[] @relation("DevelopmentMain")
+  videoFor      Development[] @relation("DevelopmentVideo")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([developmentId, collection, kind])
+  @@index([unitId])
+  @@index([floorId])
+  @@index([amenityId])
+  @@index([roomId])
+  @@index([typologyId])
+}
+
+enum MediaKind {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  MODEL
+}
+
+enum MediaCollection {
+  LIBRARY
+  FLOOR_PLAN
+  DESIGN
+}
+
+model Gallery {
+  id            String  @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  slug          String
+  title         String
+  description   String? @db.Text
+  coverMediaId  String?
+  coverMedia    Media?  @relation("GalleryCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  sortOrder     Int     @default(0)
+  published     Boolean @default(true)
+  items         GalleryItem[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([developmentId, slug])
+}
+
+model GalleryItem {
+  galleryId String
+  gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  sortOrder Int     @default(0)
+
+  @@id([galleryId, mediaId])
+  @@index([mediaId])
+}
+
+// ─────────────────────────── Media (time-state system) ─────────────
 
 /// A MediaSet groups the SAME view captured across time states.
 /// This is the backbone of the day/night/aerial system (F7).
@@ -398,10 +702,36 @@ enum HotspotKind {
 
 // ─────────────────────────── Commercial ─────────────────────────────
 
+/// A named payment plan. The default plan's milestones are what the public
+/// payment timeline shows; a residence may be put on a different plan.
+model PaymentPlan {
+  id                  String  @id @default(cuid())
+  developmentId       String
+  development         Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name                String
+  description         String? @db.Text
+  isDefault           Boolean @default(false)
+  published           Boolean @default(true)
+  depositPercent      Float?
+  reservationFeeMinor Int?
+  installmentCount    Int?
+  durationMonths      Int?
+  sortOrder           Int     @default(0)
+  milestones          PaymentMilestone[]
+  units               Unit[]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([developmentId])
+}
+
 model PaymentMilestone {
   id            String @id @default(cuid())
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  paymentPlanId String?
+  paymentPlan   PaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: Cascade)
   sortOrder     Int
   label         String            // "On reservation", "On completion of structure"
   percent       Float             // 10 = 10%
@@ -410,6 +740,7 @@ model PaymentMilestone {
   triggerNote   String?
 
   @@index([developmentId])
+  @@index([paymentPlanId])
 }
 
 enum MilestoneTrigger {
@@ -425,10 +756,20 @@ model Amenity {
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   name          String
+  /// Stable handle the public site uses to pair an amenity with its scene art.
+  slug          String?
   descriptionMd String?
+  shortDescription String?
   iconKey       String?
   mediaAssetId  String?
+  /// [{ label, value }] — "Length: 15 m", "Hours: 06:00–22:00".
+  specifications Json?
+  location      String?
+  published     Boolean @default(true)
   sortOrder     Int    @default(0)
+  media         Media[]
+
+  @@index([developmentId])
 }
 
 model Landmark {
@@ -457,6 +798,160 @@ enum LandmarkCategory {
   BUSINESS
 }
 
+// ─────────────────────────── Parking ────────────────────────────────
+
+model ParkingSpace {
+  id            String  @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  code          String            // "P-01"
+  level         String  @default("Basement")
+  type          ParkingType @default(STANDARD)
+  sizeSqm       Float?
+  status        ParkingStatus @default(AVAILABLE)
+  unitId        String?
+  unit          Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  residentId    String?
+  resident      Resident? @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  priceMinor    Int?
+  notes         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([developmentId, code])
+  @@index([status])
+  @@index([unitId])
+}
+
+enum ParkingType {
+  STANDARD
+  COMPACT
+  ACCESSIBLE
+  EV
+  VISITOR
+  MOTORCYCLE
+}
+
+enum ParkingStatus {
+  AVAILABLE
+  RESERVED
+  ASSIGNED
+  SOLD
+  UNAVAILABLE
+}
+
+// ─────────────────────────── People (PRIVATE) ───────────────────────
+
+/// Someone living in a residence. PRIVATE: never reachable from a public endpoint.
+model Resident {
+  id              String  @id @default(cuid())
+  developmentId   String
+  development     Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  fullName        String
+  email           String?
+  phone           String?
+  countryIso      String?
+  unitId          String?
+  unit            Unit?   @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  residentType    ResidentType @default(OWNER)
+  occupancyStatus OccupancyStatus @default(UPCOMING)
+  moveInDate      DateTime?
+  moveOutDate     DateTime?
+  notes           String? @db.Text
+  profileMediaId  String?
+  profileMedia    Media?  @relation(fields: [profileMediaId], references: [id], onDelete: SetNull)
+  buyerId         String?
+  buyer           Buyer?  @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  archivedAt      DateTime?
+
+  residencies     Residency[]
+  parkingSpaces   ParkingSpace[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([unitId])
+  @@index([developmentId, archivedAt])
+}
+
+enum ResidentType {
+  OWNER
+  TENANT
+  FAMILY
+  OTHER
+}
+
+enum OccupancyStatus {
+  UPCOMING
+  ACTIVE
+  MOVED_OUT
+}
+
+/// Residence history — one row per stay.
+model Residency {
+  id         String   @id @default(cuid())
+  residentId String
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  unitId     String
+  unit       Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  startedAt  DateTime @default(now())
+  endedAt    DateTime?
+  actor      String
+
+  @@index([residentId])
+  @@index([unitId])
+}
+
+/// A client — prospect through owner. PRIVATE.
+model Buyer {
+  id            String  @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  fullName      String
+  email         String?
+  phone         String?
+  countryIso    String?
+  stage         BuyerStage @default(PROSPECT)
+  source        String?
+  assignedToId  String?
+  assignedTo    AdminUser? @relation("BuyerAgent", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notes         String? @db.Text
+  archivedAt    DateTime?
+
+  units         Unit[]  @relation("UnitBuyer")
+  interests     BuyerInterest[]
+  enquiries     Enquiry[]
+  residents     Resident[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([stage])
+  @@index([developmentId, archivedAt])
+}
+
+enum BuyerStage {
+  PROSPECT
+  ENQUIRY
+  INTERESTED
+  RESERVATION
+  BUYER
+  OWNER
+  RESIDENT
+}
+
+model BuyerInterest {
+  buyerId   String
+  buyer     Buyer   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  unitId    String
+  unit      Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([buyerId, unitId])
+  @@index([unitId])
+}
+
 // ─────────────────────────── Leads ──────────────────────────────────
 
 model Enquiry {
@@ -479,8 +974,11 @@ model Enquiry {
   userAgent  String?
 
   status     EnquiryStatus @default(NEW)
+  /// AdminUser id of the agent working the lead.
   assignedTo String?
   internalNote String? @db.Text
+  buyerId    String?
+  buyer      Buyer?  @relation(fields: [buyerId], references: [id], onDelete: SetNull)
 
   // §6.7 — Turnstile unreachable: keep the lead, flag it for manual review
   // rather than dropping it. Never silently trust an unverified submission.
@@ -496,6 +994,7 @@ model Enquiry {
   @@index([status])
   @@index([createdAt])
   @@index([purgeAfter])
+  @@index([buyerId])
 }
 
 enum EnquiryIntent {
@@ -509,7 +1008,10 @@ enum EnquiryStatus {
   NEW
   CONTACTED
   QUALIFIED
-  WON
+  VIEWING
+  NEGOTIATION
+  RESERVED
+  CONVERTED
   LOST
   SPAM
 }
@@ -521,6 +1023,7 @@ model EnquiryUnit {
   unit      Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
 
   @@id([enquiryId, unitId])
+  @@index([unitId])
 }
 
 // ─────────────────────────── Content ────────────────────────────────
@@ -535,6 +1038,7 @@ model ProgressUpdate {
   percentComplete Int?
   mediaAssetIds String[]
   splatUrl      String?
+  published     Boolean @default(true)
 
   @@index([developmentId, capturedOn])
 }
@@ -545,7 +1049,27 @@ model Faq {
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   question      String
   answerMd      String @db.Text
+  category      String @default("General")
+  published     Boolean @default(true)
   sortOrder     Int    @default(0)
+}
+
+/// Editable copy for one public page. `content` is a flat object whose keys are
+/// declared in @avida/types (CONTENT_PAGES), so the admin renders the form and
+/// the site knows every key it may read.
+model ContentPage {
+  id            String   @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  key           String   // "home" | "about" | "amenities" | "buying" | "gallery" | "contact"
+  title         String
+  content       Json
+  published     Boolean  @default(true)
+  updatedById   String?
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+
+  @@unique([developmentId, key])
 }
 
 model SeoMeta {
@@ -587,7 +1111,8 @@ model AdminUser {
   email        String @unique
   passwordHash String
   name         String
-  role         AdminRole @default(SALES)
+  role         AdminRole @default(VIEWER)
+  active       Boolean   @default(true)
   totpSecret   String?
   // §5.9 — issued once at enrolment, stored hashed, single use.
   totpEnrolledAt   DateTime?
@@ -597,28 +1122,40 @@ model AdminUser {
   lockedUntil      DateTime?
   lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
 
   auditLogs    AdminAuditLog[]
+  buyers       Buyer[]   @relation("BuyerAgent")
 }
 
-// §5.9 — exporting the customer list is an audited action, not a convenience.
-// Also records status changes made outside UnitStatusLog and every media delete.
+// §5.9 — every consequential admin action writes one row: who, what, which
+// record, and the before/after values that changed.
 model AdminAuditLog {
   id        String   @id @default(cuid())
   actorId   String
   actor     AdminUser @relation(fields: [actorId], references: [id], onDelete: Cascade)
-  action    String    // "enquiry.export", "media.delete", "unit.bulk-status"
-  target    String?   // resource id or filter description
+  action    String    // "residence.price", "media.upload", "enquiry.export"
+  entity    String?   // "residence", "floor", "media"…
+  entityId  String?
+  target    String?   // human handle: "A1", "Floor 2"
+  summary   String?   // "Price $120,000 → $125,000"
+  before    Json?
+  after     Json?
   rowCount  Int?      // how many records the action touched
   ip        String?
+  userAgent String?
   createdAt DateTime  @default(now())
 
   @@index([actorId])
   @@index([action, createdAt])
+  @@index([entity, entityId])
+  @@index([createdAt])
 }
 
 enum AdminRole {
-  OWNER
-  MARKETING
-  SALES
+  SUPER_ADMIN
+  PROPERTY_MANAGER
+  SALES_MANAGER
+  CONTENT_MANAGER
+  VIEWER
 }

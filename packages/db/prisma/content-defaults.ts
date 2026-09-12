@@ -1,0 +1,81 @@
+/**
+ * The public site's copy as it stood when the CMS arrived — the first state of
+ * each ContentPage row. Keys match CONTENT_PAGES in @avida/types. Written only
+ * where a key is missing; the admin owns every value afterwards (D-33).
+ *
+ * Nothing here repeats business data: counts, prices, percentages and the
+ * handover date are read from their own records, never written into copy.
+ */
+export const contentDefaults: Record<string, { title: string; content: Record<string, unknown> }> = {
+  home: {
+    title: 'Homepage',
+    content: {
+      heroKicker: 'Kimihurura · Kigali',
+      heroTitle: 'Almasi Residences',
+      heroSubtitle: 'Contemporary residences in the heart of Kimihurura.',
+      heroMediaId: null,
+      ctaPrimaryLabel: 'Explore residences',
+      ctaPrimaryHref: '/residences',
+      ctaSecondaryLabel: 'Take the 3D tour',
+      ctaSecondaryHref: '/tour',
+      introTitle: 'One distinct address.',
+      introBody:
+        'Almasi is Swahili for diamond. Stone, walnut and glass on a quiet rise in Kimihurura, planned to feel like fewer homes than it holds: generous rooms, deep balconies, and a floor of amenities that gives a reason to leave the apartment without leaving the building.',
+    },
+  },
+  about: {
+    title: 'About',
+    content: {
+      developerTitle: 'The developer',
+      developerBody: '',
+      architectureTitle: 'The architecture',
+      architectureBody:
+        'Stone, walnut and glass, with deep balconies and wide corridors. Every residence is a corner or an end, so every home has light from more than one side.',
+    },
+  },
+  amenities: {
+    title: 'Amenities content',
+    content: {
+      heroKicker: 'Amenities',
+      heroTitle: 'The art of living',
+      heroLede:
+        'A pool, a gym, a sauna and a restaurant inside the gate — so the best part of the day never needs the car.',
+      heroMediaId: null,
+    },
+  },
+  buying: {
+    title: 'Buying guide',
+    content: {
+      heroTitle: 'Buying at Almasi',
+      heroLede:
+        'Priced in US dollars, open to buyers in Rwanda and abroad, and paid in stages that follow the building as it rises.',
+      processSteps: [
+        { title: 'Choose', body: 'Find a residence in the explorer or with the sales team, who confirm that it is available.' },
+        { title: 'Reserve', body: 'The sales team holds the residence for you while the agreement is prepared.' },
+        { title: 'Sign', body: 'Sign the agreement and pay the first stage of the payment plan.' },
+        { title: 'Build', body: 'The balance falls due as construction reaches each stage, not on fixed dates.' },
+        { title: 'Move in', body: 'The final payment falls due on handover.' },
+      ],
+      reservationBody:
+        'Choose your residence, confirm with the sales team that it is available, and sign the reservation agreement. The residence is held for you while the sale agreement is prepared.',
+      foreignBuyersBody:
+        'Foreign buyers may purchase property in Rwanda. The developer assists with the documentation, and payment is accepted in US dollars.',
+    },
+  },
+  gallery: {
+    title: 'Gallery & progress',
+    content: {
+      heroTitle: 'Stone, walnut, evening light.',
+      heroLede: 'The building, its residences and the spaces around them. Prefer it moving? The film runs under a minute.',
+    },
+  },
+  contact: {
+    title: 'Contact information',
+    content: {
+      enquireTitle: 'Arrange a private viewing.',
+      enquireBody:
+        'Viewings are by appointment with the sales team. Tell us which residences interest you and when suits you, and we will reply within one working day.',
+      responseTime: 'We reply within one working day.',
+    },
+  },
+};

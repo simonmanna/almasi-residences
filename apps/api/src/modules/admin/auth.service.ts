@@ -1,8 +1,9 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
 // otplib 13's functional API ships with its crypto and base32 plugins wired
 // in; a bare `new TOTP()` has neither and throws on every verify.
 import { verify as verifyTotp } from 'otplib';
+import { ROLE_PERMISSIONS, type AdminRole } from '@avida/types';
 import { PrismaService } from '../../common/prisma.service.js';
 import { SessionService } from './session.service.js';
 
@@ -29,8 +30,9 @@ export class AuthService {
     });
 
     // Same message and roughly the same work either way — a different response
-    // for "no such account" tells an attacker which emails are staff.
-    if (!user) {
+    // for "no such account" tells an attacker which emails are staff. A
+    // deactivated account is answered exactly like a missing one.
+    if (!user || !user.active) {
       await hash('decoy-work-to-equalise-timing');
       throw new UnauthorizedException('Those details do not match an account');
     }
@@ -70,9 +72,26 @@ export class AuthService {
   }
 
   async me(userId: string) {
-    return this.prisma.client.adminUser.findUnique({
+    const user = await this.prisma.client.adminUser.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true, role: true, lastLoginAt: true },
+      select: { id: true, name: true, email: true, role: true, lastLoginAt: true, totpEnrolledAt: true },
+    });
+    if (!user) throw new UnauthorizedException('Sign in to continue');
+    return {
+      ...user,
+      twoFactor: user.totpEnrolledAt !== null,
+      permissions: ROLE_PERMISSIONS[user.role as AdminRole] ?? [],
+    };
+  }
+
+  async changePassword(userId: string, current: string, next: string): Promise<void> {
+    const user = await this.prisma.client.adminUser.findUniqueOrThrow({ where: { id: userId } });
+    const ok = await verify(user.passwordHash, current).catch(() => false);
+    if (!ok) throw new BadRequestException('Your current password is not correct.');
+    if (current === next) throw new BadRequestException('Choose a password you have not used here before.');
+    await this.prisma.client.adminUser.update({
+      where: { id: userId },
+      data: { passwordHash: await hash(next) },
     });
   }
 

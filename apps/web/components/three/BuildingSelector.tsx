@@ -37,7 +37,7 @@ function statusColour(status: UnitStatus, accent: string, muted: string, line: s
   // §2.3 — colour comes from the token cascade, read once from the document,
   // never computed per component from the time state.
   if (status === 'AVAILABLE') return accent;
-  if (status === 'SOLD' || status === 'BOOKED') return muted;
+  if (status === 'SOLD' || status === 'OCCUPIED' || status === 'ON_HOLD') return muted;
   return line;
 }
 

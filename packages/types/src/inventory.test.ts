@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   allowedTransitions,
   canTransition,
+  effectivePriceMinor,
   EMPTY_FILTERS,
+  isSaleReversal,
+  pricePerSqmMinor,
+  PUBLIC_UNIT_STATUS,
   unitMatches,
   UNIT_STATUSES,
   type UnitStatus,
@@ -15,33 +19,51 @@ const unit = {
   typology: { slug: 'two-bed' },
 };
 
-describe('§5.5 status transitions', () => {
-  it('allows the sales team’s normal path', () => {
-    expect(canTransition('NOT_RELEASED', 'AVAILABLE')).toBe(true);
+describe('D-34 status changes', () => {
+  it('lets the sales team move between open statuses freely', () => {
     expect(canTransition('AVAILABLE', 'RESERVED')).toBe(true);
-    expect(canTransition('RESERVED', 'BOOKED')).toBe(true);
-    expect(canTransition('BOOKED', 'SOLD')).toBe(true);
+    expect(canTransition('RESERVED', 'ON_HOLD')).toBe(true);
+    expect(canTransition('ON_HOLD', 'AVAILABLE')).toBe(true);
+    expect(canTransition('UNAVAILABLE', 'AVAILABLE')).toBe(true);
+    expect(canTransition('AVAILABLE', 'SOLD')).toBe(true);
   });
 
-  it('allows releasing a reservation back to available', () => {
-    expect(canTransition('RESERVED', 'AVAILABLE')).toBe(true);
-    expect(canTransition('BOOKED', 'AVAILABLE')).toBe(true);
+  it('treats a move-in or move-out as not undoing the sale', () => {
+    expect(canTransition('SOLD', 'OCCUPIED')).toBe(true);
+    expect(canTransition('OCCUPIED', 'SOLD')).toBe(true);
   });
 
-  it('treats SOLD as terminal', () => {
-    expect(allowedTransitions('SOLD')).toEqual([]);
-    for (const s of UNIT_STATUSES) {
-      if (s !== 'SOLD') expect(canTransition('SOLD', s)).toBe(false);
+  it('guards undoing a sale behind the reverse-sale permission', () => {
+    for (const to of ['AVAILABLE', 'RESERVED', 'ON_HOLD', 'UNAVAILABLE'] as UnitStatus[]) {
+      expect(isSaleReversal('SOLD', to)).toBe(true);
+      expect(canTransition('SOLD', to)).toBe(false);
+      expect(canTransition('SOLD', to, true)).toBe(true);
+      expect(canTransition('OCCUPIED', to)).toBe(false);
     }
-  });
-
-  it('rejects skipping a stage', () => {
-    expect(canTransition('AVAILABLE', 'SOLD')).toBe(false);
-    expect(canTransition('NOT_RELEASED', 'RESERVED')).toBe(false);
+    expect(allowedTransitions('SOLD')).toEqual(['OCCUPIED']);
   });
 
   it('treats a no-op as allowed, so re-saving a row is not an error', () => {
     for (const s of UNIT_STATUSES) expect(canTransition(s, s)).toBe(true);
+  });
+
+  it('never tells a visitor about a hold or an occupant', () => {
+    expect(PUBLIC_UNIT_STATUS.ON_HOLD).toBe('reserved');
+    expect(PUBLIC_UNIT_STATUS.OCCUPIED).toBe('sold');
+  });
+});
+
+describe('pricing helpers', () => {
+  it('applies a discount, and prefers a live promotion', () => {
+    expect(effectivePriceMinor({ priceMinor: 100_00, discountMinor: 10_00 })).toBe(90_00);
+    expect(effectivePriceMinor({ priceMinor: 100_00, promoPriceMinor: 80_00 })).toBe(80_00);
+    const past = new Date('2020-01-01');
+    expect(effectivePriceMinor({ priceMinor: 100_00, promoPriceMinor: 80_00, promoEndsAt: past })).toBe(100_00);
+  });
+
+  it('computes price per m² and refuses a zero area', () => {
+    expect(pricePerSqmMinor(125_000_00, 69)).toBe(181_159);
+    expect(pricePerSqmMinor(1, 0)).toBeNull();
   });
 });
 

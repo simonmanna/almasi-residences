@@ -383,3 +383,80 @@ to be audited but does not say who may run it. SALES reads the enquiry inbox in
 the app and works individual leads; walking out with every lead's contact
 details in one file is limited to the two roles accountable for the data. Both
 paths write an `AdminAuditLog` row with the actor, the filter and the row count.
+
+## D-33 — The admin database is the single source of truth
+
+**Status:** decided, 2026-09-11 · **supersedes the "revisit" note in D-19**
+
+The admin grew from three screens to the full platform the September brief asks
+for: property, floors, residences, rooms, types and features, parking,
+amenities, residents, buyers, enquiries, media, galleries, floor plans,
+designs, pricing, payment plans, website copy, users and the audit log. It
+stays plain React (no Refine): a small typed client, a query cache with
+prefix invalidation, and one component set, all under `apps/admin/src`.
+
+Rules that make the database authoritative:
+
+- **The seed writes a first state only.** `packages/db/prisma/seed.ts` creates
+  what is missing and never overwrites a row the admin may have edited
+  (prices, statuses, amenities, FAQs, page copy). Re-seeding is safe.
+- **Nothing counted is stored.** Dashboard, floor and type figures are
+  computed from `Unit` rows per request; `Development.totalUnits` is legacy
+  and unused.
+- **The public site reads the API.** Contact details, amenities, galleries,
+  page copy, residence photographs, plans and features arrive through
+  `/api/v1/*`; the static media manifest remains only as a fallback until an
+  image exists in the library. The residence groups on the site are derived
+  from bedrooms and `Typology.isPenthouse`, so a type added in the admin
+  lands in the right group.
+- **Every visible write revalidates.** `PublicSync` busts the inventory cache
+  and asks Next to revalidate the affected routes (dynamic segments by
+  pattern). The one-minute `/inventory/live` poll stays the backstop.
+- **Public selects are explicit.** `PublicService` and the legacy public
+  endpoints select fields one by one, so a private column (notes, buyer,
+  residents, tags, audit) cannot leak by being added to a table later.
+
+Media uploads go through `StorageService`: signature-checked, stored once as
+the original, and rendered to WebP at 400/800/1600/2400 px with a blur
+placeholder. `STORAGE_DRIVER=local` (default) writes under `storage/media` and
+serves `/api/v1/files/*` with a sandboxing CSP; `s3` writes to R2.
+`pnpm media:import` moved the site's existing renders into the library.
+
+## D-34 — Residence statuses, and who may undo a sale
+
+**Status:** decided, 2026-09-11 · **supersedes the §5.5 pipeline in `@avida/types`**
+
+Statuses are AVAILABLE, RESERVED, ON_HOLD, SOLD, OCCUPIED, UNAVAILABLE. The
+migration mapped BOOKED → ON_HOLD and NOT_RELEASED → UNAVAILABLE. The strict
+AVAILABLE → RESERVED → BOOKED → SOLD pipeline made the sales team fight the
+tool, so open statuses now move freely. The one guarded edge is undoing a sale:
+SOLD or OCCUPIED back to an open status needs `residence.reverse-sale` (super
+admin). SOLD ↔ OCCUPIED is a move-in or move-out and follows the residents
+module automatically. Every change writes `UnitStatusLog`, an audit row, and
+moves the residence's parking bays with it. A general edit cannot change a
+status; only the status endpoint can. A floor holding residences cannot be
+deleted without naming where they go (`Unit.floor` is `onDelete: Restrict`).
+
+## D-35 — Five roles, one permission table, enforced by the API
+
+**Status:** decided, 2026-09-11 · **supersedes D-27**
+
+Roles are SUPER_ADMIN, PROPERTY_MANAGER, SALES_MANAGER, CONTENT_MANAGER and
+VIEWER (OWNER → SUPER_ADMIN, MARKETING → CONTENT_MANAGER, SALES →
+SALES_MANAGER in the migration). `ROLE_PERMISSIONS` in `@avida/types` is the
+only table: `AdminGuard` checks `@RequirePermission` on every request, and the
+admin reads the same table only to hide what a role cannot use. Resident and
+buyer contact details need `resident.view` / `buyer.view`; a viewer sees
+neither. Roles are fixed in code rather than a Role table: the brief names
+five, and editable permission sets would be a way to lock everyone out.
+Sessions now slide their idle window while in use (still capped at 12 hours).
+
+## D-36 — The admin's visual language
+
+**Status:** decided, 2026-09-11
+
+A light sky-blue and white command centre, distinct from the public site's
+ivory and bronze: Plus Jakarta Sans headings, Inter body, soft shadows, status
+colours fixed by the brief (green available, blue reserved, orange on hold,
+red sold, purple occupied, grey unavailable). Desktop first; an icon rail
+below 1180 px and a drawer below 820 px.

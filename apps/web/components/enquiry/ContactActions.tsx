@@ -1,7 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { mailtoHref, telHref, whatsappHref } from '../../lib/contact';
+import { mailtoHref, telHref, whatsappHref, type Contact } from '../../lib/contact';
+import { useContact } from '../providers/ContactProvider';
 import { track } from '../../lib/analytics';
 import type { EnquiryResidence } from './EnquiryForm';
 import { useEnquiry, type EnquiryRequest } from './EnquiryProvider';
@@ -41,8 +42,9 @@ export function ContactActions({
   layout?: 'row' | 'stack';
 }) {
   const { open } = useEnquiry();
-  const wa = whatsappHref(whatsappSubject);
-  const tel = telHref();
+  const contact = useContact();
+  const wa = whatsappHref(contact, whatsappSubject);
+  const tel = telHref(contact);
 
   return (
     <div className={`contact-actions contact-actions--${layout}`}>
@@ -96,6 +98,6 @@ export function ContactActions({
   );
 }
 
-export function emailHrefOrNull(): string | null {
-  return mailtoHref();
+export function emailHrefOrNull(contact: Contact): string | null {
+  return mailtoHref(contact);
 }

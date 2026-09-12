@@ -238,6 +238,17 @@ export const TYPE_MEDIA: Record<
     ],
     plan: 'plan-2br',
   },
+  'three-bedroom': {
+    hero: 'living-2br',
+    spaces: [
+      { id: 'living-2br', label: 'Living and dining' },
+      { id: 'two-kitchen', label: 'Kitchen' },
+      { id: 'ph-bedroom', label: 'Main bedroom' },
+      { id: 'ph-bath', label: 'En-suite' },
+      { id: 'view', label: 'From the balcony' },
+    ],
+    plan: 'plan-2br',
+  },
   penthouse: {
     hero: 'ph-living',
     spaces: [

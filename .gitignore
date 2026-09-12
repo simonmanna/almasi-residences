@@ -41,3 +41,6 @@ test-results/
 # Extra Next build dirs (scripts/dev-preview.mjs)
 .next-*/
 apps/web/public/media/almasi/video/.film-work/
+
+# Uploaded media (local storage driver). Production uses R2.
+storage/

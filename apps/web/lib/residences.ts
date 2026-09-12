@@ -7,26 +7,22 @@
  * status or a count; it only reshapes what the API said, so no two parts of the
  * page can disagree about a residence.
  */
-import type { Orientation, UnitStatus } from '@avida/types';
+import { PUBLIC_UNIT_STATUS, type Orientation, type PublicUnitStatus, type UnitStatus } from '@avida/types';
 import type { InventoryDto } from './api';
 
-export type ResidenceType = 'one-bedroom' | 'two-bedroom' | 'penthouse';
-export type PublicStatus = 'available' | 'reserved' | 'sold' | 'unavailable';
+/**
+ * How the site groups residences for a visitor. Derived from the residence's
+ * bedrooms and whether its type is a penthouse — never from a list of type
+ * names — so a type the developer adds in the admin lands in the right group.
+ */
+export type ResidenceType = 'one-bedroom' | 'two-bedroom' | 'three-bedroom' | 'penthouse';
+export type PublicStatus = PublicUnitStatus;
 
-export const RESIDENCE_TYPES: readonly ResidenceType[] = ['one-bedroom', 'two-bedroom', 'penthouse'];
+export const RESIDENCE_TYPES: readonly ResidenceType[] = ['one-bedroom', 'two-bedroom', 'three-bedroom', 'penthouse'];
 export const PUBLIC_STATUSES: readonly PublicStatus[] = ['available', 'reserved', 'sold', 'unavailable'];
 
-/**
- * BOOKED is a sale in progress — not buyable, not final — so a visitor sees
- * "reserved". NOT_RELEASED is held back by the developer: "unavailable".
- */
-export const PUBLIC_STATUS: Record<UnitStatus, PublicStatus> = {
-  AVAILABLE: 'available',
-  RESERVED: 'reserved',
-  BOOKED: 'reserved',
-  SOLD: 'sold',
-  NOT_RELEASED: 'unavailable',
-};
+/** ON_HOLD reads "reserved"; OCCUPIED reads "sold"; UNAVAILABLE is held back by the developer. */
+export const PUBLIC_STATUS: Record<UnitStatus, PublicStatus> = PUBLIC_UNIT_STATUS;
 
 export const STATUS_TEXT: Record<PublicStatus, string> = {
   available: 'Available',
@@ -38,6 +34,7 @@ export const STATUS_TEXT: Record<PublicStatus, string> = {
 export const TYPE_TEXT: Record<ResidenceType, string> = {
   'one-bedroom': 'One bedroom',
   'two-bedroom': 'Two bedroom',
+  'three-bedroom': 'Three bedroom',
   penthouse: 'Penthouse',
 };
 
@@ -85,11 +82,13 @@ export interface Residence {
   viewTags: string[];
   positionIndex: number;
   meshName: string | null;
+  featured: boolean;
 }
 
-export function residenceType(typologySlug: string, bedrooms: number): ResidenceType {
-  if (typologySlug.startsWith('penthouse')) return 'penthouse';
-  return bedrooms <= 1 ? 'one-bedroom' : 'two-bedroom';
+export function residenceType(isPenthouse: boolean, bedrooms: number): ResidenceType {
+  if (isPenthouse) return 'penthouse';
+  if (bedrooms <= 1) return 'one-bedroom';
+  return bedrooms === 2 ? 'two-bedroom' : 'three-bedroom';
 }
 
 export function displayCode(code: string): string {
@@ -109,13 +108,17 @@ export function floorMark(level: number, label: string): string {
 }
 
 type FloorLike = InventoryDto['buildings'][number]['floors'][number];
+type UnitLike = FloorLike['units'][number];
+
+const isPenthouseUnit = (u: UnitLike) => u.typology.isPenthouse ?? u.typology.slug.startsWith('penthouse');
 
 /** The floor that holds the penthouses is read as such, whatever number the schedule gives it. */
 function isPenthouseFloor(floor: FloorLike): boolean {
-  return floor.units.length > 0 && floor.units.every((u) => u.typology.slug.startsWith('penthouse'));
+  return floor.units.length > 0 && floor.units.every(isPenthouseUnit);
 }
 
 function floorDisplayLabel(floor: FloorLike): string {
+  if (floor.displayName) return floor.displayName;
   return isPenthouseFloor(floor) ? 'Penthouse level' : floor.label;
 }
 
@@ -128,6 +131,7 @@ export function toResidences(
     for (const floor of building.floors) {
       const floorLabel = floorDisplayLabel(floor);
       for (const u of floor.units) {
+        const bedrooms = u.bedrooms ?? u.typology.bedrooms;
         list.push({
           id: u.id,
           code: u.code,
@@ -135,20 +139,21 @@ export function toResidences(
           slug: residenceSlug(u.code),
           floorLevel: floor.level,
           floorLabel,
-          type: residenceType(u.typology.slug, u.typology.bedrooms),
+          type: residenceType(isPenthouseUnit(u), bedrooms),
           typologySlug: u.typology.slug,
           typologyName: u.typology.name,
-          bedrooms: u.typology.bedrooms,
-          bathrooms: bathroomsByTypology[u.typology.slug] ?? null,
+          bedrooms,
+          bathrooms: u.bathrooms ?? bathroomsByTypology[u.typology.slug] ?? null,
           areaSqm: u.areaSqm,
           priceMinor: u.priceMinor,
           currency: u.currency,
           status: u.status,
-          publicStatus: PUBLIC_STATUS[u.status],
+          publicStatus: PUBLIC_STATUS[u.status] ?? 'unavailable',
           orientation: u.orientation,
           viewTags: u.viewTags,
           positionIndex: u.positionIndex,
           meshName: u.meshName ?? null,
+          featured: u.featured ?? false,
         });
       }
     }
@@ -233,6 +238,11 @@ export function summarise(residences: readonly Residence[]): ResidenceSummary {
   for (const t of Object.values(byType)) if (t.total === 0) t.areaMin = 0;
 
   return { total: residences.length, available: byStatus.available, byStatus, byType };
+}
+
+/** The groups that actually have residences, in display order. */
+export function typesPresent(summary: ResidenceSummary): ResidenceType[] {
+  return RESIDENCE_TYPES.filter((t) => summary.byType[t].total > 0);
 }
 
 export interface FloorSummary {

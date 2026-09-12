@@ -21,7 +21,8 @@
     "infra:logs": "docker compose -f infra/docker-compose.yml logs -f",
     "check:env": "node scripts/check-env.mjs",
     "check:secrets": "node scripts/check-public-secrets.mjs",
-    "verify:schedules": "node scripts/verify-schedules.mjs"
+    "verify:schedules": "node scripts/verify-schedules.mjs",
+    "media:import": "pnpm --filter @avida/api media:import"
   },
   "devDependencies": {
     "turbo": "2.10.12",

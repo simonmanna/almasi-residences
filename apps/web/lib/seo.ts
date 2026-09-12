@@ -11,8 +11,8 @@ import { residenceType, visiblePriceMinor, type Residence } from './residences';
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
-const typeUrl = (t: Pick<TypologyDto, 'slug' | 'bedrooms'>) =>
-  `${SITE}/residences?type=${residenceType(t.slug, t.bedrooms)}`;
+const typeUrl = (t: Pick<TypologyDto, 'slug' | 'bedrooms' | 'isPenthouse'>) =>
+  `${SITE}/residences?type=${residenceType(t.isPenthouse ?? t.slug.startsWith('penthouse'), t.bedrooms)}`;
 
 export function developmentJsonLd(dev: DevelopmentDto) {
   const available = dev.typologies.filter((t) => t.summary.priceMinorFrom !== null);

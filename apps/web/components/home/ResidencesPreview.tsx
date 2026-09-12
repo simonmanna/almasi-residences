@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { formatMoney } from '@avida/types';
+import { formatCount, formatMoney } from '@avida/types';
 import { TYPE_MEDIA } from '../../lib/media-manifest';
-import { RESIDENCE_TYPES, type ResidenceType } from '../../lib/residences';
+import { typesPresent, type ResidenceType } from '../../lib/residences';
 import { useInventory } from '../providers/InventoryProvider';
 import { Reveal } from '../ui/Reveal';
 import { RevealText } from '../ui/RevealText';
@@ -19,18 +19,23 @@ const COPY: Record<ResidenceType, { title: string; line: string }> = {
     title: 'Two bedroom',
     line: 'Two bedrooms and two bathrooms, the main suite with a walk-in wardrobe, the living room onto the balcony.',
   },
+  'three-bedroom': {
+    title: 'Three bedroom',
+    line: 'Three bedrooms for a family, with room to entertain and a balcony onto the hills.',
+  },
   penthouse: {
     title: 'Penthouse',
-    line: 'The top floor in three residences, from wrap-around glass to a duplex with its own roof terrace and pool.',
+    line: 'The top floor, from wrap-around glass to a duplex with its own roof terrace and pool.',
   },
 };
 
-/** 04 — the three residence types, each with its live count and lowest available price. */
+/** 04 — the residence groups that exist, each with its live count and lowest available price. */
 export function ResidencesPreview() {
   const { summary } = useInventory();
-  const areas = RESIDENCE_TYPES.map((t) => summary.byType[t]).filter((t) => t.total > 0);
-  const min = Math.min(...areas.map((t) => t.areaMin));
-  const max = Math.max(...areas.map((t) => t.areaMax));
+  const types = typesPresent(summary);
+  const areas = types.map((t) => summary.byType[t]);
+  const min = areas.length ? Math.min(...areas.map((t) => t.areaMin)) : 0;
+  const max = areas.length ? Math.max(...areas.map((t) => t.areaMax)) : 0;
 
   return (
     <section id="residences" className={`section ${styles.section}`} aria-labelledby="residences-title">
@@ -38,7 +43,7 @@ export function ResidencesPreview() {
         <header className={styles.head}>
           <div>
             <p className={`mark ${styles.kicker}`}>Residences</p>
-            <RevealText as="h2" id="residences-title" className="h2" lines={['Three ways', 'to live here.']} />
+            <RevealText as="h2" id="residences-title" className="h2" lines={[`${formatCount(types.length || 3)} ways`, 'to live here.']} />
           </div>
           <div className={styles.aside}>
             <p className="lead">
@@ -51,7 +56,7 @@ export function ResidencesPreview() {
         </header>
 
         <ul className={styles.grid}>
-          {RESIDENCE_TYPES.map((t) => {
+          {types.map((t) => {
             const s = summary.byType[t];
             return (
               <li key={t} className={styles.item}>

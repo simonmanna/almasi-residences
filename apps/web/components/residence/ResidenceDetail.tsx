@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type KeyboardEvent } from 'react';
-import { formatDate, formatMoney, formatPercent } from '@avida/types';
-import type { MilestoneDto, UnitDetailDto } from '../../lib/api';
+import { formatCount, formatDate, formatMoney, formatPercent } from '@avida/types';
+import type { MilestoneDto, PublicResidenceDto, UnitDetailDto } from '../../lib/api';
 import { PROVENANCE_NOTE, scene, TYPE_MEDIA } from '../../lib/media-manifest';
 import {
   ORIENTATION_TEXT,
@@ -20,6 +20,7 @@ import { EnquiryForm, type EnquiryResidence } from '../enquiry/EnquiryForm';
 import { ElevationStack } from '../explore/ElevationStack';
 import { MotionMedia } from '../ui/MotionMedia';
 import { Reveal } from '../ui/Reveal';
+import { ApiImage } from '../ui/ApiImage';
 import { SceneImage } from '../ui/SceneImage';
 import { PlanDrawing } from './PlanDrawing';
 import styles from './ResidenceDetail.module.css';
@@ -49,6 +50,7 @@ export function ResidenceDetail({
   typologyText,
   handover,
   milestones,
+  publicData = null,
 }: {
   fallback: Residence;
   schedule: UnitDetailDto['schedule'] | null;
@@ -56,6 +58,8 @@ export function ResidenceDetail({
   typologyText: string | null;
   handover: string;
   milestones: MilestoneDto[];
+  /** The residence's own record from the admin: photographs, plans, features. */
+  publicData?: PublicResidenceDto | null;
 }) {
   // Live status and price from the shared inventory; the server's copy until it arrives.
   const r = useResidence(fallback.slug) ?? fallback;
@@ -64,6 +68,19 @@ export function ResidenceDetail({
   const [tab, setTab] = useState<'plan' | 'furnished'>('plan');
 
   const media = TYPE_MEDIA[r.type];
+  // Photographs and plans uploaded in the admin win; the type's artwork stands in until then.
+  const photos = (publicData?.images ?? []).filter((m) => m.kind === 'IMAGE');
+  const heroPhoto = photos[0] ?? null;
+  const planImage = (publicData?.floorPlans ?? []).find((m) => m.kind === 'IMAGE') ?? null;
+  const planFile = (publicData?.floorPlans ?? []).find((m) => m.kind !== 'IMAGE') ?? null;
+  const spec = [
+    ...(publicData && publicData.features.length ? [{ label: 'This residence', text: `${publicData.features.map((f) => f.name).join(', ')}.` }] : []),
+    ...SPECIFICATION.map((s) =>
+      s.label === 'Parking' && publicData
+        ? { ...s, text: `${publicData.parkingIncluded === 1 ? 'One basement bay' : `${publicData.parkingIncluded} basement bays`} with this residence${publicData.hasStorage ? ', and a private storage room' : ''}; visitor bays at ground level.` }
+        : s,
+    ),
+  ];
   const price = visiblePriceMinor(r);
   const enquiry: EnquiryResidence = {
     id: r.id,
@@ -90,7 +107,7 @@ export function ResidenceDetail({
       {/* ─── Opening ─────────────────────────────────────────────────── */}
       <section className={styles.hero} data-ground="night" data-nav-over aria-labelledby="residence-title">
         <div className={styles.heroMedia}>
-          <MotionMedia id={media.hero} priority sizes="100vw" />
+          {heroPhoto ? <ApiImage m={heroPhoto} priority sizes="100vw" /> : <MotionMedia id={media.hero} priority sizes="100vw" />}
           <div className={styles.heroShade} aria-hidden="true" />
         </div>
         <div className={`container ${styles.heroContent}`}>
@@ -154,7 +171,7 @@ export function ResidenceDetail({
             <ContactActions residence={enquiry} whatsappSubject={whatsappSubject} source="residence-hero" />
           </div>
         </div>
-        <p className={`cgi-note ${styles.heroNote}`}>{PROVENANCE_NOTE[scene(media.hero).provenance]} Shows the residence type.</p>
+        <p className={`cgi-note ${styles.heroNote}`}>{heroPhoto ? (heroPhoto.caption ?? '') : `${PROVENANCE_NOTE[scene(media.hero).provenance]} Shows the residence type.`}</p>
       </section>
 
       {/* ─── The spaces ──────────────────────────────────────────────── */}
@@ -179,17 +196,29 @@ export function ResidenceDetail({
             </div>
           </header>
           <div className={styles.grid}>
-            {media.spaces.map((s, i) => (
-              <figure key={s.id} className={styles.space} data-first={i === 0 ? 'true' : 'false'}>
-                <Reveal className={styles.spaceMedia}>
-                  <SceneImage id={s.id} sizes={i === 0 ? '(max-width: 900px) 100vw, 66vw' : '(max-width: 900px) 100vw, 33vw'} />
-                </Reveal>
-                <figcaption className={styles.spaceCaption}>
-                  <span>{s.label}</span>
-                  <span className="cgi-note">{PROVENANCE_NOTE[scene(s.id).provenance]}</span>
-                </figcaption>
-              </figure>
-            ))}
+            {photos.length > 1
+              ? photos.slice(0, 5).map((m, i) => (
+                  <figure key={m.id} className={styles.space} data-first={i === 0 ? 'true' : 'false'}>
+                    <Reveal className={styles.spaceMedia}>
+                      <ApiImage m={m} sizes={i === 0 ? '(max-width: 900px) 100vw, 66vw' : '(max-width: 900px) 100vw, 33vw'} />
+                    </Reveal>
+                    <figcaption className={styles.spaceCaption}>
+                      <span>{m.title ?? ''}</span>
+                      {m.caption && <span className="cgi-note">{m.caption}</span>}
+                    </figcaption>
+                  </figure>
+                ))
+              : media.spaces.map((s, i) => (
+                  <figure key={s.id} className={styles.space} data-first={i === 0 ? 'true' : 'false'}>
+                    <Reveal className={styles.spaceMedia}>
+                      <SceneImage id={s.id} sizes={i === 0 ? '(max-width: 900px) 100vw, 66vw' : '(max-width: 900px) 100vw, 33vw'} />
+                    </Reveal>
+                    <figcaption className={styles.spaceCaption}>
+                      <span>{s.label}</span>
+                      <span className="cgi-note">{PROVENANCE_NOTE[scene(s.id).provenance]}</span>
+                    </figcaption>
+                  </figure>
+                ))}
           </div>
           <p className="caption">
             Images are artist’s impressions of the residence type, furnished for illustration. Finishes
@@ -239,10 +268,20 @@ export function ResidenceDetail({
                 <PlanDrawing type={r.type} orientation={r.orientation} areaSqm={r.areaSqm} label={r.label} />
               </div>
               <div id="panel-furnished" role="tabpanel" aria-labelledby="tab-furnished" hidden={tab !== 'furnished'}>
-                <div className={styles.furnished}>
-                  <SceneImage id={media.plan} sizes="(max-width: 1100px) 100vw, 60vw" />
+                <div className={styles.furnished} style={{ position: 'relative' }}>
+                  {planImage ? <ApiImage m={planImage} sizes="(max-width: 1100px) 100vw, 60vw" focus="50% 50%" /> : <SceneImage id={media.plan} sizes="(max-width: 1100px) 100vw, 60vw" />}
                 </div>
-                <p className="caption">{PROVENANCE_NOTE[scene(media.plan).provenance]} Furnished for illustration.</p>
+                <p className="caption">
+                  {planImage ? (planImage.caption ?? planImage.title ?? '') : `${PROVENANCE_NOTE[scene(media.plan).provenance]} Furnished for illustration.`}
+                  {planFile && (
+                    <>
+                      {' '}
+                      <a className="link-line" href={planFile.url} target="_blank" rel="noopener noreferrer">
+                        Download the plan
+                      </a>
+                    </>
+                  )}
+                </p>
               </div>
             </div>
             <aside className={styles.position} aria-label="Where it is in the building">
@@ -276,7 +315,7 @@ export function ResidenceDetail({
           </div>
           <div>
             <dl className={styles.specList}>
-              {SPECIFICATION.map((s) => (
+              {spec.map((s) => (
                 <div key={s.label}>
                   <dt>{s.label}</dt>
                   <dd>{s.text}</dd>
@@ -295,7 +334,7 @@ export function ResidenceDetail({
             <div>
               <p className={`mark ${styles.kicker}`}>Payment plan</p>
               <h2 id="payment-title" className="h2">
-                {schedule && price !== null ? 'Four stages, one price' : 'Four stages'}
+                {`${formatCount(Math.max(1, milestones.length))} stage${milestones.length === 1 ? '' : 's'}${schedule && price !== null ? ', one price' : ''}`}
               </h2>
             </div>
             <p className="lead">

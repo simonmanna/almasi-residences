@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { SALES, telHref, whatsappHref } from '../../lib/contact';
+import { telHref, whatsappHref } from '../../lib/contact';
+import { useContact } from '../providers/ContactProvider';
 import { useEnquiry } from '../enquiry/EnquiryProvider';
 import { useLenis } from './SmoothScroll';
 import { Wordmark } from './Wordmark';
@@ -82,8 +83,9 @@ export function SiteNav() {
     lenis?.stop();
   };
 
-  const wa = whatsappHref();
-  const tel = telHref();
+  const contact = useContact();
+  const wa = whatsappHref(contact);
+  const tel = telHref(contact);
 
   return (
     <header
@@ -181,9 +183,9 @@ export function SiteNav() {
                 WhatsApp
               </a>
             )}
-            {tel && SALES.phone && (
+            {tel && contact.phone && (
               <a className="btn btn--ghost" href={tel}>
-                {SALES.phone}
+                {contact.phone}
               </a>
             )}
             <p className="caption">Kimihurura, Kigali, Rwanda</p>

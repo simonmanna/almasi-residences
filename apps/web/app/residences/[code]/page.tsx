@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { formatQuarter } from '@avida/types';
-import { getDevelopment, getInventory, getUnit } from '../../../lib/api';
+import { getDevelopment, getInventory, getPublicResidence, getUnit } from '../../../lib/api';
 import {
   ORIENTATION_TEXT,
   STATUS_TEXT,
@@ -14,7 +14,7 @@ import { breadcrumbJsonLd, residenceJsonLd } from '../../../lib/seo';
 import { ResidenceDetail } from '../../../components/residence/ResidenceDetail';
 import { SiteFooter } from '../../../components/layout/SiteFooter';
 
-/** Status changes reach this page within a minute; the client polls between renders. */
+/** Status changes reach this page within a minute; admin saves revalidate it at once (§37). */
 export const revalidate = 60;
 
 async function load(code: string) {
@@ -38,14 +38,22 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
     .then((x) => x.residence)
     .catch(() => undefined);
   if (!r) return { title: 'Residence not found' };
+  const pub = await getPublicResidence(r.slug).catch(() => null);
   const title = `Residence ${r.label}: ${TYPE_TEXT[r.type].toLowerCase()}, ${r.areaSqm} m²`;
-  const description = `${TYPE_TEXT[r.type]} residence ${r.label} at Almasi Residences, Kimihurura, Kigali: ${r.areaSqm} m² on ${r.floorLabel.toLowerCase()}, facing ${ORIENTATION_TEXT[r.orientation].toLowerCase()}. ${STATUS_TEXT[r.publicStatus]}.`;
+  const description =
+    pub?.shortDescription ??
+    `${TYPE_TEXT[r.type]} residence ${r.label} at Almasi Residences, Kimihurura, Kigali: ${r.areaSqm} m² on ${r.floorLabel.toLowerCase()}, facing ${ORIENTATION_TEXT[r.orientation].toLowerCase()}. ${STATUS_TEXT[r.publicStatus]}.`;
+  const cover = pub?.images[0];
   const hero = scene(TYPE_MEDIA[r.type].hero);
   return {
     title,
     description,
     alternates: { canonical: `/residences/${r.slug}` },
-    openGraph: { title, description, images: [{ url: hero.src, width: hero.width, height: hero.height, alt: hero.alt }] },
+    openGraph: {
+      title,
+      description,
+      images: [cover ? { url: cover.url, width: cover.width ?? undefined, height: cover.height ?? undefined, alt: cover.altText ?? title } : { url: hero.src, width: hero.width, height: hero.height, alt: hero.alt }],
+    },
   };
 }
 
@@ -54,7 +62,7 @@ export default async function ResidencePage({ params }: { params: Promise<{ code
   const { dev, residence } = await load(code);
   if (!residence) notFound();
 
-  const detail = await getUnit(residence.id).catch(() => null);
+  const [detail, pub] = await Promise.all([getUnit(residence.id).catch(() => null), getPublicResidence(residence.slug).catch(() => null)]);
   const typology = dev.typologies.find((t) => t.slug === residence.typologySlug);
   const handover = dev.handoverDate ? formatQuarter(dev.handoverDate) : 'Q2 2028';
 
@@ -76,10 +84,11 @@ export default async function ResidencePage({ params }: { params: Promise<{ code
       <ResidenceDetail
         fallback={residence}
         schedule={detail?.schedule ?? null}
-        balconySqm={detail?.balconySqm ?? null}
-        typologyText={typology?.descriptionMd ?? null}
+        balconySqm={detail?.balconySqm ?? detail?.terraceSqm ?? null}
+        typologyText={pub?.description ?? typology?.descriptionMd ?? null}
         handover={handover}
         milestones={dev.milestones}
+        publicData={pub}
       />
       <SiteFooter />
     </main>

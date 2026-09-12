@@ -15,6 +15,9 @@ import { HealthModule } from './modules/health/health.module.js';
 import { InventoryModule } from './modules/inventory/inventory.module.js';
 import { PricingModule } from './modules/pricing/pricing.module.js';
 import { PrismaModule } from './common/prisma.module.js';
+import { PlatformCommonModule } from './common/platform-common.module.js';
+import { PlatformModule } from './modules/platform/platform.module.js';
+import { PublicModule } from './modules/public/public.module.js';
 
 @Module({
   imports: [
@@ -43,6 +46,7 @@ import { PrismaModule } from './common/prisma.module.js';
     // §5.2 — 120 req/min per IP globally. /enquiry tightens this in Phase 1.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     PrismaModule,
+    PlatformCommonModule,
     HealthModule,
     DevelopmentModule,
     InventoryModule,
@@ -51,6 +55,8 @@ import { PrismaModule } from './common/prisma.module.js';
     LocationModule,
     EnquiryModule,
     AdminModule,
+    PublicModule,
+    PlatformModule,
     MediaModule,
     TourModule,
     ConciergeModule,
