@@ -91,11 +91,12 @@ export class RoomsController {
 
   @Post('residences/:unitId/rooms/reorder')
   @RequirePermission('room.edit')
-  async reorder(@Param('unitId') unitId: string, @Body() dto: IdsDto) {
-    await this.ownedUnit(unitId);
+  async reorder(@Param('unitId') unitId: string, @Body() dto: IdsDto, @Req() req: AdminRequest) {
+    const unit = await this.ownedUnit(unitId);
     await this.prisma.client.$transaction(
       dto.ids.map((id, i) => this.prisma.client.room.updateMany({ where: { id, unitId }, data: { sortOrder: i } })),
     );
+    await this.audit.record({ actorId: actorOf(req).id, action: 'room.reorder', entity: 'residence', entityId: unitId, target: unit.code, summary: `Reordered ${dto.ids.length} rooms in ${unit.code}`, rowCount: dto.ids.length, req });
     await this.sync.changed('inventory');
     return { ok: true };
   }

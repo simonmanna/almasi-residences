@@ -7,9 +7,14 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module.js';
 import { ProblemDetailsFilter } from './common/problem-details.filter.js';
+import { RedisService } from './common/redis.service.js';
 import { RequestIdInterceptor } from './common/request-id.interceptor.js';
 
 async function bootstrap() {
+  // Refuse to start in production without the shared state the security
+  // controls depend on, rather than degrading quietly.
+  RedisService.assertReady();
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ trustProxy: true, genReqId: () => crypto.randomUUID() }),
@@ -43,10 +48,26 @@ async function bootstrap() {
   app.useGlobalFilters(new ProblemDetailsFilter());
   app.useGlobalInterceptors(new RequestIdInterceptor());
 
-  // §5.9 — security headers. CSP is set by the web app, which serves the HTML.
-  // Cross-origin resource policy is relaxed so the admin (another origin) can
-  // show uploaded images; /files responses still carry their own sandbox CSP.
-  await app.register(helmet, { contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } });
+  // §5.9 — security headers. This API only ever answers with JSON or a file,
+  // so nothing it returns should be allowed to load or run anything: the policy
+  // below is `default-src 'none'` with the frame and form directives closed.
+  // /files responses override it with their own sandbox policy, and the web app
+  // sets its own for the HTML it serves.
+  //
+  // Cross-origin resource policy stays relaxed so the admin, on another origin,
+  // can display uploaded images.
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        'default-src': ["'none'"],
+        'frame-ancestors': ["'none'"],
+        'form-action': ["'none'"],
+        'base-uri': ["'none'"],
+      },
+    },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  });
 
   // §15 — uploads stream through multipart; per-kind size limits are checked
   // again by StorageService, this is only the hard ceiling.

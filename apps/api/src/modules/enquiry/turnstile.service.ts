@@ -9,6 +9,17 @@ export type TurnstileResult = 'passed' | 'failed' | 'unavailable';
 export class TurnstileService {
   private readonly log = new Logger(TurnstileService.name);
 
+  constructor() {
+    // §24.4 — an unset secret makes every submission "unverified but accepted".
+    // That is the right behaviour for an outage and the wrong default for a
+    // public form on the internet, so production refuses to start without it.
+    if (process.env.NODE_ENV === 'production' && !process.env.TURNSTILE_SECRET_KEY) {
+      throw new Error(
+        'TURNSTILE_SECRET_KEY must be set in production: without it every enquiry is accepted unverified.',
+      );
+    }
+  }
+
   /**
    * §5.7 step 1 verifies the token; §6.7 says an unreachable Turnstile must not
    * cost a lead. So this distinguishes "Cloudflare said no" (reject) from

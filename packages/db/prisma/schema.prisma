@@ -1117,6 +1117,9 @@ model AdminUser {
   // §5.9 — issued once at enrolment, stored hashed, single use.
   totpEnrolledAt   DateTime?
   recoveryCodeHashes String[] @default([])
+  /// Bumped by a password change or "sign out everywhere": every session issued
+  /// before the new value stops verifying, without a session store.
+  tokenVersion Int      @default(0)
   // §5.9 — login throttle state, per account (the per-IP limit is in the gateway).
   failedLoginCount Int      @default(0)
   lockedUntil      DateTime?

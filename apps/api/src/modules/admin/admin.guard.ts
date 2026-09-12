@@ -10,7 +10,13 @@ import { Reflector } from '@nestjs/core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { can, PERMISSION_LABEL, type Permission } from '@avida/types';
 import { PrismaService } from '../../common/prisma.service.js';
-import { sessionCookie, SESSION_COOKIE, SessionService, type SessionPayload } from './session.service.js';
+import {
+  CSRF_HEADER,
+  sessionCookie,
+  SESSION_COOKIE,
+  SessionService,
+  type SessionPayload,
+} from './session.service.js';
 
 export const ROLES_KEY = 'admin:roles';
 export const PERMISSIONS_KEY = 'admin:permissions';
@@ -32,6 +38,18 @@ export interface AdminRequest extends FastifyRequest {
 /** Refresh the idle window once it is more than ten minutes old. */
 const REFRESH_AFTER_MS = 10 * 60 * 1000;
 
+/**
+ * Whether this request arrived over TLS. `trustProxy` is on, so Fastify reads
+ * `x-forwarded-proto` from the gateway; behind one, `req.protocol` is the
+ * browser's scheme rather than the hop's.
+ */
+export function isHttps(req: FastifyRequest): boolean {
+  return req.protocol === 'https';
+}
+
+/** Methods that change something, and so need the CSRF header. */
+const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
 @Injectable()
 export class AdminGuard implements CanActivate {
   constructor(
@@ -50,9 +68,23 @@ export class AdminGuard implements CanActivate {
     // account stops working immediately rather than when its cookie expires.
     const user = await this.prisma.client.adminUser.findUnique({
       where: { id: session.userId },
-      select: { id: true, role: true, name: true, active: true },
+      select: { id: true, role: true, name: true, active: true, tokenVersion: true },
     });
     if (!user || !user.active) throw new UnauthorizedException('Sign in to continue');
+
+    // §24.5 — a signed-out cookie, or one issued before a password change, is
+    // refused for the rest of its life rather than until it expires.
+    if ((session.v ?? 0) !== user.tokenVersion) throw new UnauthorizedException('Sign in again to continue');
+    if (await this.sessions.isRevoked(session)) throw new UnauthorizedException('Sign in again to continue');
+
+    // §24.2 — SameSite=Strict is the first line; this is the second. A request
+    // that changes something must echo the token signed into its own cookie.
+    if (MUTATING.has(req.method.toUpperCase())) {
+      const header = req.headers[CSRF_HEADER] as string | undefined;
+      if (!session.csrf || !SessionService.csrfMatches(header, session.csrf)) {
+        throw new ForbiddenException('This request is missing its security token. Reload the admin and try again.');
+      }
+    }
 
     const roles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [context.getHandler(), context.getClass()]);
     if (roles && roles.length > 0 && !roles.includes(user.role)) {
@@ -70,7 +102,7 @@ export class AdminGuard implements CanActivate {
     const idleAge = 60 * 60 * 1000 - (session.idle - Date.now());
     if (idleAge > REFRESH_AFTER_MS) {
       const reply = context.switchToHttp().getResponse<FastifyReply>();
-      void reply.header('set-cookie', sessionCookie(this.sessions.refresh(session)));
+      void reply.header('set-cookie', sessionCookie(this.sessions.refresh(session), isHttps(req)));
     }
 
     req.admin = { ...session, role: user.role, name: user.name };

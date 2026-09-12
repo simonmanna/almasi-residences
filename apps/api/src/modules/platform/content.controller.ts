@@ -178,9 +178,10 @@ export class ContentController {
   @Post('faqs/reorder')
   @HttpCode(200)
   @RequirePermission('content.edit')
-  async reorderFaqs(@Body() dto: IdsDto) {
+  async reorderFaqs(@Body() dto: IdsDto, @Req() req: AdminRequest) {
     const developmentId = await this.dev.id();
     await this.prisma.client.$transaction(dto.ids.map((id, i) => this.prisma.client.faq.updateMany({ where: { id, developmentId }, data: { sortOrder: i } })));
+    await this.audit.record({ actorId: actorOf(req).id, action: 'faq.reorder', entity: 'faq', summary: `Reordered ${dto.ids.length} FAQs`, rowCount: dto.ids.length, req });
     await this.sync.changed('content');
     return { ok: true };
   }
@@ -318,9 +319,10 @@ export class ContentController {
   @Post('amenities/reorder')
   @HttpCode(200)
   @RequirePermission('amenity.edit')
-  async reorderAmenities(@Body() dto: IdsDto) {
+  async reorderAmenities(@Body() dto: IdsDto, @Req() req: AdminRequest) {
     const developmentId = await this.dev.id();
     await this.prisma.client.$transaction(dto.ids.map((id, i) => this.prisma.client.amenity.updateMany({ where: { id, developmentId }, data: { sortOrder: i } })));
+    await this.audit.record({ actorId: actorOf(req).id, action: 'amenity.reorder', entity: 'amenity', summary: `Reordered ${dto.ids.length} amenities`, rowCount: dto.ids.length, req });
     await this.sync.changed('content');
     return { ok: true };
   }

@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common';
-import { can, effectivePriceMinor, PARKING_STATUSES, UNIT_STATUSES, type UnitStatus } from '@avida/types';
+import { can, effectivePriceMinor, PARKING_STATUSES, UNIT_STATUSES, type Permission, type UnitStatus } from '@avida/types';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
@@ -15,6 +15,23 @@ const HELD: UnitStatus[] = ['RESERVED', 'ON_HOLD'];
  * request time. Nothing here is stored, so adding a residence or selling one
  * changes the dashboard with no second write.
  */
+/**
+ * An audit summary about a person names that person. The feed is open to
+ * anyone who can see the property, so rows about people are shown only to the
+ * roles allowed to see those people in the first place.
+ */
+const ACTIVITY_GATE: Record<string, Permission> = {
+  buyer: 'buyer.view',
+  resident: 'resident.view',
+  enquiry: 'enquiry.view',
+  user: 'user.manage',
+};
+
+function canSeeActivity(role: string, entity: string | null): boolean {
+  const needed = entity ? ACTIVITY_GATE[entity] : undefined;
+  return !needed || can(role, needed);
+}
+
 @Controller('admin')
 @UseGuards(AdminGuard)
 @UseInterceptors(NoStoreInterceptor)
@@ -27,7 +44,8 @@ export class DashboardController {
 
   @Get('dashboard')
   @RequirePermission('property.view')
-  async dashboard() {
+  async dashboard(@Req() req: AdminRequest) {
+    const role = actorOf(req).role;
     const { id: developmentId, currency } = await this.dev.get();
     const weekAgo = new Date(Date.now() - 7 * 86400_000);
 
@@ -46,8 +64,9 @@ export class DashboardController {
       this.prisma.client.amenity.count({ where: { developmentId, published: true } }),
       this.prisma.client.enquiry.groupBy({ by: ['status'], _count: true }),
       this.prisma.client.enquiry.count({ where: { createdAt: { gte: weekAgo } } }),
-      // Recent activity is one-line summaries (never private values), so every
-      // role sees it; the full log with before/after values needs audit.view.
+      // Recent activity is one-line summaries, but a summary about a person
+      // names them ("Archived client Jane Doe"), so rows about people are
+      // filtered below by the same permissions that gate their records.
       this.prisma.client.adminAuditLog.findMany({
         orderBy: { createdAt: 'desc' },
         take: 12,
@@ -145,7 +164,9 @@ export class DashboardController {
       },
       breakdown,
       building,
-      activity: activity.map(({ actor: a, ...row }) => ({ ...row, actorName: a.name })),
+      activity: activity
+        .filter((row) => canSeeActivity(role, row.entity))
+        .map(({ actor: a, ...row }) => ({ ...row, actorName: a.name })),
       featured: featured.map(({ media, ...u }) => ({
         id: u.id,
         code: u.code,

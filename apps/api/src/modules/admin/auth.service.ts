@@ -65,8 +65,10 @@ export class AuthService {
       data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() },
     });
 
+    const { token, csrf } = this.sessions.issue(user.id, user.role, user.tokenVersion);
     return {
-      token: this.sessions.issue(user.id, user.role),
+      token,
+      csrf,
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
     };
   }
@@ -89,9 +91,11 @@ export class AuthService {
     const ok = await verify(user.passwordHash, current).catch(() => false);
     if (!ok) throw new BadRequestException('Your current password is not correct.');
     if (current === next) throw new BadRequestException('Choose a password you have not used here before.');
+    // §24.5 — a password change ends every other session, which is the whole
+    // point of changing it. `tokenVersion` is signed into each cookie.
     await this.prisma.client.adminUser.update({
       where: { id: userId },
-      data: { passwordHash: await hash(next) },
+      data: { passwordHash: await hash(next), tokenVersion: { increment: 1 } },
     });
   }
 

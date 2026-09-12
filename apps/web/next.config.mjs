@@ -18,6 +18,46 @@ if (existsSync(rootEnv)) {
 const API_URL =
   process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Where uploaded media is served from in production (Cloudflare R2). Empty in
+// development, where everything is same-origin through the rewrite below.
+const MEDIA_ORIGIN = process.env.NEXT_PUBLIC_MEDIA_URL
+  ? new URL(process.env.NEXT_PUBLIC_MEDIA_URL).origin
+  : '';
+
+/**
+ * §5.9 — the site's Content-Security-Policy.
+ *
+ * What this closes: framing, plugins, base-tag hijacking, form posts to another
+ * origin, and loading images, fonts, media, styles or scripts from anywhere but
+ * this origin and the media bucket.
+ *
+ * What it does NOT close, and why: `script-src` keeps `'unsafe-inline'`. Next
+ * inlines its own bootstrap and flight-data scripts, and the only way to allow
+ * those without `'unsafe-inline'` is a per-request nonce — which requires
+ * reading `headers()` in the root layout, which opts every page out of static
+ * rendering. This site's whole delivery model is ISR, so the trade is not worth
+ * making for a site whose HTML contains no visitor-supplied text: everything
+ * rendered comes from the admin database through JSON.stringify or React's own
+ * escaping. Revisit if the site ever renders anything a visitor can influence.
+ */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  `img-src 'self' data: blob:${MEDIA_ORIGIN ? ` ${MEDIA_ORIGIN}` : ''}`,
+  `media-src 'self' blob:${MEDIA_ORIGIN ? ` ${MEDIA_ORIGIN}` : ''}`,
+  "font-src 'self'",
+  // CSS modules are files; Next still injects a little inline style.
+  "style-src 'self' 'unsafe-inline'",
+  // 'unsafe-eval' is React Refresh in development only.
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+  `connect-src 'self'${MEDIA_ORIGIN ? ` ${MEDIA_ORIGIN}` : ''}`,
+  "worker-src 'self' blob:",
+  'upgrade-insecure-requests',
+].join('; ');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -37,15 +77,17 @@ const nextConfig = {
     return [{ source: '/api/v1/:path*', destination: `${API_URL}/api/v1/:path*` }];
   },
   async headers() {
-    // §5.9 — security headers. CSP arrives with the nonce plumbing; these
-    // cost nothing now and are easy to forget later.
     return [
       {
         source: '/:path*',
         headers: [
+          { key: 'Content-Security-Policy', value: contentSecurityPolicy },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'DENY' },
+          // Nothing on this site uses a camera, a microphone or the visitor's
+          // location; the map is a drawing and the coordinates come from the API.
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
         ],
       },
       {

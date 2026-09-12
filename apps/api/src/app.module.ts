@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { RedisModule, RedisService } from './common/redis.service.js';
+import { RedisThrottlerStorage } from './common/redis-throttler.storage.js';
 import { APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { AdminModule } from './modules/admin/admin.module.js';
@@ -43,8 +45,22 @@ import { PublicModule } from './modules/public/public.module.js';
         customProps: (req) => ({ requestId: req.id }),
       },
     }),
-    // §5.2 — 120 req/min per IP globally. /enquiry tightens this in Phase 1.
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    // §5.2 — 120 req/min per IP globally; /enquiry and sign-in tighten it.
+    //
+    // Counted in Redis, not in process memory: the in-memory default resets on
+    // every deploy and counts separately per instance, so "five sign-in
+    // attempts per fifteen minutes" silently became five per instance per
+    // deploy. Without REDIS_URL this falls back to the in-memory store, which
+    // `RedisService.assertReady` refuses in production.
+    ThrottlerModule.forRootAsync({
+      imports: [RedisModule],
+      inject: [RedisService],
+      useFactory: (redis: RedisService) => ({
+        throttlers: [{ ttl: 60_000, limit: 120 }],
+        storage: redis.client ? new RedisThrottlerStorage(redis.client) : undefined,
+      }),
+    }),
+    RedisModule,
     PrismaModule,
     PlatformCommonModule,
     HealthModule,

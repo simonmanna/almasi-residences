@@ -1,7 +1,7 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { Check, FileText, Film, ImagePlus, Replace, Star, Trash2, UploadCloud } from 'lucide-react';
 import { categoriesFor, categoryLabel, type MediaCollectionValue } from '@avida/types';
-import { API_ORIGIN, del, get, mediaUrl, patch, qs } from '../lib/api';
+import { API_ORIGIN, csrfToken, del, get, mediaUrl, patch, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { bytes, date } from '../lib/format';
 import { invalidate, useQuery } from '../lib/query';
@@ -29,6 +29,7 @@ export function uploadFiles(files: File[], fields: Record<string, string | null 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_ORIGIN}/api/v1/admin/assets/upload`);
     xhr.withCredentials = true;
+    xhr.setRequestHeader('x-csrf-token', csrfToken());
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(Math.round((e.loaded / e.total) * 100));
     xhr.onload = () => {
       let body: unknown = null;
@@ -283,7 +284,12 @@ export function MediaEditor({ media, onClose }: { media: MediaView; onClose: () 
     try {
       const form = new FormData();
       form.append('file', file, file.name);
-      const res = await fetch(`${API_ORIGIN}/api/v1/admin/assets/${media.id}/replace`, { method: 'POST', body: form, credentials: 'include' });
+      const res = await fetch(`${API_ORIGIN}/api/v1/admin/assets/${media.id}/replace`, {
+        method: 'POST',
+        body: form,
+        credentials: 'include',
+        headers: { 'x-csrf-token': csrfToken() },
+      });
       if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { detail?: string }).detail ?? 'Replace failed');
       toast.success('File replaced. Everywhere it is used now shows the new one.');
       invalidateMedia();

@@ -15,15 +15,35 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * The CSRF token the API signed into the session and set as a readable cookie.
+ * Echoed on every mutating request; the API compares it to the value inside the
+ * session token, so a cross-site request cannot forge it even if it can send
+ * the cookie.
+ */
+export function csrfToken(): string {
+  for (const part of document.cookie.split(';')) {
+    const [k, ...v] = part.trim().split('=');
+    if (k === 'avida_csrf') return decodeURIComponent(v.join('='));
+  }
+  return '';
+}
+
+const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
 type Init = { method?: string; body?: unknown; form?: FormData; signal?: AbortSignal };
 
 export async function http<T>(path: string, init: Init = {}): Promise<T> {
-  const req: RequestInit = { method: init.method ?? 'GET', credentials: 'include', signal: init.signal };
+  const method = init.method ?? 'GET';
+  const req: RequestInit = { method, credentials: 'include', signal: init.signal };
+  const headers: Record<string, string> = {};
+  if (MUTATING.has(method)) headers['x-csrf-token'] = csrfToken();
   if (init.form) req.body = init.form;
   else if (init.body !== undefined) {
     req.body = JSON.stringify(init.body);
-    req.headers = { 'content-type': 'application/json' };
+    headers['content-type'] = 'application/json';
   }
+  if (Object.keys(headers).length > 0) req.headers = headers;
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, req);
@@ -31,6 +51,9 @@ export async function http<T>(path: string, init: Init = {}): Promise<T> {
     throw new ApiError('The server could not be reached. Check your connection and try again.', 0);
   }
   if (res.status === 204) return undefined as T;
+  // §24.18 — sign-out is decided by the status, not by the body's content type.
+  // A 401 with a non-JSON body used to leave the user in a half-signed-in app.
+  if (res.status === 401) window.dispatchEvent(new CustomEvent('admin:signed-out'));
   const type = res.headers.get('content-type') ?? '';
   if (!type.includes('json')) {
     const text = await res.text();
@@ -38,10 +61,7 @@ export async function http<T>(path: string, init: Init = {}): Promise<T> {
     return text as T;
   }
   const json = (await res.json()) as T & { detail?: string };
-  if (!res.ok) {
-    if (res.status === 401) window.dispatchEvent(new CustomEvent('admin:signed-out'));
-    throw new ApiError((json as { detail?: string }).detail ?? res.statusText, res.status);
-  }
+  if (!res.ok) throw new ApiError((json as { detail?: string }).detail ?? res.statusText, res.status);
   return json;
 }
 

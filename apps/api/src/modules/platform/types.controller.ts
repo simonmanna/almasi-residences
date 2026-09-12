@@ -108,11 +108,12 @@ export class TypesController {
 
   @Post('reorder')
   @RequirePermission('typology.edit')
-  async reorder(@Body() dto: IdsDto) {
+  async reorder(@Body() dto: IdsDto, @Req() req: AdminRequest) {
     const developmentId = await this.dev.id();
     await this.prisma.client.$transaction(
       dto.ids.map((id, i) => this.prisma.client.typology.updateMany({ where: { id, developmentId }, data: { sortOrder: i } })),
     );
+    await this.audit.record({ actorId: actorOf(req).id, action: 'type.reorder', entity: 'type', summary: `Reordered ${dto.ids.length} residence types`, rowCount: dto.ids.length, req });
     await this.sync.changed('inventory');
     return { ok: true };
   }

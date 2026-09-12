@@ -140,9 +140,10 @@ export class GalleriesController {
   @Post('reorder')
   @HttpCode(200)
   @RequirePermission('gallery.edit')
-  async reorder(@Body() dto: IdsDto) {
+  async reorder(@Body() dto: IdsDto, @Req() req: AdminRequest) {
     const developmentId = await this.dev.id();
     await this.prisma.client.$transaction(dto.ids.map((id, i) => this.prisma.client.gallery.updateMany({ where: { id, developmentId }, data: { sortOrder: i } })));
+    await this.audit.record({ actorId: actorOf(req).id, action: 'gallery.reorder', entity: 'gallery', summary: `Reordered ${dto.ids.length} galleries`, rowCount: dto.ids.length, req });
     await this.sync.changed('media');
     return { ok: true };
   }
