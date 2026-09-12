@@ -5,6 +5,7 @@ import { API_ORIGIN, post } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { dateTime } from '../lib/format';
 import { useToast } from '../components/Toast';
+import { TwoFactor } from '../components/TwoFactor';
 import { Alert, Badge, Button, Card, CardHead, Field, Input, KV, PageHead } from '../components/ui';
 
 const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined) || 'http://localhost:3000';
@@ -62,6 +63,7 @@ export default function Settings() {
             <Button type="submit" variant="primary" busy={busy} style={{ justifySelf: 'start' }}>Change password</Button>
           </form>
         </Card>
+        <TwoFactor />
         <Card>
           <CardHead title="What you can do" icon={<ShieldCheck size={18} />} />
           <div className="card-body stack-sm">

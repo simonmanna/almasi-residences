@@ -9,6 +9,8 @@ export interface Me {
   role: string;
   lastLoginAt: string | null;
   twoFactor: boolean;
+  /** Single-use codes still unspent, for when the authenticator is lost. */
+  recoveryCodesLeft: number;
   permissions: Permission[];
 }
 

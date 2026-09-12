@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * Creates an admin account, or resets one, with a fresh password and TOTP
- * secret. Production refuses a login without TOTP (§3.1) and the admin has no
- * enrolment screen yet, so this is how accounts get in.
+ * secret. Production refuses a login without TOTP (§3.1); the admin can now
+ * enrol itself under Settings, so this is for the first account and for
+ * recovering one nobody can sign in to.
  *
  *   node scripts/create-admin.mjs <email> "<name>" [OWNER|SALES]
  *
@@ -38,7 +39,10 @@ const reset = {
   lockedUntil: null,
 };
 
+let development;
 try {
+  // The authenticator entry is named after the property, not a constant.
+  development = await prisma.development.findFirst({ select: { name: true } });
   await prisma.adminUser.upsert({
     where: { email },
     create: { email, ...reset },
@@ -53,7 +57,7 @@ console.log(`
 
   Password:     ${password}
   TOTP secret:  ${totpSecret}
-  TOTP URI:     ${generateURI({ issuer: 'Kivu Ridge admin', label: email, secret: totpSecret })}
+  TOTP URI:     ${generateURI({ issuer: `${development?.name ?? 'Property'} admin`, label: email, secret: totpSecret })}
 
   Shown once. Store the password in a password manager and add the secret to
   an authenticator app now.

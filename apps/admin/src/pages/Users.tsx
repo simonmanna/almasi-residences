@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Copy, KeyRound, ShieldCheck, UserPlus } from 'lucide-react';
+import { Check, Copy, KeyRound, ShieldCheck, ShieldOff, UserPlus } from 'lucide-react';
 import { ADMIN_ROLES, ROLE_LABEL, type AdminRole } from '@avida/types';
 import { get, patch, post } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -52,6 +52,23 @@ export default function Users() {
   if (error) return <ErrorBox error={error} />;
   if (!users) return <LoadingPage />;
 
+  /** §24.8 — the lost-phone path, so it no longer means editing the database. */
+  const resetTotp = async (u: UserRow) => {
+    if (!(await confirm({
+      title: `Reset two-factor for ${u.name}?`,
+      body: 'Their authenticator stops working and they set it up again next time they sign in. Any session they have open ends.',
+      confirm: 'Reset it',
+      danger: true,
+    }))) return;
+    try {
+      await post(`/admin/users/${u.id}/totp/reset`);
+      invalidate('users', 'team');
+      toast.success(`${u.name} can set up two-factor again.`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   const update = async (u: UserRow, body: Partial<UserRow>) => {
     try {
       await patch(`/admin/users/${u.id}`, body);
@@ -80,6 +97,9 @@ export default function Users() {
                   <td>{u.twoFactor ? <Badge tone="green" plain>Enrolled</Badge> : <Badge tone="grey" plain>Not set up</Badge>}</td>
                   <td className="muted small">{u.lastLoginAt ? ago(u.lastLoginAt) : 'Never'}</td>
                   <td className="actions">
+                    {u.twoFactor && (
+                      <Button size="sm" variant="ghost" icon={<ShieldOff size={14} />} onClick={() => void resetTotp(u)}>Reset two-factor</Button>
+                    )}
                     <Button size="sm" icon={<KeyRound size={14} />} onClick={async () => {
                       if (!(await confirm({ title: `Reset ${u.name}'s password?`, body: 'Their current password stops working. You will see a temporary one to pass on.', confirm: 'Reset password' }))) return;
                       try {

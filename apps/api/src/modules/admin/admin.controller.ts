@@ -4,7 +4,7 @@ import type { FastifyReply } from 'fastify';
 import { AuditService } from '../../common/audit.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { AdminGuard, isHttps, type AdminRequest } from './admin.guard.js';
-import { ChangePasswordDto, LoginDto } from './admin.dto.js';
+import { ChangePasswordDto, LoginDto, TotpConfirmDto, TotpDisableDto } from './admin.dto.js';
 import { AuthService } from './auth.service.js';
 import { csrfCookie, sessionCookie, SessionService } from './session.service.js';
 
@@ -54,6 +54,39 @@ export class AdminController {
   @UseGuards(AdminGuard)
   me(@Req() req: AdminRequest) {
     return this.auth.me(req.admin!.userId);
+  }
+
+  /**
+   * §24.8 — two-factor enrolment, in the admin rather than over SSH. Production
+   * refuses a sign-in without it, so this is how an account becomes usable.
+   */
+  @Post('me/totp/start')
+  @HttpCode(200)
+  @UseGuards(AdminGuard)
+  @Throttle({ default: { limit: 10, ttl: 900_000 } })
+  startTotp(@Req() req: AdminRequest) {
+    return this.auth.startTotpEnrolment(req.admin!.userId);
+  }
+
+  /** Returns the recovery codes once; they are stored hashed and never shown again. */
+  @Post('me/totp/confirm')
+  @HttpCode(200)
+  @UseGuards(AdminGuard)
+  @Throttle({ default: { limit: 10, ttl: 900_000 } })
+  async confirmTotp(@Body() dto: TotpConfirmDto, @Req() req: AdminRequest) {
+    const result = await this.auth.confirmTotpEnrolment(req.admin!.userId, dto.code);
+    await this.audit.record({ actorId: req.admin!.userId, action: 'user.totp-enrol', entity: 'user', entityId: req.admin!.userId, summary: 'Set up two-factor authentication', req });
+    return result;
+  }
+
+  @Post('me/totp/disable')
+  @HttpCode(200)
+  @UseGuards(AdminGuard)
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
+  async disableTotp(@Body() dto: TotpDisableDto, @Req() req: AdminRequest) {
+    await this.auth.disableTotp(req.admin!.userId, dto.password);
+    await this.audit.record({ actorId: req.admin!.userId, action: 'user.totp-disable', entity: 'user', entityId: req.admin!.userId, summary: 'Turned off two-factor authentication', req });
+    return { ok: true };
   }
 
   @Post('me/password')

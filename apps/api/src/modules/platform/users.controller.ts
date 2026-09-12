@@ -29,6 +29,7 @@ import { rethrowPrisma } from '../../common/http.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
+import { AuthService } from '../admin/auth.service.js';
 import { actorOf } from './actor.js';
 import { CreateUserDto, UpdateUserDto } from './dto.js';
 
@@ -59,6 +60,7 @@ export class UsersController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly auth: AuthService,
   ) {}
 
   /** The permission matrix — any signed-in user may read it. */
@@ -130,6 +132,20 @@ export class UsersController {
       await this.audit.record({ actorId: actor.id, action: 'user.update', entity: 'user', entityId: id, target: user.email, summary: `${user.name}: ${parts.join(', ')}`, before: { role: before.role, active: before.active }, after: { role: user.role, active: user.active }, req });
     }
     return user;
+  }
+
+  /**
+   * §24.8 — the lost-authenticator path. Clears the secret and the recovery
+   * codes so the person can enrol again, and ends their sessions.
+   */
+  @Post('users/:id/totp/reset')
+  @HttpCode(200)
+  @RequirePermission('user.manage')
+  async resetTotp(@Param('id') id: string, @Req() req: AdminRequest) {
+    const user = await this.prisma.client.adminUser.findUniqueOrThrow({ where: { id }, select: { id: true, email: true, name: true } });
+    await this.auth.resetTotpFor(id);
+    await this.audit.record({ actorId: actorOf(req).id, action: 'user.totp-reset', entity: 'user', entityId: id, target: user.email, summary: `Reset two-factor authentication for ${user.name}`, req });
+    return { ok: true };
   }
 
   @Post('users/:id/reset-password')

@@ -285,6 +285,20 @@ button.stat { text-align: left; cursor: pointer; border: 1px solid var(--line); 
 .form-section h3 { font-size: 14px; }
 
 /* ─── Tables ─────────────────────────────────────────────────────────── */
+/* Recovery codes: shown once, read aloud or copied, so they are set in a
+   monospaced grid rather than a paragraph. */
+.recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 4px 16px;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; }
 .table th {

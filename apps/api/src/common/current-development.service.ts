@@ -9,16 +9,16 @@ import { PrismaService } from './prisma.service.js';
  */
 @Injectable()
 export class CurrentDevelopment {
-  private cached: { id: string; slug: string; currency: string } | null = null;
+  private cached: { id: string; slug: string; name: string; currency: string } | null = null;
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async get(): Promise<{ id: string; slug: string; currency: string }> {
+  async get(): Promise<{ id: string; slug: string; name: string; currency: string }> {
     if (this.cached) return this.cached;
     const slug = process.env.DEVELOPMENT_SLUG || process.env.NEXT_PUBLIC_DEVELOPMENT_SLUG;
     const dev = slug
-      ? await this.prisma.client.development.findUnique({ where: { slug }, select: { id: true, slug: true, currency: true } })
-      : await this.prisma.client.development.findFirst({ orderBy: { createdAt: 'asc' }, select: { id: true, slug: true, currency: true } });
+      ? await this.prisma.client.development.findUnique({ where: { slug }, select: { id: true, slug: true, name: true, currency: true } })
+      : await this.prisma.client.development.findFirst({ orderBy: { createdAt: 'asc' }, select: { id: true, slug: true, name: true, currency: true } });
     if (!dev) throw new NotFoundException('No property is configured. Run `pnpm db:seed`.');
     this.cached = dev;
     return dev;

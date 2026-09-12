@@ -2,8 +2,9 @@ import { BadRequestException, Injectable, Logger, UnauthorizedException } from '
 import { hash, verify } from '@node-rs/argon2';
 // otplib 13's functional API ships with its crypto and base32 plugins wired
 // in; a bare `new TOTP()` has neither and throws on every verify.
-import { verify as verifyTotp } from 'otplib';
+import { generateSecret, generateURI, verify as verifyTotp } from 'otplib';
 import { ROLE_PERMISSIONS, type AdminRole } from '@avida/types';
+import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { SessionService } from './session.service.js';
 
@@ -18,6 +19,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sessions: SessionService,
+    private readonly dev: CurrentDevelopment,
   ) {}
 
   static hashPassword(password: string): Promise<string> {
@@ -48,14 +50,25 @@ export class AuthService {
     // un-enrolled one is told to enrol rather than let through.
     if (user.totpSecret) {
       if (!totp) throw new UnauthorizedException('Enter the code from your authenticator app');
+      const entered = totp.trim();
+      // otplib throws on anything that is not six digits, so the shape decides
+      // which check runs: a six-digit code goes to the authenticator, anything
+      // else is treated as a recovery code.
+      const looksLikeCode = /^\d{6}$/.test(entered);
       // A one-step tolerance: phone clocks drift, and a 30-second window with
       // no slack locks out real people.
-      const result = await verifyTotp({
-        secret: user.totpSecret,
-        token: totp,
-        epochTolerance: 30,
-      });
-      if (!result.valid) return this.recordFailure(user.id, user.failedLoginCount);
+      const valid = looksLikeCode
+        ? await verifyTotp({ secret: user.totpSecret, token: entered, epochTolerance: 30 })
+            .then((r) => r.valid)
+            .catch(() => false)
+        : false;
+      if (!valid) {
+        // §24.8 — a recovery code stands in for the authenticator exactly once.
+        const used = looksLikeCode
+          ? false
+          : await this.consumeRecoveryCode(user.id, user.recoveryCodeHashes, entered);
+        if (!used) return this.recordFailure(user.id, user.failedLoginCount);
+      }
     } else if (process.env.NODE_ENV === 'production') {
       throw new UnauthorizedException('This account must complete two-factor enrolment first');
     }
@@ -73,15 +86,66 @@ export class AuthService {
     };
   }
 
+  /**
+   * §24.8 — step one of enrolment. The secret is stored immediately but
+   * `totpEnrolledAt` stays null until a code proves the authenticator has it,
+   * so an abandoned enrolment cannot lock anybody out.
+   */
+  async startTotpEnrolment(userId: string): Promise<{ secret: string; uri: string }> {
+    const user = await this.prisma.client.adminUser.findUniqueOrThrow({ where: { id: userId } });
+    if (user.totpEnrolledAt) {
+      throw new BadRequestException('Two-factor authentication is already set up. Turn it off first to start again.');
+    }
+    const secret = generateSecret();
+    await this.prisma.client.adminUser.update({ where: { id: userId }, data: { totpSecret: secret } });
+    const { name } = await this.dev.get();
+    return { secret, uri: generateURI({ issuer: `${name} admin`, label: user.email, secret }) };
+  }
+
+  /** Step two: prove the code works, then hand over the recovery codes once. */
+  async confirmTotpEnrolment(userId: string, code: string): Promise<{ recoveryCodes: string[] }> {
+    const user = await this.prisma.client.adminUser.findUniqueOrThrow({ where: { id: userId } });
+    if (!user.totpSecret) throw new BadRequestException('Start the setup again: there is no pending secret.');
+    const result = await verifyTotp({ secret: user.totpSecret, token: code, epochTolerance: 30 });
+    if (!result.valid) throw new BadRequestException('That code is not right. Check the clock on your phone and try the current code.');
+
+    const recoveryCodes = SessionService.newRecoveryCodes();
+    const recoveryCodeHashes = await Promise.all(recoveryCodes.map((c) => hash(c)));
+    await this.prisma.client.adminUser.update({
+      where: { id: userId },
+      data: { totpEnrolledAt: new Date(), recoveryCodeHashes },
+    });
+    return { recoveryCodes };
+  }
+
+  /** Turning it off needs the password, so a borrowed session cannot do it. */
+  async disableTotp(userId: string, password: string): Promise<void> {
+    const user = await this.prisma.client.adminUser.findUniqueOrThrow({ where: { id: userId } });
+    const ok = await verify(user.passwordHash, password).catch(() => false);
+    if (!ok) throw new BadRequestException('That password is not correct.');
+    if (process.env.NODE_ENV === 'production') {
+      throw new BadRequestException('Two-factor authentication cannot be switched off on this deployment. Ask a super admin to reset it instead.');
+    }
+    await this.clearTotp(userId);
+  }
+
+  /** A super admin resetting someone who lost their phone. */
+  async resetTotpFor(userId: string): Promise<void> {
+    await this.clearTotp(userId);
+  }
+
+  /** How many single-use recovery codes are left. */
   async me(userId: string) {
     const user = await this.prisma.client.adminUser.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true, role: true, lastLoginAt: true, totpEnrolledAt: true },
+      select: { id: true, name: true, email: true, role: true, lastLoginAt: true, totpEnrolledAt: true, recoveryCodeHashes: true },
     });
     if (!user) throw new UnauthorizedException('Sign in to continue');
+    const { recoveryCodeHashes, ...rest } = user;
     return {
-      ...user,
+      ...rest,
       twoFactor: user.totpEnrolledAt !== null,
+      recoveryCodesLeft: recoveryCodeHashes.length,
       permissions: ROLE_PERMISSIONS[user.role as AdminRole] ?? [],
     };
   }
@@ -97,6 +161,34 @@ export class AuthService {
       where: { id: userId },
       data: { passwordHash: await hash(next), tokenVersion: { increment: 1 } },
     });
+  }
+
+  private async clearTotp(userId: string): Promise<void> {
+    await this.prisma.client.adminUser.update({
+      where: { id: userId },
+      data: { totpSecret: null, totpEnrolledAt: null, recoveryCodeHashes: [], tokenVersion: { increment: 1 } },
+    });
+  }
+
+  /**
+   * Recovery codes are stored hashed and are single use, so this checks each
+   * one and removes the match. Comparing every hash keeps the work constant
+   * whether or not the code was right.
+   */
+  private async consumeRecoveryCode(userId: string, hashes: string[], candidate: string): Promise<boolean> {
+    const code = candidate.trim().toLowerCase();
+    let matched = -1;
+    for (let i = 0; i < hashes.length; i += 1) {
+      const ok = await verify(hashes[i]!, code).catch(() => false);
+      if (ok && matched === -1) matched = i;
+    }
+    if (matched === -1) return false;
+    await this.prisma.client.adminUser.update({
+      where: { id: userId },
+      data: { recoveryCodeHashes: hashes.filter((_, i) => i !== matched) },
+    });
+    this.log.warn(`Recovery code used for ${userId}; ${hashes.length - 1} remain`);
+    return true;
   }
 
   private async recordFailure(userId: string, current: number): Promise<never> {
