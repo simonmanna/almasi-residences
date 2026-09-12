@@ -24,6 +24,7 @@ export class PropertyController {
   ) {}
 
   @Get()
+  @RequirePermission('property.view')
   async get() {
     const id = await this.dev.id();
     const dev = await this.prisma.client.development.findUniqueOrThrow({

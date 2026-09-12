@@ -25,16 +25,42 @@ export interface Money {
 
 const MINOR_UNITS: Record<string, number> = {
   // Currencies whose minor unit is not 1/100. Extend as needed.
+  // RWF is the local currency where this development is built: it has no minor
+  // unit at all, so dividing by 100 would quote every price at 1% of itself.
+  RWF: 0,
+  BIF: 0,
+  UGX: 0,
+  XAF: 0,
+  XOF: 0,
+  CLP: 0,
+  ISK: 0,
   JPY: 0,
   KRW: 0,
+  PYG: 0,
+  VND: 0,
   BHD: 3,
   KWD: 3,
   OMR: 3,
   TND: 3,
 };
 
-function minorDigits(currency: string): number {
+/** How many minor units make one major unit: 2 for USD, 0 for RWF, 3 for KWD. */
+export function minorDigits(currency: string): number {
   return MINOR_UNITS[currency.toUpperCase()] ?? 2;
+}
+
+/**
+ * Minor units to a major-unit number — for anywhere a raw figure is required
+ * rather than a formatted string, such as schema.org `price`. Never divide by
+ * a literal 100: that is only correct for two-decimal currencies.
+ */
+export function toMajorUnits(amountMinor: number, currency: string): number {
+  return amountMinor / 10 ** minorDigits(currency);
+}
+
+/** The inverse, for a price band or threshold written in whole major units. */
+export function toMinorUnits(amountMajor: number, currency: string): number {
+  return Math.round(amountMajor * 10 ** minorDigits(currency));
 }
 
 /**

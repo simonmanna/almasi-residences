@@ -10,6 +10,8 @@
  * the same selection code and this file retires.
  */
 
+import { isPlacedInModel } from '@avida/types';
+
 /** [x0, z0, x1, z1] in plan. */
 export type Rect = readonly [number, number, number, number];
 
@@ -84,7 +86,13 @@ const PENTHOUSE: Record<string, UnitVolume[]> = {
   ],
 };
 
+/**
+ * The volumes for a residence, or none when the maquette cannot place it.
+ * `isPlacedInModel` (in @avida/types) is the shared answer to "can it?", so the
+ * admin warns about exactly the residences this function cannot draw.
+ */
 export function unitVolumes(code: string, level: number): UnitVolume[] {
+  if (!isPlacedInModel(code, level)) return [];
   if (PENTHOUSE[code]) return PENTHOUSE[code]!;
   const letter = code.replace(/\d+$/, '');
   const rect = level === 0 ? GROUND[letter] : TYPICAL[letter];

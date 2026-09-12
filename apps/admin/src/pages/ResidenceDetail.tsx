@@ -17,9 +17,18 @@ import {
   Send,
   Star,
   Trash2,
+  TriangleAlert,
   UserPlus,
 } from 'lucide-react';
-import { humanise, ROOM_TYPES, STATUS_LABEL } from '@avida/types';
+import {
+  humanise,
+  MODEL_GROUND_LETTERS,
+  MODEL_PENTHOUSE_CODES,
+  MODEL_TYPICAL_LETTERS,
+  ROOM_TYPES,
+  STATUS_LABEL,
+  UNPLACED_IN_MODEL_NOTE,
+} from '@avida/types';
 import { del, get, patch, post } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { ago, area, code as fmtCode, date, dateTime, ENQUIRY_TONE, money, ORIENTATION_TEXT, STAGE_TONE, STATUS_TONE } from '../lib/format';
@@ -160,7 +169,7 @@ function RoomsTab({ u, refetch }: { u: Detail; refetch: () => void }) {
                 </td>
                 <td>{editable ? <Input className="sm" defaultValue={r.name} onBlur={(e) => e.target.value !== r.name && void save(r, { name: e.target.value })} /> : r.name}</td>
                 <td>{editable ? <Select className="sm" value={r.type} onChange={(e) => void save(r, { type: e.target.value })} options={ROOM_TYPES.map((t) => ({ value: t, label: humanise(t) }))} /> : humanise(r.type)}</td>
-                <td className="num" style={{ width: 120 }}>{editable ? <NumberInput value={r.areaSqm} suffix="m²" onChange={() => {}} onBlur={(e) => { const n = e.target.value === '' ? null : Number(e.target.value); if (n !== r.areaSqm) void save(r, { areaSqm: n }); }} /> : area(r.areaSqm)}</td>
+                <td className="num" style={{ width: 120 }}>{editable ? <NumberInput key={String(r.areaSqm)} defaultValue={r.areaSqm} suffix="m²" aria-label={`Area of ${r.name} in square metres`} onBlur={(e) => { const n = e.target.value === '' ? null : Number(e.target.value); if (n !== r.areaSqm) void save(r, { areaSqm: n }); }} /> : area(r.areaSqm)}</td>
                 <td>{editable ? <Input className="sm" defaultValue={r.description ?? ''} placeholder="Optional" onBlur={(e) => e.target.value !== (r.description ?? '') && void save(r, { description: e.target.value || null })} /> : r.description}</td>
                 <td className="actions">
                   {editable && (
@@ -538,6 +547,13 @@ export default function ResidenceDetail({ params }: { params: Record<string, str
       </PageHead>
 
       {archived && <Alert tone="warn" icon={<Archive size={18} />}>This residence is archived and hidden everywhere. Restore it to edit or publish it.</Alert>}
+
+      {!u.placedInModel && (
+        <Alert tone="warn" icon={<TriangleAlert size={18} />}>
+          {UNPLACED_IN_MODEL_NOTE} Codes the model can place are {MODEL_GROUND_LETTERS.join(', ')} on the
+          ground floor, {MODEL_TYPICAL_LETTERS.join(', ')} above it, and {MODEL_PENTHOUSE_CODES.join(', ')}.
+        </Alert>
+      )}
 
       <div className="sticky-actions">
         <StatusSelect id={u.id} code={u.code} status={u.status} disabled={archived} onChanged={refetch} />

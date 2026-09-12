@@ -31,7 +31,7 @@ const COPY: Record<ResidenceType, { title: string; line: string }> = {
 
 /** 04 — the residence groups that exist, each with its live count and lowest available price. */
 export function ResidencesPreview() {
-  const { summary } = useInventory();
+  const { summary, currency } = useInventory();
   const types = typesPresent(summary);
   const areas = types.map((t) => summary.byType[t]);
   const min = areas.length ? Math.min(...areas.map((t) => t.areaMin)) : 0;
@@ -83,7 +83,7 @@ export function ResidencesPreview() {
                         <dt>From</dt>
                         <dd>
                           {s.priceFromMinor !== null
-                            ? formatMoney({ amountMinor: s.priceFromMinor, currency: 'USD' })
+                            ? formatMoney({ amountMinor: s.priceFromMinor, currency })
                             : 'On request'}
                         </dd>
                       </div>

@@ -39,11 +39,13 @@ export class ResidencesController {
   ) {}
 
   @Get()
+  @RequirePermission('residence.view')
   list(@Query() q: ResidenceQuery, @Req() req: AdminRequest) {
     return this.residences.list(q, actorOf(req));
   }
 
   @Get('export.csv')
+  @RequirePermission('residence.export')
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Content-Disposition', 'attachment; filename="residences.csv"')
   export(@Query() q: ResidenceQuery, @Req() req: AdminRequest) {
@@ -51,12 +53,14 @@ export class ResidencesController {
   }
 
   @Get(':id')
+  @RequirePermission('residence.view')
   get(@Param('id') id: string, @Req() req: AdminRequest) {
     return this.residences.get(id, actorOf(req));
   }
 
   /** §38 — exactly what a visitor would see, published or not. */
   @Get(':id/preview')
+  @RequirePermission('residence.view')
   async preview(@Param('id') id: string) {
     return this.publicApi.residenceById(id, { includeUnpublished: true });
   }
@@ -87,8 +91,13 @@ export class ResidencesController {
     return this.residences.changePrice(id, dto, actorOf(req), req);
   }
 
-  /** Each action checks its own permission inside the service. */
+  /**
+   * Each action additionally checks its own permission inside the service; this
+   * route-level floor stops a role with no write rights enumerating residences
+   * through the error messages.
+   */
   @Post('bulk')
+  @RequirePermission('residence.view')
   @HttpCode(200)
   bulk(@Body() dto: BulkResidenceDto, @Req() req: AdminRequest) {
     return this.residences.bulk(dto, actorOf(req), req);

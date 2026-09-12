@@ -7,7 +7,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: end;
   gap: 20px 32px;
-  margin-bottom: clamp(48px, 6vw, 96px);
+  margin-bottom: clamp(24px, 3vw, 48px);
 }
 
 .kicker {
@@ -109,6 +109,25 @@
 
 .slide[data-active='true'] img {
   transform: scale(1);
+}
+
+/* An amenity with no photograph yet: an empty frame that says so, rather than
+   another room's picture standing in for it. */
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  background: var(--surface-sunk);
+  color: var(--ink-muted);
+}
+
+.placeholder p:last-child {
+  font-size: 0.9375rem;
 }
 
 .note {

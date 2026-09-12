@@ -84,7 +84,7 @@
   inset: auto 0 0 0;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   align-items: end;
   gap: 32px;
   padding-bottom: clamp(92px, 12vh, 140px);
@@ -95,6 +95,7 @@
   font-size: var(--fs-mega);
   line-height: 0.84;
   letter-spacing: -0.045em;
+  min-width: 0;
 }
 
 .line {
@@ -112,6 +113,7 @@
   justify-items: start;
   gap: 28px;
   padding-bottom: 1.4vw;
+  margin-left: clamp(48px, 9vw, 176px);
 }
 
 .lede {
@@ -209,6 +211,6 @@
     gap: 24px;
     padding-bottom: 96px;
   }
-  .aside { padding-bottom: 0; }
+  .aside { padding-bottom: 0; margin-left: 0; }
   .foot :global(.cgi-note) { display: none; }
 }

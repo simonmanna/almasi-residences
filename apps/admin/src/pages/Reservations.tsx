@@ -4,7 +4,7 @@ import { get } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { ago, area, code as fmtCode, money, STAGE_TONE } from '../lib/format';
 import { useQuery } from '../lib/query';
-import { floorName } from '../lib/ref';
+import { floorName, useCurrency } from '../lib/ref';
 import { Link, navigate } from '../lib/router';
 import type { Paged, ResidenceRow } from '../lib/types';
 import { StatusSelect } from '../components/StatusSelect';
@@ -13,6 +13,7 @@ import type { BuyerRow } from './Buyers';
 
 /** §10 — residences held for someone, and the clients at the reservation stage. */
 export default function Reservations() {
+  const currency = useCurrency();
   const { can } = useAuth();
   const { data, error } = useQuery('residences:held', () => get<Paged<ResidenceRow>>('/admin/residences?status=RESERVED,ON_HOLD&pageSize=200&sort=updated'));
   const { data: buyers } = useQuery(can('buyer.view') ? 'buyers:reservation' : null, () => get<Paged<BuyerRow>>('/admin/buyers?stage=RESERVATION&pageSize=100'));
@@ -29,7 +30,7 @@ export default function Reservations() {
       <div className="grid-3">
         <Stat label="Reserved" value={reserved.length} icon={<CalendarCheck size={20} />} tone="blue" />
         <Stat label="On hold" value={held.length} icon={<CalendarCheck size={20} />} tone="orange" />
-        <Stat label="Value held" value={money(value, 'USD', { compact: true })} icon={<CalendarCheck size={20} />} tone="indigo" />
+        <Stat label="Value held" value={money(value, currency, { compact: true })} icon={<CalendarCheck size={20} />} tone="indigo" />
       </div>
       <Card>
         <CardHead title="Held residences" icon={<CalendarCheck size={18} />} />

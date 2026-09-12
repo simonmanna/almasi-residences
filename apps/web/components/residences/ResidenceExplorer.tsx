@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { formatMoney } from '@avida/types';
+import { formatMoney, toMinorUnits } from '@avida/types';
 import {
   EMPTY_FILTER,
   ORIENTATION_TEXT,
@@ -28,6 +28,7 @@ import { ElevationStack, StatusLegend } from '../explore/ElevationStack';
 import { ExploreAlmasi } from '../explore/ExploreAlmasi';
 import styles from './ResidenceExplorer.module.css';
 
+/** Whole major units; converted with the development's own minor-unit rule. */
 const PRICE_CAPS = [100_000, 150_000, 200_000, 300_000, 500_000];
 
 type ListKey = 'types' | 'bedrooms' | 'floors' | 'sizes' | 'statuses';
@@ -50,7 +51,7 @@ export function ResidenceExplorer({
   initialFilter: ResidenceFilter;
   initialSort: SortKey;
 }) {
-  const { residences, floors, summary } = useInventory();
+  const { residences, floors, summary, currency } = useInventory();
   const [filter, setFilter] = useState<ResidenceFilter>(initialFilter);
   const [sort, setSort] = useState<SortKey>(initialSort);
   const [view, setView] = useState<'list' | 'building'>('list');
@@ -167,11 +168,14 @@ export function ResidenceExplorer({
                     }
                   >
                     <option value="">Any price</option>
-                    {PRICE_CAPS.map((cap) => (
-                      <option key={cap} value={cap * 100}>
-                        {formatMoney({ amountMinor: cap * 100, currency: 'USD' })}
-                      </option>
-                    ))}
+                    {PRICE_CAPS.map((cap) => {
+                      const minor = toMinorUnits(cap, currency);
+                      return (
+                        <option key={cap} value={minor}>
+                          {formatMoney({ amountMinor: minor, currency })}
+                        </option>
+                      );
+                    })}
                   </select>
                 </label>
                 <label className="field">

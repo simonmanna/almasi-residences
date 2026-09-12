@@ -43,6 +43,7 @@ export class FloorsController {
   ) {}
 
   @Get()
+  @RequirePermission('floor.view')
   async list() {
     const developmentId = await this.dev.id();
     const [floors, grouped, covers] = await Promise.all([
@@ -68,6 +69,7 @@ export class FloorsController {
   }
 
   @Get(':id')
+  @RequirePermission('floor.view')
   async get(@Param('id') id: string) {
     const developmentId = await this.dev.id();
     const floor = await this.prisma.client.floor.findFirst({

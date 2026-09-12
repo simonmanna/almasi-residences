@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ButtonHTMLAttributes,
+  type ChangeEvent,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
@@ -282,15 +283,23 @@ export function MoneyInput({ value, onChange, currency = 'USD', ...rest }: { val
   );
 }
 
-export function NumberInput({ value, onChange, suffix, step = 'any', ...rest }: { value: number | null | undefined; onChange: (v: number | null) => void; suffix?: string; step?: string } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
+/**
+ * A number field in two modes. Pass `value` + `onChange` for a controlled field
+ * whose value lives in a draft; pass `defaultValue` (and read the input on
+ * `onBlur`) for an inline cell that saves itself. Passing `value` without an
+ * `onChange` that can act on it freezes the field — hence the explicit split.
+ */
+export function NumberInput({ value, defaultValue, onChange, suffix, step = 'any', ...rest }: { value?: number | null; defaultValue?: number | null; onChange?: (v: number | null) => void; suffix?: string; step?: string } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'defaultValue'>) {
+  const controlled = onChange !== undefined;
   return (
     <div className={suffix ? 'input-affix suffix' : undefined}>
       <input
         className="input tabular"
         type="number"
         step={step}
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
+        {...(controlled
+          ? { value: value ?? '', onChange: (e: ChangeEvent<HTMLInputElement>) => onChange!(e.target.value === '' ? null : Number(e.target.value)) }
+          : { defaultValue: defaultValue ?? value ?? '' })}
         {...rest}
       />
       {suffix && <span className="affix">{suffix}</span>}

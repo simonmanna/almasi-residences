@@ -45,7 +45,7 @@ export function HeroExperience({
   primary?: { label: string; href: string };
   secondary?: { label: string; href: string };
 } = {}) {
-  const [lineA, ...rest] = title.trim().split(/s+/);
+  const [lineA, ...rest] = title.trim().split(/\s+/);
   const lineB = rest.join(' ');
   const root = useRef<HTMLElement>(null);
   const tlRef = useRef<gsap.core.Timeline | null>(null);

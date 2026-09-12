@@ -1,4 +1,5 @@
 import type { DevelopmentDto, TypologyDto } from './api';
+import { toMajorUnits } from '@avida/types';
 import { residenceType, visiblePriceMinor, type Residence } from './residences';
 
 /**
@@ -39,7 +40,7 @@ export function developmentJsonLd(dev: DevelopmentDto) {
       name: t.name,
       url: typeUrl(t),
       priceCurrency: dev.currency,
-      price: (t.summary.priceMinorFrom ?? 0) / 100,
+      price: toMajorUnits(t.summary.priceMinorFrom ?? 0, dev.currency),
       availability: 'https://schema.org/InStock',
       itemOffered: {
         '@type': 'Accommodation',
@@ -65,7 +66,7 @@ export function typologyJsonLd(typology: TypologyDto, dev: DevelopmentDto) {
           offers: {
             '@type': 'Offer',
             priceCurrency: dev.currency,
-            price: typology.summary.priceMinorFrom / 100,
+            price: toMajorUnits(typology.summary.priceMinorFrom, dev.currency),
             availability: 'https://schema.org/InStock',
           },
         }
@@ -96,7 +97,7 @@ export function residenceJsonLd(r: Residence, dev: DevelopmentDto) {
             '@type': 'Offer',
             url,
             priceCurrency: r.currency,
-            price: price / 100,
+            price: toMajorUnits(price, r.currency),
             availability: 'https://schema.org/InStock',
           },
         }

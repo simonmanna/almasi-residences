@@ -1,13 +1,21 @@
-import { humanise, STATUS_LABEL, type UnitStatus } from '@avida/types';
+import { humanise, minorDigits, STATUS_LABEL, toMajorUnits, type UnitStatus } from '@avida/types';
 
+/**
+ * Money in the development's own currency. `currency` is not optional in spirit:
+ * the default exists only so a call site that has not loaded the property yet
+ * renders something rather than throwing. The minor-unit rule comes from
+ * @avida/types, so RWF (no minor unit) is not quoted at 1% of itself.
+ */
 export function money(minor: number | null | undefined, currency = 'USD', opts: { compact?: boolean } = {}): string {
   if (minor === null || minor === undefined) return '—';
+  const compactFrom = 100_000 * 10 ** minorDigits(currency);
+  const compact = Boolean(opts.compact) && Math.abs(minor) >= compactFrom;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
-    maximumFractionDigits: opts.compact && Math.abs(minor) >= 100_000_00 ? 1 : 0,
-    notation: opts.compact && Math.abs(minor) >= 100_000_00 ? 'compact' : 'standard',
-  }).format(minor / 100);
+    maximumFractionDigits: compact ? 1 : 0,
+    notation: compact ? 'compact' : 'standard',
+  }).format(toMajorUnits(minor, currency));
 }
 
 export const area = (sqm: number | null | undefined) => (sqm === null || sqm === undefined ? '—' : `${Number.isInteger(sqm) ? sqm : sqm.toFixed(1)} m²`);

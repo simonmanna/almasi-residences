@@ -4,6 +4,7 @@ import { STATUS_LABEL, UNIT_STATUSES, type UnitStatus } from '@avida/types';
 import { get } from '../lib/api';
 import { area, code as fmtCode, money, STATUS_TONE } from '../lib/format';
 import { useQuery } from '../lib/query';
+import { useCurrency } from '../lib/ref';
 import { useSearchState } from '../lib/router';
 import type { BuildingFloor, BuildingUnit } from '../lib/types';
 import { BuildingMap } from '../components/BuildingMap';
@@ -18,6 +19,7 @@ import { Button, Card, CardHead, ErrorBox, LoadingPage, PageHead, Select } from 
  * so the shape of the building stays readable.
  */
 export default function Availability() {
+  const currency = useCurrency();
   const [s, set] = useSearchState();
   const { data: floors, error, refetch } = useQuery('building', () => get<BuildingFloor[]>('/admin/building'));
   const [open, setOpen] = useState<string | null>(null);
@@ -88,7 +90,7 @@ export default function Availability() {
             </tbody>
           </table>
         </div>
-        <div className="table-foot">Value of the residences shown: {money(shown.reduce((a, u) => a + u.effectivePriceMinor, 0), 'USD', { compact: true })}</div>
+        <div className="table-foot">Value of the residences shown: {money(shown.reduce((a, u) => a + u.effectivePriceMinor, 0), currency, { compact: true })}</div>
       </Card>
 
       {open && <UnitQuickView id={open} onClose={() => setOpen(null)} />}

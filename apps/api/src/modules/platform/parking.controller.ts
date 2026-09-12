@@ -36,6 +36,7 @@ export class ParkingController {
   ) {}
 
   @Get()
+  @RequirePermission('parking.view')
   async list(@Req() req: AdminRequest, @Query('status') status?: string, @Query('type') type?: string, @Query('q') q?: string) {
     const developmentId = await this.dev.id();
     const where: Prisma.ParkingSpaceWhereInput = {

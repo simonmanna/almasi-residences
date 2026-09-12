@@ -4,7 +4,7 @@ import { CurrentDevelopment } from '../../common/current-development.service.js'
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { StorageService } from '../../common/storage.service.js';
-import { AdminGuard, type AdminRequest } from '../admin/admin.guard.js';
+import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
 import { actorOf } from './actor.js';
 
 const SOLD: UnitStatus[] = ['SOLD', 'OCCUPIED'];
@@ -26,6 +26,7 @@ export class DashboardController {
   ) {}
 
   @Get('dashboard')
+  @RequirePermission('property.view')
   async dashboard() {
     const { id: developmentId, currency } = await this.dev.get();
     const weekAgo = new Date(Date.now() - 7 * 86400_000);
@@ -166,6 +167,7 @@ export class DashboardController {
 
   /** §24 / §49 — the building, top floor first, every residence with what sales needs at a glance. */
   @Get('building')
+  @RequirePermission('property.view')
   async buildingRoute() {
     return this.building(await this.dev.id());
   }
@@ -215,6 +217,7 @@ export class DashboardController {
 
   /** §27 — one box searches everything the signed-in role may see. */
   @Get('search')
+  @RequirePermission('property.view')
   async search(@Query('q') raw: string | undefined, @Req() req: AdminRequest) {
     const q = (raw ?? '').trim();
     if (!q) return { results: [] };

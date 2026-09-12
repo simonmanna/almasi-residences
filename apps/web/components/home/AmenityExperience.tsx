@@ -23,6 +23,10 @@ export interface AmenityInput {
  * Artwork for an amenity that has no photograph in the media library yet,
  * paired by its handle or icon. Presentation only: which amenities exist, in
  * what order and with what words, is decided in the admin (§19).
+ *
+ * There is deliberately no default. An amenity the developer adds without an
+ * uploaded photograph shows an empty frame that says so — showing the lobby
+ * instead would put the wrong room behind the right name.
  */
 const SCENE_BY_KEY: Record<string, SceneId> = {
   'swimming-pool': 'pool',
@@ -44,7 +48,7 @@ const SCENE_BY_KEY: Record<string, SceneId> = {
   parking: 'parking',
 };
 
-const sceneFor = (a: AmenityInput): SceneId => SCENE_BY_KEY[a.slug ?? ''] ?? SCENE_BY_KEY[a.iconKey ?? ''] ?? 'lobby';
+const sceneFor = (a: AmenityInput): SceneId | null => SCENE_BY_KEY[a.slug ?? ''] ?? SCENE_BY_KEY[a.iconKey ?? ''] ?? null;
 
 /**
  * 06 — The art of living. Not a grid of icons: the names are set large, and
@@ -68,9 +72,22 @@ export function AmenityExperience({
   const items = amenities.map((a, i) => ({ ...a, key: a.slug ?? a.id ?? String(i), photo: a.images?.find((m) => m.kind === 'IMAGE') ?? null }));
   if (items.length === 0) return null;
   const current = items[Math.min(active, items.length - 1)]!;
-  const note = (it: (typeof items)[number]) => (it.photo ? (it.photo.caption ?? '') : PROVENANCE_NOTE[scene(sceneFor(it)).provenance]);
-  const media = (it: (typeof items)[number], sizes: string) =>
-    it.photo ? <ApiImage m={it.photo} sizes={sizes} /> : <SceneImage id={sceneFor(it)} sizes={sizes} />;
+  const note = (it: (typeof items)[number]) => {
+    if (it.photo) return it.photo.caption ?? '';
+    const id = sceneFor(it);
+    return id ? PROVENANCE_NOTE[scene(id).provenance] : '';
+  };
+  const media = (it: (typeof items)[number], sizes: string) => {
+    if (it.photo) return <ApiImage m={it.photo} sizes={sizes} />;
+    const id = sceneFor(it);
+    if (id) return <SceneImage id={id} sizes={sizes} />;
+    return (
+      <div className={styles.placeholder}>
+        <p className="mark">{it.name}</p>
+        <p>Photography to follow</p>
+      </div>
+    );
+  };
 
   return (
     <section id={id} className={`section ${styles.section}`} data-ground="night" aria-labelledby={`${id}-title`}>

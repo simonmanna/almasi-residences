@@ -11,6 +11,7 @@ import {
   can,
   computeSchedule,
   effectivePriceMinor,
+  isPlacedInModel,
   isSaleReversal,
   pricePerSqmMinor,
   STATUS_LABEL,
@@ -164,6 +165,8 @@ export class ResidencesService {
       pricePerSqmMinor: pricePerSqmMinor(u.priceMinor, u.areaSqm),
       cover: media[0] ? this.storage.present(media[0]) : null,
       buyer: can(actor.role, 'buyer.view') ? buyer : buyer ? { id: buyer.id, fullName: 'Assigned', stage: buyer.stage } : null,
+      // Roadmap §40.1 — a residence the 3D maquette cannot place is flagged, not dropped.
+      placedInModel: isPlacedInModel(u.code, u.floor.level),
       enquiryCount: _count.enquiries,
       interestCount: _count.interests,
       residentCount: _count.residents,
@@ -246,13 +249,17 @@ export class ResidencesService {
       }
     }
 
+    // §24.10 — `notes` is marked PRIVATE in the schema. It used to be returned
+    // to every signed-in role, including VIEWER and CONTENT_MANAGER.
+    const canNotes = can(actor.role, 'residence.notes');
     const canBuyers = can(actor.role, 'buyer.view');
     const canResidents = can(actor.role, 'resident.view');
     const canEnquiries = can(actor.role, 'enquiry.view');
 
     return {
       ...unit,
-      notes: unit.notes,
+      notes: canNotes ? unit.notes : null,
+      placedInModel: isPlacedInModel(unit.code, unit.floor.level),
       effectivePriceMinor: price,
       pricePerSqmMinor: pricePerSqmMinor(unit.priceMinor, unit.areaSqm),
       features: unit.features.map((f) => ({ ...f.feature, note: f.note })),

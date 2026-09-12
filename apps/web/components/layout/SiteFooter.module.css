@@ -1,7 +1,7 @@
 .footer {
   position: relative;
   overflow: hidden;
-  padding-top: clamp(96px, 12vw, 176px);
+  padding-top: clamp(48px, 6vw, 88px);
   padding-bottom: 32px;
 }
 
@@ -11,7 +11,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 32px;
-  padding-bottom: clamp(64px, 8vw, 112px);
+  padding-bottom: clamp(32px, 4vw, 56px);
   border-bottom: 1px solid var(--line);
 }
 

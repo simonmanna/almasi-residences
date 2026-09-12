@@ -5,6 +5,7 @@ import { del, get, patch, post, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { code as fmtCode, money, PARKING_TONE } from '../lib/format';
 import { invalidate, useQuery } from '../lib/query';
+import { useCurrency } from '../lib/ref';
 import type { Paged } from '../lib/types';
 import { useToast } from '../components/Toast';
 import { Badge, Button, Card, ErrorBox, Field, Input, LoadingPage, Modal, MoneyInput, NumberInput, PageHead, Select, Stat, Textarea, useConfirm } from '../components/ui';
@@ -67,6 +68,7 @@ function BayForm({ bay, onClose }: { bay?: Bay; onClose: () => void }) {
 
 /** §20 — basement and visitor parking. The statistics are counted from the bays. */
 export default function Parking() {
+  const currency = useCurrency();
   const { can } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
@@ -107,7 +109,7 @@ export default function Parking() {
                   <td><Badge tone={PARKING_TONE[b.status]}>{humanise(b.status)}</Badge></td>
                   <td>{b.unit ? fmtCode(b.unit.code) : <span className="faint">—</span>}</td>
                   {can('resident.view') && <td>{b.resident?.fullName ?? <span className="faint">—</span>}</td>}
-                  <td className="num">{b.priceMinor ? money(b.priceMinor) : '—'}</td>
+                  <td className="num">{b.priceMinor ? money(b.priceMinor, currency) : '—'}</td>
                   <td className="actions">
                     {editable && (
                       <span className="row" style={{ gap: 6, justifyContent: 'flex-end' }}>

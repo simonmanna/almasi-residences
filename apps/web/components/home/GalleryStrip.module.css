@@ -9,7 +9,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: clamp(40px, 5vw, 72px);
+  margin-bottom: clamp(20px, 2.5vw, 36px);
 }
 
 .kicker {

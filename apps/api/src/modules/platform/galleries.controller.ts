@@ -48,6 +48,7 @@ export class GalleriesController {
   ) {}
 
   @Get()
+  @RequirePermission('gallery.view')
   async list() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.gallery.findMany({
@@ -68,6 +69,7 @@ export class GalleriesController {
   }
 
   @Get(':id')
+  @RequirePermission('gallery.view')
   async get(@Param('id') id: string) {
     const g = await this.owned(id);
     const full = await this.prisma.client.gallery.findUniqueOrThrow({

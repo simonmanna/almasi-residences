@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Archive,
   ArrowDown,
@@ -16,9 +16,10 @@ import {
   Star,
   Tag,
   Trash2,
+  TriangleAlert,
   X,
 } from 'lucide-react';
-import { STATUS_LABEL, UNIT_STATUSES } from '@avida/types';
+import { STATUS_LABEL, UNIT_STATUSES, UNPLACED_IN_MODEL_NOTE } from '@avida/types';
 import { del, downloadUrl, get, patch, post, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { area, code as fmtCode, money } from '../lib/format';
@@ -167,7 +168,12 @@ export default function Residences() {
   const { data: floors } = useFloors();
   const { data: types } = useTypes();
 
-  if ((s.q ?? '') !== debounced) set({ q: debounced, page: 1 });
+  // The URL is history, not render output: pushing it during render fires a
+  // history entry twice under StrictMode. Every other list page does this here.
+  useEffect(() => {
+    if ((s.q ?? '') !== debounced) set({ q: debounced, page: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `set` is rebuilt each render
+  }, [debounced, s.q]);
 
   const params = { q: s.q, floorId: s.floorId, typologyId: s.typologyId, status: s.status, bedrooms: s.bedrooms, minPrice: s.minPrice, maxPrice: s.maxPrice, minSize: s.minSize, maxSize: s.maxSize, published: s.published, featured: s.featured, archived: s.archived, sort: s.sort, dir: s.dir, page: s.page, pageSize: s.pageSize };
   const query = qs(params);
@@ -315,6 +321,11 @@ export default function Residences() {
                       <span className="cell-strong">{fmtCode(r.code)}</span>
                       {r.featured && <Star size={13} fill="var(--gold)" color="var(--gold)" aria-label="Featured" />}
                       {!r.published && <Badge tone="grey" plain>Hidden</Badge>}
+                      {!r.placedInModel && (
+                        <TriangleAlert size={13} color="var(--orange)" aria-label="Not in the 3D building" >
+                          <title>{UNPLACED_IN_MODEL_NOTE}</title>
+                        </TriangleAlert>
+                      )}
                     </div>
                     {r.tags.length > 0 && <div className="small muted">{r.tags.join(' · ')}</div>}
                   </td>

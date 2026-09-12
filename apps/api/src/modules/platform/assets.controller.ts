@@ -59,6 +59,7 @@ export class AssetsController {
   ) {}
 
   @Get()
+  @RequirePermission('media.view')
   async list(@Query() q: Record<string, string | undefined>) {
     const developmentId = await this.dev.id();
     const p = pageOf(q.page, q.pageSize ?? '60', 500);
@@ -98,6 +99,7 @@ export class AssetsController {
   }
 
   @Get(':id')
+  @RequirePermission('media.view')
   async get(@Param('id') id: string) {
     const m = await this.owned(id);
     const galleries = await this.prisma.client.galleryItem.findMany({ where: { mediaId: id }, include: { gallery: { select: { id: true, title: true } } } });

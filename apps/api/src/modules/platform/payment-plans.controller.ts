@@ -37,6 +37,7 @@ export class PaymentPlansController {
   ) {}
 
   @Get()
+  @RequirePermission('payment-plan.view')
   async list() {
     const developmentId = await this.dev.id();
     const plans = await this.prisma.client.paymentPlan.findMany({

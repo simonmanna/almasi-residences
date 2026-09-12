@@ -83,6 +83,8 @@ export interface ResidenceRow {
   floor: FloorRef;
   typology: TypeRef;
   cover: MediaView | null;
+  /** False when the 3D building on the website has no volume for this code. */
+  placedInModel: boolean;
   enquiryCount: number;
   interestCount: number;
   residentCount: number;

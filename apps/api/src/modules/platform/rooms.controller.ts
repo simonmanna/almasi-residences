@@ -38,6 +38,7 @@ export class RoomsController {
 
   /** Every room in the property — the "Rooms / Spaces" screen. */
   @Get('rooms')
+  @RequirePermission('residence.view')
   async all(@Query('type') type?: string, @Query('q') q?: string) {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.room.findMany({
@@ -54,6 +55,7 @@ export class RoomsController {
   }
 
   @Get('residences/:unitId/rooms')
+  @RequirePermission('residence.view')
   async list(@Param('unitId') unitId: string) {
     await this.ownedUnit(unitId);
     const rows = await this.prisma.client.room.findMany({

@@ -18,6 +18,8 @@ const POLL_MS = 60_000;
 interface InventoryValue {
   /** False when the API could not be reached at render time (development only). */
   ready: boolean;
+  /** The development's currency, from the API. Never assumed by a component. */
+  currency: string;
   residences: Residence[];
   summary: ResidenceSummary;
   floors: FloorSummary[];
@@ -79,6 +81,7 @@ export function InventoryProvider({
     const residences = inventory ? toResidences(inventory, bathrooms) : [];
     return {
       ready: inventory !== null,
+      currency: inventory?.currency ?? 'USD',
       residences,
       summary: summarise(residences),
       floors: inventory ? floorsOf(inventory, residences) : [],

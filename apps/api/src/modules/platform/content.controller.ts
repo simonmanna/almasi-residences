@@ -57,6 +57,7 @@ export class ContentController {
   // ─── Pages ─────────────────────────────────────────────────────────────
 
   @Get('pages')
+  @RequirePermission('content.view')
   async pages() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.contentPage.findMany({ where: { developmentId } });
@@ -68,6 +69,7 @@ export class ContentController {
   }
 
   @Get('pages/:key')
+  @RequirePermission('content.view')
   async page(@Param('key') key: string) {
     const def = contentPageDef(key);
     if (!def) throw new NotFoundException('No such page');
@@ -144,6 +146,7 @@ export class ContentController {
   // ─── FAQs ──────────────────────────────────────────────────────────────
 
   @Get('faqs')
+  @RequirePermission('content.view')
   async faqs() {
     return this.prisma.client.faq.findMany({ where: { developmentId: await this.dev.id() }, orderBy: { sortOrder: 'asc' } });
   }
@@ -201,6 +204,7 @@ export class ContentController {
   // ─── Construction progress ─────────────────────────────────────────────
 
   @Get('progress')
+  @RequirePermission('content.view')
   async progress() {
     return this.prisma.client.progressUpdate.findMany({ where: { developmentId: await this.dev.id() }, orderBy: { capturedOn: 'desc' } });
   }
@@ -253,6 +257,7 @@ export class ContentController {
   // ─── Amenities ─────────────────────────────────────────────────────────
 
   @Get('amenities')
+  @RequirePermission('content.view')
   async amenities() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.amenity.findMany({

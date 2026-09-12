@@ -26,7 +26,7 @@ export function PaymentTimeline({
   handover: string;
   id?: string;
 }) {
-  const { summary } = useInventory();
+  const { summary, currency } = useInventory();
   const priced = RESIDENCE_TYPES.filter((t) => summary.byType[t].priceFromMinor !== null);
   const [type, setType] = useState<ResidenceType>(priced.includes('two-bedroom') ? 'two-bedroom' : priced[0] ?? 'two-bedroom');
   const price = summary.byType[type].priceFromMinor;
@@ -103,7 +103,7 @@ export function PaymentTimeline({
               {m.triggerNote && <p className={styles.note}>{m.triggerNote}</p>}
               {price !== null && (
                 <p className={styles.amount}>
-                  {formatMoney({ amountMinor: Math.round((price * m.percent) / 100), currency: 'USD' })}
+                  {formatMoney({ amountMinor: Math.round((price * m.percent) / 100), currency })}
                 </p>
               )}
             </li>
@@ -115,7 +115,7 @@ export function PaymentTimeline({
           {price !== null && (
             <span className="caption">
               Example amounts on the lowest available {TYPE_TEXT[type].toLowerCase()} price,{' '}
-              {formatMoney({ amountMinor: price, currency: 'USD' })}. Each residence has its own schedule on
+              {formatMoney({ amountMinor: price, currency })}. Each residence has its own schedule on
               its page.
             </span>
           )}

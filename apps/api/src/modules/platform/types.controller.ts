@@ -44,6 +44,7 @@ export class TypesController {
   ) {}
 
   @Get()
+  @RequirePermission('typology.view')
   async list() {
     const developmentId = await this.dev.id();
     const types = await this.prisma.client.typology.findMany({
@@ -149,6 +150,7 @@ export class FeaturesController {
   ) {}
 
   @Get()
+  @RequirePermission('typology.view')
   async list() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.feature.findMany({

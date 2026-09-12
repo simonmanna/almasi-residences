@@ -34,6 +34,20 @@ export const ROLE_DESCRIPTION: Record<AdminRole, string> = {
 };
 
 export const PERMISSIONS = [
+  // Reads. Before these existed, any authenticated request could read any admin
+  // GET, so VIEWER — a role with no permissions at all — could pull the whole
+  // priced inventory and the media library. A read is a permission like any other.
+  'property.view',
+  'floor.view',
+  'residence.view',
+  'residence.export',
+  'typology.view',
+  'parking.view',
+  'payment-plan.view',
+  'media.view',
+  'gallery.view',
+  'content.view',
+  // Writes.
   'property.edit',
   'floor.edit',
   'residence.edit',
@@ -41,6 +55,7 @@ export const PERMISSIONS = [
   'residence.status',
   'residence.reverse-sale',
   'residence.price',
+  'residence.notes',
   'typology.edit',
   'room.edit',
   'parking.edit',
@@ -63,6 +78,16 @@ export const PERMISSIONS = [
 export type Permission = (typeof PERMISSIONS)[number];
 
 export const PERMISSION_LABEL: Record<Permission, string> = {
+  'property.view': 'See the property overview',
+  'floor.view': 'See floors',
+  'residence.view': 'See residences and their prices',
+  'residence.export': 'Export all residences as CSV',
+  'typology.view': 'See residence types and features',
+  'parking.view': 'See parking',
+  'payment-plan.view': 'See payment plans',
+  'media.view': 'See the media library',
+  'gallery.view': 'See galleries',
+  'content.view': 'See website content, FAQs and progress updates',
   'property.edit': 'Edit property details',
   'floor.edit': 'Create, edit and delete floors',
   'residence.edit': 'Create and edit residences',
@@ -70,6 +95,7 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
   'residence.status': 'Change residence status',
   'residence.reverse-sale': 'Undo a sale (sold or occupied back to open)',
   'residence.price': 'Change prices and discounts',
+  'residence.notes': 'Read private notes on a residence',
   'typology.edit': 'Manage residence types and features',
   'room.edit': 'Manage rooms and spaces',
   'parking.edit': 'Manage parking',
@@ -95,11 +121,22 @@ const ALL: readonly Permission[] = PERMISSIONS;
 export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
   SUPER_ADMIN: ALL,
   PROPERTY_MANAGER: [
+    'property.view',
+    'floor.view',
+    'residence.view',
+    'typology.view',
+    'parking.view',
+    'payment-plan.view',
+    'media.view',
+    'gallery.view',
+    'content.view',
+    'residence.export',
     'property.edit',
     'floor.edit',
     'residence.edit',
     'residence.delete',
     'residence.status',
+    'residence.notes',
     'typology.edit',
     'room.edit',
     'parking.edit',
@@ -110,8 +147,19 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'audit.view',
   ],
   SALES_MANAGER: [
+    'property.view',
+    'floor.view',
+    'residence.view',
+    'typology.view',
+    'parking.view',
+    'payment-plan.view',
+    'media.view',
+    'gallery.view',
+    'content.view',
+    'residence.export',
     'residence.status',
     'residence.price',
+    'residence.notes',
     'payment-plan.edit',
     'parking.edit',
     'buyer.view',
@@ -121,8 +169,35 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'enquiry.export',
     'resident.view',
   ],
-  CONTENT_MANAGER: ['media.edit', 'gallery.edit', 'content.edit', 'amenity.edit'],
-  VIEWER: [],
+  CONTENT_MANAGER: [
+    'property.view',
+    'floor.view',
+    'residence.view',
+    'typology.view',
+    'parking.view',
+    'payment-plan.view',
+    'media.view',
+    'gallery.view',
+    'content.view',
+    'media.edit',
+    'gallery.edit',
+    'content.edit',
+    'amenity.edit',
+  ],
+  // Read-only, and that is now an explicit grant rather than the absence of
+  // checks. A viewer may browse the property; it may not export it in bulk, and
+  // it never sees residents, buyers, enquiries, private notes or the audit log.
+  VIEWER: [
+    'property.view',
+    'floor.view',
+    'residence.view',
+    'typology.view',
+    'parking.view',
+    'payment-plan.view',
+    'media.view',
+    'gallery.view',
+    'content.view',
+  ],
 };
 
 export function can(role: string | null | undefined, permission: Permission): boolean {
