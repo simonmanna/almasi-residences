@@ -8,7 +8,11 @@
   },
   "scripts": {
     "dev": "turbo run dev",
+    "dev:seq": "node scripts/dev-sequential.mjs",
+    "dev:manager": "node scripts/dev-manager.mjs",
+    "dev:manager:stable": "node scripts/dev-manager.mjs --no-api-watch",
     "build": "turbo run build",
+    "build:api": "node scripts/build-with-api.mjs",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
@@ -22,12 +26,16 @@
     "check:env": "node scripts/check-env.mjs",
     "check:secrets": "node scripts/check-public-secrets.mjs",
     "verify:schedules": "node scripts/verify-schedules.mjs",
-    "media:import": "pnpm --filter @avida/api media:import"
+    "media:import": "pnpm --filter @avida/api media:import",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "ioredis": "5.7.0",
+    "prettier": "3.6.2",
     "turbo": "2.10.12",
-    "typescript": "5.9.3",
-    "prettier": "3.6.2"
+    "typescript": "5.9.3"
   },
   "pnpm": {
     "overrides": {

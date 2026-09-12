@@ -12,6 +12,9 @@ concurrency:
 env:
   DATABASE_URL: postgresql://avida:avida@localhost:5432/avida?schema=public
   REDIS_URL: redis://localhost:6379
+  # The seed creates the development-only accounts the end-to-end suite signs
+  # in as; it refuses to create any of them when NODE_ENV is production.
+  SEED_ADMIN_PASSWORD: ci-only-seed-password
 
 jobs:
   verify:
@@ -66,6 +69,43 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+      # Gate 0 item 15 — the admin to website chain. Unit tests cannot see it:
+      # every claim about "the database is the single source of truth" is only
+      # true if a change made through the admin API shows up on the public site.
+      - name: Install the browser the end-to-end suite drives
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start the API and the website
+        run: |
+          pnpm --filter @avida/api start &
+          pnpm --filter @avida/web start &
+          npx wait-on -t 120000 http://localhost:3011/api/v1/health http://localhost:3000
+        env:
+          # Deliberately not NODE_ENV=production: that mode requires an
+          # authenticator for every sign-in (and rightly so), and the seeded CI
+          # accounts have none. The production-only guards are unit tested.
+          API_PORT: 3011
+          ADMIN_SESSION_SECRET: ci-session-secret-at-least-32-characters-long
+          TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+          WEB_ORIGIN: http://localhost:3000
+          NEXT_PUBLIC_API_URL: http://localhost:3011
+
+      - name: End-to-end
+        run: pnpm test:e2e
+        env:
+          E2E_API_URL: http://localhost:3011
+          E2E_WEB_URL: http://localhost:3000
+          SEED_ADMIN_PASSWORD: ${{ env.SEED_ADMIN_PASSWORD }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
 
       # §5.9 — a high-severity advisory fails the build, it does not warn.
       - name: Audit dependencies

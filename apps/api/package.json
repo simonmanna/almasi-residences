@@ -8,7 +8,7 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "lint": "eslint src --max-warnings 0",
     "media:import": "tsx scripts/import-site-media.ts"
   },
