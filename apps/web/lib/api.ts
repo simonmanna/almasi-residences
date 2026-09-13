@@ -335,6 +335,10 @@ export interface PublicResidenceDto {
   listPriceMinor: number | null;
   currency: string;
   featured: boolean;
+  orientation: Orientation;
+  viewTags: string[];
+  positionIndex: number;
+  modelSlot?: string | null;
   shortDescription: string | null;
   description: string | null;
   parkingIncluded: number;
@@ -359,6 +363,13 @@ export interface PublicResidenceDto {
   }[];
   /** §5.4 — the specification, from the admin; type rows replace development rows. */
   specifications?: { category: string; label: string; value: string }[];
+  paymentPlan?: { name: string; description: string | null; milestones: MilestoneDto[] } | null;
+}
+
+export interface ResidencePageDto {
+  property: Pick<DevelopmentDto, 'name' | 'slug' | 'city' | 'country' | 'currency' | 'handoverDate'>;
+  residence: PublicResidenceDto;
+  schedule: UnitDetailDto['schedule'] | null;
 }
 
 export interface PublicAmenityDto {
@@ -403,6 +414,9 @@ export const getUnit = (id: string) => get<UnitDetailDto>(`/unit/${id}`, ['inven
 
 export const getPublicResidence = (code: string) =>
   get<PublicResidenceDto>(`/residences/${encodeURIComponent(code)}`, ['inventory', 'media', 'content'], 60);
+
+export const getResidencePage = (code: string) =>
+  get<ResidencePageDto>(`/residence-pages/${encodeURIComponent(code)}`, ['development', 'inventory', 'media', 'content'], 60);
 
 /** §52 — the site's placements. An empty one renders a neutral frame, never a substitute. */
 export const getMediaSlots = () => get<MediaSlotsDto>('/media-slots', ['presentation', 'media']);

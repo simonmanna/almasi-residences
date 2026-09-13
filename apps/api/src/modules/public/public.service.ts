@@ -15,6 +15,7 @@ import { live, previewing, shown } from '../../common/preview.js';
 import { csvList, numberOrUndefined } from '../../common/http.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { StorageService } from '../../common/storage.service.js';
+import { PricingService } from '../pricing/pricing.service.js';
 
 /** What a visitor may see of a residence. Anything not here is private (§32). */
 /** Residences a visitor may see; in a preview, unpublished ones too (never archived). */
@@ -37,6 +38,7 @@ const cardSelect = {
   featured: true,
   shortDescription: true,
   positionIndex: true,
+  modelSlot: true,
   floor: { select: { id: true, level: true, label: true, displayName: true } },
   typology: { select: { id: true, slug: true, name: true, isPenthouse: true } },
   media: { where: { kind: 'IMAGE', collection: 'LIBRARY', published: true, archivedAt: null, roomId: null }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }], take: 1 },
@@ -70,6 +72,7 @@ export class PublicService {
     private readonly prisma: PrismaService,
     private readonly dev: CurrentDevelopment,
     private readonly storage: StorageService,
+    private readonly pricing: PricingService,
   ) {}
 
   /** §13 — a price is published only for something a visitor can buy. */
@@ -96,6 +99,8 @@ export class PublicService {
       ...this.price(u),
       currency: u.currency,
       featured: u.featured,
+      positionIndex: u.positionIndex,
+      modelSlot: u.modelSlot,
       shortDescription: u.shortDescription,
       cover: u.media[0] ? this.publicMedia(u.media[0]) : null,
     };
@@ -294,6 +299,13 @@ export class PublicService {
     });
     if (!unit) throw new NotFoundException('No such residence');
     return this.residenceById(unit.id);
+  }
+
+  /** One HTTP read for the complete residence page (roadmap item 56). */
+  async residencePage(code: string) {
+    const residence = await this.residence(code);
+    const [property, schedule] = await Promise.all([this.property(), this.pricing.scheduleForUnit(residence.id).catch(() => null)]);
+    return { property, residence, schedule };
   }
 
   /** The full public record. `includeUnpublished` is for the admin preview only. */

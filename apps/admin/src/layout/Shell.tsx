@@ -6,8 +6,8 @@ import { useAuth } from '../lib/auth';
 import { initials } from '../lib/format';
 import { useQuery } from '../lib/query';
 import { Link, navigate, useDebounced, useLocation } from '../lib/router';
-import type { Dashboard, Paged } from '../lib/types';
-import { Menu, MediaImg } from '../components/ui';
+import type { Paged } from '../lib/types';
+import { Menu } from '../components/ui';
 import { NAV, navFor } from './nav';
 
 function BrandMark() {
@@ -132,7 +132,6 @@ export function Shell({ children }: { children: ReactNode }) {
       return {};
     }
   });
-  const { data: dash } = useQuery('dashboard', () => get<Dashboard>('/admin/dashboard'));
   const current = navFor(path);
 
   useEffect(() => setMenuOpen(false), [path]);
@@ -143,8 +142,6 @@ export function Shell({ children }: { children: ReactNode }) {
       /* storage may be unavailable; the menu still works */
     }
   }, [collapsed]);
-
-  const newEnquiries = dash?.stats.enquiries.new ?? 0;
 
   return (
     <div className="app">
@@ -174,22 +171,12 @@ export function Shell({ children }: { children: ReactNode }) {
                     <Link key={item.to} to={item.to} className="nav-item" aria-current={item === current ? 'page' : undefined} title={item.label}>
                       <item.icon size={18} />
                       <span>{item.label}</span>
-                      {item.to === '/enquiries' && newEnquiries > 0 && <b className="nav-count">{newEnquiries}</b>}
                     </Link>
                   ))}
               </div>
             );
           })}
         </nav>
-        {dash && (
-          <div className="sidebar-card">
-            {dash.property.heroImage && <MediaImg m={dash.property.heroImage} thumb sizes="240px" />}
-            <div className="sidebar-card-body">
-              <strong>{dash.property.name}</strong>
-              <span>{dash.property.location}</span>
-            </div>
-          </div>
-        )}
       </aside>
 
       <div className="main">

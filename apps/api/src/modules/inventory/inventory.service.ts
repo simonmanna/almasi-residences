@@ -7,6 +7,8 @@ import { live, previewing } from '../../common/preview.js';
 /** §4.5 — the hottest query on the site. Cached 30s, busted on any admin write. */
 const CACHE_TTL_SECONDS = 30;
 const cacheKey = (slug: string) => `inventory:stack:${slug}`;
+const liveCacheKey = (slug: string) => `inventory:live:${slug}`;
+const LIVE_CACHE_TTL_SECONDS = 10;
 
 /** §32 — only residences the admin has published, and not archived, reach a visitor. */
 const LIVE = () => ({ ...live() });
@@ -131,32 +133,40 @@ export class InventoryService {
    * deliberately tiny: it is the only uncached endpoint on the public API.
    */
   async live(slug: string) {
+    const cached = await this.readCacheKey(liveCacheKey(slug));
+    if (cached) return cached;
     const units = await this.prisma.client.unit.findMany({
       where: { development: { slug }, ...LIVE(), floor: { ...live() } },
       select: { id: true, status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true },
       orderBy: { code: 'asc' },
     });
-    return {
+    const payload = {
       units: units.map((u) => ({ id: u.id, status: u.status, priceMinor: effectivePriceMinor(u) })),
       generatedAt: new Date().toISOString(),
     };
+    await this.writeCacheKey(liveCacheKey(slug), payload, LIVE_CACHE_TTL_SECONDS);
+    return payload;
   }
 
   /** Called on every admin write a visitor could see (§37). */
   async bustCache(slug: string): Promise<void> {
     try {
       if (this.redis?.status === 'wait') await this.redis.connect();
-      await this.redis?.del(cacheKey(slug));
+      await this.redis?.del(cacheKey(slug), liveCacheKey(slug));
     } catch {
       /* a failed bust means a stale read for <=30s, not an error for the caller */
     }
   }
 
   private async readCache(slug: string): Promise<unknown | null> {
+    return this.readCacheKey(cacheKey(slug));
+  }
+
+  private async readCacheKey(key: string): Promise<unknown | null> {
     if (!this.redis) return null;
     try {
       if (this.redis.status === 'wait') await this.redis.connect();
-      const hit = await this.redis.get(cacheKey(slug));
+      const hit = await this.redis.get(key);
       return hit ? JSON.parse(hit) : null;
     } catch {
       return null; // §6.7 — fall through to Postgres.
@@ -164,9 +174,13 @@ export class InventoryService {
   }
 
   private async writeCache(slug: string, payload: unknown): Promise<void> {
+    return this.writeCacheKey(cacheKey(slug), payload, CACHE_TTL_SECONDS);
+  }
+
+  private async writeCacheKey(key: string, payload: unknown, ttl: number): Promise<void> {
     if (!this.redis) return;
     try {
-      await this.redis.set(cacheKey(slug), JSON.stringify(payload), 'EX', CACHE_TTL_SECONDS);
+      await this.redis.set(key, JSON.stringify(payload), 'EX', ttl);
     } catch {
       /* cache write failures are invisible to the visitor */
     }

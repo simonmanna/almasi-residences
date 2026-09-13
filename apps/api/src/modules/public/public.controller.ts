@@ -49,6 +49,12 @@ export class PublicController {
     return this.svc.residences({ featured: 'true' });
   }
 
+  @Get('residence-pages/:code')
+  @PublicCache()
+  residencePage(@Param('code') code: string) {
+    return this.svc.residencePage(code);
+  }
+
   /** Roadmap item 49 — the brochure, generated from live data at the moment of download. */
   @Get('residences/:code/brochure.pdf')
   async brochure(@Param('code') code: string, @Res() reply: FastifyReply) {

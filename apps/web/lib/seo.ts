@@ -74,7 +74,7 @@ export function typologyJsonLd(typology: TypologyDto, dev: DevelopmentDto) {
   };
 }
 
-export function residenceJsonLd(r: Residence, dev: DevelopmentDto) {
+export function residenceJsonLd(r: Residence, dev: Pick<DevelopmentDto, 'name' | 'city' | 'country'>) {
   const price = visiblePriceMinor(r);
   const url = `${SITE}/residences/${r.slug}`;
   return {
