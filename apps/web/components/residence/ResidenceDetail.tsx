@@ -24,6 +24,7 @@ import { SceneImage } from '../ui/SceneImage';
 import { PlanDrawing } from './PlanDrawing';
 import { track } from '../../lib/analytics';
 import { useTrackInView } from '../../lib/use-track-in-view';
+import { useResidenceShortlist } from '../../lib/shortlist';
 import styles from './ResidenceDetail.module.css';
 
 export function ResidenceDetail({
@@ -49,6 +50,7 @@ export function ResidenceDetail({
   const { residences, floors } = useInventory();
   const router = useRouter();
   const [tab, setTab] = useState<'plan' | 'furnished'>('plan');
+  const shortlist = useResidenceShortlist();
 
   // Photographs and plans come from the admin: the residence's own, else its type's (API).
   // With none, an empty frame says so — never another type's artwork (roadmap item 17).
@@ -155,6 +157,17 @@ export function ResidenceDetail({
               )}
             </div>
             <ContactActions residence={enquiry} whatsappSubject={whatsappSubject} source="residence-hero" />
+            <button
+              type="button"
+              className="btn btn--ghost"
+              aria-pressed={shortlist.favorites.includes(r.id)}
+              onClick={() => {
+                const added = shortlist.toggleFavorite(r.id);
+                if (added) track('favorite_added', { residence: r.code });
+              }}
+            >
+              {shortlist.favorites.includes(r.id) ? 'Saved to favourites' : 'Save residence'}
+            </button>
           </div>
         </div>
         <p className={`cgi-note ${styles.heroNote}`}>{heroPhoto?.note || (heroPhoto?.caption ?? '')}</p>

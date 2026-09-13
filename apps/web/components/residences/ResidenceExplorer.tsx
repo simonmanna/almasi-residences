@@ -23,6 +23,7 @@ import {
   type SortKey,
 } from '../../lib/residences';
 import { track } from '../../lib/analytics';
+import { useResidenceShortlist } from '../../lib/shortlist';
 import { useInventory } from '../providers/InventoryProvider';
 import { ElevationStack, StatusLegend } from '../explore/ElevationStack';
 import { ExploreAlmasi } from '../explore/ExploreAlmasi';
@@ -56,6 +57,7 @@ export function ResidenceExplorer({
   const [sort, setSort] = useState<SortKey>(initialSort);
   const [view, setView] = useState<'list' | 'building'>('list');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const shortlist = useResidenceShortlist();
 
   useEffect(() => {
     const qs = filterToSearch(filter, sort);
@@ -202,6 +204,11 @@ export function ResidenceExplorer({
                 Clear filters
               </button>
             )}
+            {(shortlist.favorites.length > 0 || shortlist.compare.length > 0) && (
+              <p className={styles.savedSummary} aria-live="polite">
+                {shortlist.favorites.length} saved · {shortlist.compare.length}/3 comparing
+              </p>
+            )}
             <div className={styles.views} role="group" aria-label="View">
               <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
                 List
@@ -236,7 +243,7 @@ export function ResidenceExplorer({
               <ol className={styles.rows}>
                 {sorted.map((r) => (
                   <li key={r.id}>
-                    <ResidenceRow r={r} hovered={hoveredId === r.id} onHover={setHoveredId} />
+                    <ResidenceRow r={r} hovered={hoveredId === r.id} onHover={setHoveredId} shortlist={shortlist} />
                   </li>
                 ))}
               </ol>
@@ -260,6 +267,33 @@ export function ResidenceExplorer({
           </aside>
         </div>
       )}
+      {shortlist.compare.length >= 2 && (
+        <section className={styles.compare} aria-labelledby="compare-title">
+          <div className="container">
+            <div className={styles.compareHead}>
+              <div><p className="mark muted">Shortlist</p><h2 id="compare-title" className="h3">Compare residences</h2></div>
+              <button type="button" className="link-line" onClick={shortlist.clearCompare}>Clear comparison</button>
+            </div>
+            <div className={styles.compareGrid}>
+              {shortlist.compare.map((id) => residences.find((r) => r.id === id)).filter((r): r is Residence => Boolean(r)).map((r) => (
+                <article key={r.id} className={styles.compareCard}>
+                  <p className={styles.compareCode}>{r.label}</p>
+                  <h3>{TYPE_TEXT[r.type]}</h3>
+                  <dl>
+                    <div><dt>Floor</dt><dd>{r.floorLabel}</dd></div>
+                    <div><dt>Interior</dt><dd>{r.areaSqm} m²</dd></div>
+                    <div><dt>Bedrooms</dt><dd>{r.bedrooms}</dd></div>
+                    <div><dt>Faces</dt><dd>{ORIENTATION_TEXT[r.orientation]}</dd></div>
+                    <div><dt>Status</dt><dd>{STATUS_TEXT[r.publicStatus]}</dd></div>
+                    <div><dt>Price</dt><dd>{visiblePriceMinor(r) !== null ? formatMoney({ amountMinor: visiblePriceMinor(r)!, currency: r.currency }) : 'Ask sales'}</dd></div>
+                  </dl>
+                  <Link href={`/residences/${r.slug}`} className="btn btn--solid">View {r.label}</Link>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }
@@ -268,15 +302,16 @@ function ResidenceRow({
   r,
   hovered,
   onHover,
+  shortlist,
 }: {
   r: Residence;
   hovered: boolean;
   onHover: (id: string | null) => void;
+  shortlist: ReturnType<typeof useResidenceShortlist>;
 }) {
   const price = visiblePriceMinor(r);
   return (
-    <Link
-      href={`/residences/${r.slug}`}
+    <article
       className={styles.row}
       data-hovered={hovered ? 'true' : 'false'}
       onMouseEnter={() => onHover(r.id)}
@@ -308,7 +343,11 @@ function ResidenceRow({
       <span className={`${styles.price} tabular`}>
         {price !== null ? formatMoney({ amountMinor: price, currency: r.currency }) : '—'}
       </span>
-      <span className={styles.go}>View residence</span>
-    </Link>
+      <span className={styles.rowActions}>
+        <button type="button" aria-pressed={shortlist.favorites.includes(r.id)} onClick={() => { const added = shortlist.toggleFavorite(r.id); if (added) track('favorite_added', { residence: r.code }); }}>{shortlist.favorites.includes(r.id) ? 'Saved' : 'Save'}</button>
+        <button type="button" aria-pressed={shortlist.compare.includes(r.id)} onClick={() => { const added = shortlist.toggleCompare(r.id); if (added) track('compare_added', { residence: r.code }); }}>{shortlist.compare.includes(r.id) ? 'Comparing' : 'Compare'}</button>
+        <Link href={`/residences/${r.slug}`} className={styles.go}>View</Link>
+      </span>
+    </article>
   );
 }
