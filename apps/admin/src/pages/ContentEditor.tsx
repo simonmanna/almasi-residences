@@ -39,6 +39,7 @@ export default function ContentEditor({ params }: { params: Record<string, strin
   const { can } = useAuth();
   const toast = useToast();
   const { data, error, refetch } = useQuery(`pages:${key}`, () => get<PageData>(`/admin/pages/${key}`));
+  const { data: revisions } = useQuery(`pages:${key}:revisions`, () => get<{ id: string; createdAt: string }[]>(`/admin/pages/${key}/revisions`));
   const [content, setContent] = useState<Record<string, unknown>>({});
   const [published, setPublished] = useState(true);
   const [media, setMedia] = useState<Record<string, MediaView>>({});
@@ -162,6 +163,12 @@ export default function ContentEditor({ params }: { params: Record<string, strin
           ))}
         </fieldset>
       </Card>
+      {revisions && revisions.length > 0 && (
+        <Card>
+          <CardHead title="Version history" icon={<Undo2 size={18} />} sub="A rollback returns the old version as a draft for preview and approval." />
+          {revisions.map((r) => <div key={r.id} className="row" style={{ padding: '12px 22px', borderTop: '1px solid var(--line-2)' }}><span style={{ flex: 1 }}>Published version from {ago(r.createdAt)}</span>{editable && <Button size="sm" icon={<Undo2 size={14} />} onClick={async () => { await post(`/admin/pages/${key}/revisions/${r.id}/restore`); toast.success('Version restored as a draft.'); refresh(); }}>Restore as draft</Button>}</div>)}
+        </Card>
+      )}
       {key === 'gallery' && <Alert tone="info">The galleries themselves are managed under <Link to="/galleries">Media → Galleries</Link>, and construction updates under <Link to="/progress">Gallery & progress</Link>.</Alert>}
       {key === 'contact' && <Alert tone="info">Phone, email, WhatsApp and the office address are edited on <Link to="/property">Property overview</Link>, so every page uses the same details.</Alert>}
       {key === 'amenities' && <Alert tone="info">The amenities are managed under <Link to="/amenities">Property → Amenities</Link>.</Alert>}

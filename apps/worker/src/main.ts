@@ -12,7 +12,7 @@ import { buildVariants } from './processors/variants.js';
 import { encodeVideo } from './processors/video.js';
 import { purgeExpiredEnquiries } from './processors/pii-purge.js';
 import { deliverNotification, resendMailer } from './processors/notify.js';
-import { processReservations, sendLeadsDigest, sendViewingReminders, sweepQueuedNotifications } from './processors/sales.js';
+import { processPublicationSchedules, processReservations, sendLeadsDigest, sendViewingReminders, sweepQueuedNotifications } from './processors/sales.js';
 
 const log = pino({ name: 'worker' });
 
@@ -212,9 +212,9 @@ async function main() {
       QUEUES.salesScheduler.name,
       async (job: Job<{ task: 'tick' | 'digest' }>) => {
         if (job.data.task === 'digest') return { digests: await sendLeadsDigest(queueNotification) };
-        const [reminders, reservations, swept] = await Promise.all([sendViewingReminders(queueNotification), processReservations(queueNotification), sweepQueuedNotifications(queueNotification)]);
-        if (reminders || reservations.expired || reservations.warned || swept) log.info({ reminders, ...reservations, swept }, 'sales scheduler tick');
-        return { reminders, ...reservations, swept };
+        const [reminders, reservations, swept, publications] = await Promise.all([sendViewingReminders(queueNotification), processReservations(queueNotification), sweepQueuedNotifications(queueNotification), processPublicationSchedules()]);
+        if (reminders || reservations.expired || reservations.warned || swept || publications) log.info({ reminders, ...reservations, swept, publications }, 'scheduler tick');
+        return { reminders, ...reservations, swept, publications };
       },
       { connection, concurrency: 1 },
     ) as unknown as Worker<MediaJobData>,

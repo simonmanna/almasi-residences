@@ -1,4 +1,4 @@
-import { prisma, type NotificationKind } from '@avida/db';
+import { Prisma, prisma, type NotificationKind } from '@avida/db';
 import {
   emailLeadsDigest,
   emailReservationExpiring,
@@ -113,4 +113,50 @@ export async function sweepQueuedNotifications(queue: Queue, now = new Date()): 
     await queue(n.id);
   }
   return stale.length;
+}
+
+/** Phase 6 — claim and execute due publish/unpublish jobs exactly once. */
+export async function processPublicationSchedules(now = new Date()): Promise<number> {
+  const due = await prisma.publicationSchedule.findMany({ where: { status: 'PENDING', runAt: { lte: now } }, orderBy: { runAt: 'asc' }, take: 50 });
+  let completed = 0;
+  for (const job of due) {
+    const claimed = await prisma.publicationSchedule.updateMany({ where: { id: job.id, status: 'PENDING' }, data: { status: 'RUNNING' } });
+    if (!claimed.count) continue;
+    try {
+      const data = job.action === 'publish'
+        ? { published: true, publishedAt: now, publishedById: job.requestedById, unpublishedAt: null }
+        : { published: false, unpublishedAt: now };
+      if (job.entity === 'page') {
+        const page = await prisma.contentPage.findUniqueOrThrow({ where: { developmentId_key: { developmentId: job.developmentId, key: job.entityId } } });
+        const published = (page.content ?? {}) as Record<string, unknown>;
+        const draft = (page.draftContent ?? {}) as Record<string, unknown>;
+        await prisma.$transaction([
+          prisma.contentRevision.create({ data: { developmentId: job.developmentId, pageKey: job.entityId, content: published as Prisma.InputJsonValue, createdById: job.requestedById } }),
+          prisma.contentPage.update({ where: { id: page.id }, data: job.action === 'publish' ? { ...data, content: { ...published, ...draft } as Prisma.InputJsonValue, draftContent: Prisma.DbNull, draftUpdatedAt: null, draftUpdatedById: null } : data }),
+        ]);
+      } else switch (job.entity) {
+        case 'amenity': await prisma.amenity.update({ where: { id: job.entityId }, data }); break;
+        case 'faq': await prisma.faq.update({ where: { id: job.entityId }, data }); break;
+        case 'progress': await prisma.progressUpdate.update({ where: { id: job.entityId }, data }); break;
+        case 'specification': await prisma.specification.update({ where: { id: job.entityId }, data }); break;
+        case 'gallery': await prisma.gallery.update({ where: { id: job.entityId }, data }); break;
+        case 'tour': await prisma.tour.update({ where: { id: job.entityId }, data }); break;
+        case 'media': await prisma.media.update({ where: { id: job.entityId }, data }); break;
+        case 'type': await prisma.typology.update({ where: { id: job.entityId }, data }); break;
+        case 'payment-plan': await prisma.paymentPlan.update({ where: { id: job.entityId }, data }); break;
+        case 'floor': await prisma.floor.update({ where: { id: job.entityId }, data }); break;
+        default: throw new Error(`Unsupported scheduled entity: ${job.entity}`);
+      }
+      const development = await prisma.development.findUniqueOrThrow({ where: { id: job.developmentId }, select: { slug: true } });
+      const scope: keyof typeof SCOPE_TAGS = ['media', 'gallery'].includes(job.entity) ? 'media' : job.entity === 'tour' ? 'presentation' : ['type', 'payment-plan', 'floor'].includes(job.entity) ? 'inventory' : 'content';
+      await prisma.$transaction([
+        prisma.publicationSchedule.update({ where: { id: job.id }, data: { status: 'COMPLETED', completedAt: now } }),
+        prisma.syncEvent.create({ data: { developmentSlug: development.slug, scope, tags: SCOPE_TAGS[scope] } }),
+      ]);
+      completed++;
+    } catch (error) {
+      await prisma.publicationSchedule.update({ where: { id: job.id }, data: { status: 'FAILED', lastError: error instanceof Error ? error.message.slice(0, 1000) : 'Unknown error' } });
+    }
+  }
+  return completed;
 }

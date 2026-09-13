@@ -1534,6 +1534,53 @@ model SyncEvent {
   @@index([createdAt])
 }
 
+/// Phase 6 — a recoverable snapshot of published page copy.
+model ContentRevision {
+  id            String   @id @default(cuid())
+  developmentId String
+  pageKey       String
+  content       Json
+  createdById   String?
+  createdAt     DateTime @default(now())
+
+  @@index([developmentId, pageKey, createdAt])
+}
+
+/// Phase 6 — publication work that the worker executes at the requested time.
+model PublicationSchedule {
+  id            String   @id @default(cuid())
+  developmentId String
+  entity        String
+  entityId      String
+  action        String
+  runAt         DateTime
+  requestedById String
+  status        String   @default("PENDING")
+  lastError     String?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([status, runAt])
+  @@index([developmentId, entity, entityId])
+}
+
+/// Editors request a decision; a publisher approves or rejects it explicitly.
+model PublicationApproval {
+  id            String   @id @default(cuid())
+  developmentId String
+  entity        String
+  entityId      String
+  action        String
+  note          String?
+  status        String   @default("PENDING")
+  requestedById String
+  decidedById   String?
+  decidedAt     DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([developmentId, status, createdAt])
+}
+
 enum SyncStatus {
   PENDING
   DELIVERED

@@ -73,6 +73,77 @@ export class SalesDeskController {
     };
   }
 
+  /** Phase 6 — actionable demand, conversion, agent and ageing signals. */
+  @Get('intelligence')
+  async intelligence() {
+    const developmentId = await this.dev.id();
+    const [events, leads, units] = await Promise.all([
+      this.prisma.client.analyticsEvent.groupBy({
+        by: ['unitId', 'name'],
+        where: { developmentId },
+        _count: { _all: true },
+      }),
+      this.prisma.client.enquiry.findMany({
+        where: { developmentId, duplicateOfId: null },
+        select: { status: true, assignedTo: { select: { id: true, name: true } }, units: { select: { unitId: true } } },
+      }),
+      this.prisma.client.unit.findMany({
+        where: { developmentId, archivedAt: null },
+        select: {
+          id: true, code: true, status: true, priceMinor: true, areaSqm: true, createdAt: true,
+          typology: { select: { name: true } },
+          _count: { select: { enquiries: true, interests: true } },
+          statusLog: { where: { to: 'AVAILABLE' }, orderBy: { createdAt: 'asc' }, take: 1, select: { createdAt: true } },
+        },
+      }),
+    ]);
+
+    const demand = new Map<string, { views: number; conversions: number }>();
+    for (const event of events) {
+      if (!event.unitId) continue;
+      const row = demand.get(event.unitId) ?? { views: 0, conversions: 0 };
+      if (event.name === 'residence_viewed') row.views += event._count._all;
+      if (['enquiry_started', 'enquiry_submitted', 'whatsapp_clicked', 'phone_clicked', 'brochure_downloaded'].includes(event.name)) row.conversions += event._count._all;
+      demand.set(event.unitId, row);
+    }
+    const residences = units.map((u) => {
+      const signal = demand.get(u.id) ?? { views: 0, conversions: 0 };
+      return {
+        id: u.id,
+        code: u.code,
+        type: u.typology.name,
+        status: u.status,
+        priceMinor: u.priceMinor,
+        areaSqm: u.areaSqm,
+        pricePerSqmMinor: u.areaSqm ? Math.round(u.priceMinor / Number(u.areaSqm)) : 0,
+        enquiries: u._count.enquiries,
+        interests: u._count.interests,
+        views: signal.views,
+        conversions: signal.conversions,
+        conversionRate: signal.views ? Math.round((signal.conversions / signal.views) * 1000) / 10 : 0,
+        availableSince: u.status === 'AVAILABLE' ? (u.statusLog[0]?.createdAt ?? u.createdAt) : null,
+      };
+    });
+    const stages = Object.fromEntries(leads.reduce((m, l) => m.set(l.status, (m.get(l.status) ?? 0) + 1), new Map<string, number>()));
+    const agents = new Map<string, { id: string; name: string; leads: number; viewings: number; reservations: number; sales: number }>();
+    for (const lead of leads) {
+      if (!lead.assignedTo) continue;
+      const row = agents.get(lead.assignedTo.id) ?? { ...lead.assignedTo, leads: 0, viewings: 0, reservations: 0, sales: 0 };
+      row.leads++;
+      if (['VIEWING_SCHEDULED', 'VIEWED', 'INTERESTED', 'RESERVED', 'SOLD'].includes(lead.status)) row.viewings++;
+      if (['RESERVED', 'SOLD'].includes(lead.status)) row.reservations++;
+      if (lead.status === 'SOLD') row.sales++;
+      agents.set(row.id, row);
+    }
+    return {
+      stages,
+      agents: [...agents.values()].sort((a, b) => b.sales - a.sales || b.leads - a.leads),
+      demand: residences.slice().sort((a, b) => (b.enquiries + b.interests) - (a.enquiries + a.interests)),
+      attentionGaps: residences.filter((r) => r.views >= 3).sort((a, b) => a.conversionRate - b.conversionRate || b.views - a.views).slice(0, 10),
+      agedInventory: residences.filter((r) => r.availableSince).sort((a, b) => +new Date(a.availableSince!) - +new Date(b.availableSince!)).slice(0, 12),
+    };
+  }
+
   @Post('notifications/retry')
   @HttpCode(200)
   @RequirePermission('enquiry.edit')

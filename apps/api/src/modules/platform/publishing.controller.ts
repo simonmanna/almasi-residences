@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@avida/db';
 import { can, contentPageDef, PERMISSION_LABEL, type Permission } from '@avida/types';
-import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsDateString, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { AuditService } from '../../common/audit.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
@@ -28,6 +28,16 @@ import { actorOf } from './actor.js';
 
 class PreviewDto {
   @IsOptional() @IsString() @MaxLength(300) @Matches(/^\/[^\s]*$/, { message: 'A preview path starts with /.' }) path?: string;
+}
+
+class ScheduleDto {
+  @IsDateString() runAt!: string;
+  @IsIn(['publish', 'unpublish']) action!: 'publish' | 'unpublish';
+}
+
+class ApprovalDto {
+  @IsIn(['publish', 'unpublish']) action!: 'publish' | 'unpublish';
+  @IsOptional() @IsString() @MaxLength(500) note?: string;
 }
 
 type Action = 'publish' | 'unpublish' | 'archive' | 'restore' | 'delete';
@@ -172,8 +182,13 @@ export class PublishingController {
         ),
       ),
     ]);
-    const pages = await this.prisma.client.contentPage.findMany({ where: { developmentId, draftContent: { not: Prisma.AnyNull } }, orderBy: { draftUpdatedAt: 'desc' } });
-    const users = new Map((await this.prisma.client.adminUser.findMany({ select: { id: true, name: true } })).map((u) => [u.id, u.name]));
+    const [pages, schedules, approvals, userRows] = await Promise.all([
+      this.prisma.client.contentPage.findMany({ where: { developmentId, draftContent: { not: Prisma.AnyNull } }, orderBy: { draftUpdatedAt: 'desc' } }),
+      this.prisma.client.publicationSchedule.findMany({ where: { developmentId, status: 'PENDING' }, orderBy: { runAt: 'asc' } }),
+      this.prisma.client.publicationApproval.findMany({ where: { developmentId, status: 'PENDING' }, orderBy: { createdAt: 'asc' } }),
+      this.prisma.client.adminUser.findMany({ select: { id: true, name: true } }),
+    ]);
+    const users = new Map(userRows.map((u) => [u.id, u.name]));
     return {
       pages: pages.map((p) => ({
         key: p.key,
@@ -184,8 +199,76 @@ export class PublishingController {
       })),
       drafts: drafts.flat(),
       archived: archived.flat(),
+      schedules: schedules.map((s) => ({ ...s, requestedBy: users.get(s.requestedById) ?? 'Unknown user' })),
+      approvals: approvals.map((a) => ({ ...a, requestedBy: users.get(a.requestedById) ?? 'Unknown user' })),
       canPublish: can(actor.role, 'content.publish'),
     };
+  }
+
+  @Post('publishing/:entity/:id/schedule')
+  @HttpCode(201)
+  @RequirePermission('content.publish')
+  async schedule(@Param('entity') entity: string, @Param('id') id: string, @Body() dto: ScheduleDto, @Req() req: AdminRequest) {
+    const def = ENTITIES[entity];
+    if (!def && entity !== 'page') throw new NotFoundException('That cannot be scheduled.');
+    const actor = actorOf(req);
+    const permission = def?.publish ?? 'content.publish';
+    if (!can(actor.role, permission)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[permission].toLowerCase()}.`);
+    const runAt = new Date(dto.runAt);
+    if (runAt.getTime() <= Date.now()) throw new BadRequestException('Choose a future time.');
+    const developmentId = await this.dev.id();
+    const row = def
+      ? await this.delegate(def).findFirst({ where: { id, ...def.scopeWhere(developmentId) } })
+      : await this.prisma.client.contentPage.findUnique({ where: { developmentId_key: { developmentId, key: id } } });
+    if (!row) throw new NotFoundException('No such publishable item.');
+    const item = await this.prisma.client.publicationSchedule.create({ data: { developmentId, entity, entityId: id, action: dto.action, runAt, requestedById: actor.id } });
+    await this.audit.record({ actorId: actor.id, action: `${entity}.schedule`, entity, entityId: id, target: def ? def.title(row) : id, summary: `Scheduled ${dto.action} for ${runAt.toISOString()}`, req });
+    return item;
+  }
+
+  @Delete('publishing/schedules/:id')
+  @RequirePermission('content.publish')
+  async cancelSchedule(@Param('id') id: string, @Req() req: AdminRequest) {
+    const developmentId = await this.dev.id();
+    const changed = await this.prisma.client.publicationSchedule.updateMany({ where: { id, developmentId, status: 'PENDING' }, data: { status: 'CANCELLED' } });
+    if (!changed.count) throw new NotFoundException('No pending schedule with that id.');
+    await this.audit.record({ actorId: actorOf(req).id, action: 'publication.schedule.cancel', entity: 'publication-schedule', entityId: id, summary: 'Cancelled scheduled publication', req });
+    return { ok: true };
+  }
+
+  @Post('publishing/:entity/:id/request')
+  @HttpCode(201)
+  @RequirePermission('content.view')
+  async requestApproval(@Param('entity') entity: string, @Param('id') id: string, @Body() dto: ApprovalDto, @Req() req: AdminRequest) {
+    const def = ENTITIES[entity];
+    if (!def && entity !== 'page') throw new NotFoundException('That cannot be submitted for approval.');
+    const actor = actorOf(req);
+    const permission = def?.edit ?? 'content.edit';
+    if (!can(actor.role, permission)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[permission].toLowerCase()}.`);
+    const developmentId = await this.dev.id();
+    const row = def
+      ? await this.delegate(def).findFirst({ where: { id, ...def.scopeWhere(developmentId) } })
+      : await this.prisma.client.contentPage.findUnique({ where: { developmentId_key: { developmentId, key: id } } });
+    if (!row) throw new NotFoundException('No such publishable item.');
+    const pending = await this.prisma.client.publicationApproval.findFirst({ where: { developmentId, entity, entityId: id, status: 'PENDING' } });
+    if (pending) throw new ConflictException('This item is already awaiting approval.');
+    return this.prisma.client.publicationApproval.create({ data: { developmentId, entity, entityId: id, action: dto.action, note: dto.note, requestedById: actor.id } });
+  }
+
+  @Post('publishing/approvals/:id/:decision')
+  @HttpCode(200)
+  @RequirePermission('content.publish')
+  async decideApproval(@Param('id') id: string, @Param('decision') decision: string, @Req() req: AdminRequest) {
+    if (!['approve', 'reject'].includes(decision)) throw new BadRequestException('Unknown decision.');
+    const developmentId = await this.dev.id();
+    const approval = await this.prisma.client.publicationApproval.findFirst({ where: { id, developmentId, status: 'PENDING' } });
+    if (!approval) throw new NotFoundException('No pending approval with that id.');
+    if (decision === 'approve') {
+      if (approval.entity === 'page') await this.publishPage(approval.entityId, req);
+      else await this.act(approval.entity, approval.entityId, approval.action, req);
+    }
+    await this.prisma.client.publicationApproval.update({ where: { id }, data: { status: decision === 'approve' ? 'APPROVED' : 'REJECTED', decidedById: actorOf(req).id, decidedAt: new Date() } });
+    return { ok: true };
   }
 
   private item(key: string, def: EntityDef, r: Record<string, unknown>, role: string) {
@@ -275,9 +358,12 @@ export class PublishingController {
     const before = (row.content ?? {}) as Record<string, unknown>;
     const draft = row.draftContent as Record<string, unknown>;
     const changed = Object.keys(draft).filter((k) => JSON.stringify(before[k] ?? null) !== JSON.stringify(draft[k] ?? null));
-    await this.prisma.client.contentPage.update({
-      where: { id: row.id },
-      data: { content: { ...before, ...draft } as Prisma.InputJsonValue, draftContent: Prisma.DbNull, draftUpdatedAt: null, draftUpdatedById: null, published: true, publishedAt: new Date(), publishedById: actorOf(req).id, updatedById: actorOf(req).id },
+    await this.prisma.client.$transaction(async (tx) => {
+      await tx.contentRevision.create({ data: { developmentId, pageKey: key, content: (row.content ?? {}) as Prisma.InputJsonValue, createdById: actorOf(req).id } });
+      await tx.contentPage.update({
+        where: { id: row.id },
+        data: { content: { ...before, ...draft } as Prisma.InputJsonValue, draftContent: Prisma.DbNull, draftUpdatedAt: null, draftUpdatedById: null, published: true, publishedAt: new Date(), publishedById: actorOf(req).id, updatedById: actorOf(req).id },
+      });
     });
     await this.audit.record({
       actorId: actorOf(req).id,
@@ -292,6 +378,25 @@ export class PublishingController {
     });
     await this.sync.changed('content');
     return { ok: true, changed };
+  }
+
+  @Get('pages/:key/revisions')
+  @RequirePermission('content.view')
+  async revisions(@Param('key') key: string) {
+    return this.prisma.client.contentRevision.findMany({ where: { developmentId: await this.dev.id(), pageKey: key }, orderBy: { createdAt: 'desc' }, take: 30, select: { id: true, createdAt: true, createdById: true } });
+  }
+
+  /** Rollback is deliberately restored as a draft, so it still passes preview and approval. */
+  @Post('pages/:key/revisions/:revisionId/restore')
+  @HttpCode(200)
+  @RequirePermission('content.edit')
+  async restoreRevision(@Param('key') key: string, @Param('revisionId') revisionId: string, @Req() req: AdminRequest) {
+    const developmentId = await this.dev.id();
+    const revision = await this.prisma.client.contentRevision.findFirst({ where: { id: revisionId, developmentId, pageKey: key } });
+    if (!revision) throw new NotFoundException('No such revision.');
+    await this.prisma.client.contentPage.update({ where: { developmentId_key: { developmentId, key } }, data: { draftContent: revision.content as Prisma.InputJsonValue, draftUpdatedAt: new Date(), draftUpdatedById: actorOf(req).id } });
+    await this.audit.record({ actorId: actorOf(req).id, action: 'content.rollback', entity: 'page', entityId: key, summary: `Restored revision ${revisionId} as a draft`, req });
+    return { ok: true };
   }
 
   @Post('pages/:key/discard')
