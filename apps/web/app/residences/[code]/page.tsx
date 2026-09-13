@@ -36,7 +36,8 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
   const r = await load(code)
     .then((x) => x.residence)
     .catch(() => undefined);
-  if (!r) return { title: 'Residence not found' };
+  // Thrown here, before the page streams, so the response is a real 404 rather than a soft one.
+  if (!r) notFound();
   const pub = await getPublicResidence(r.slug).catch(() => null);
   const title = `Residence ${r.label}: ${TYPE_TEXT[r.type].toLowerCase()}, ${r.areaSqm} m²`;
   const description =

@@ -1,0 +1,33 @@
+.banner {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  z-index: 1000;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px 10px 18px;
+  border-radius: 999px;
+  background: #151613;
+  color: #efebe3;
+  font-size: 0.875rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  max-width: calc(100vw - 32px);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0a458;
+  box-shadow: 0 0 0 4px rgba(224, 164, 88, 0.25);
+}
+.exit {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #efebe3;
+  color: #151613;
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+}

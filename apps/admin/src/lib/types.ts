@@ -48,6 +48,8 @@ export interface MediaView {
   };
   galleryCount?: number;
   galleries?: { id: string; title: string }[];
+  /** Detail only: every place on the website this file appears. */
+  usage?: { label: string; path: string; adminPath: string }[];
 }
 
 export interface FloorRef {

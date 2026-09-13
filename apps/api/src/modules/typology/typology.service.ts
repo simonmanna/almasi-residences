@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { effectivePriceMinor } from '@avida/types';
 import { PrismaService } from '../../common/prisma.service.js';
+import { live } from '../../common/preview.js';
 
-const LIVE = { published: true, archivedAt: null, floor: { published: true } } as const;
+const LIVE = () => ({ ...live(), floor: { ...live() } });
 
 @Injectable()
 export class TypologyService {
@@ -11,10 +12,10 @@ export class TypologyService {
   /** §5.3 — typology detail: its published units, plan, media, and the tour it belongs to. */
   async findOne(devSlug: string, typoSlug: string) {
     const typology = await this.prisma.client.typology.findFirst({
-      where: { slug: typoSlug, published: true, development: { slug: devSlug } },
+      where: { slug: typoSlug, ...live(), development: { slug: devSlug } },
       include: {
         units: {
-          where: LIVE,
+          where: LIVE(),
           orderBy: [{ floor: { level: 'asc' } }, { positionIndex: 'asc' }],
           select: {
             id: true,
@@ -62,10 +63,10 @@ export class TypologyService {
 
   async list(devSlug: string) {
     const typologies = await this.prisma.client.typology.findMany({
-      where: { development: { slug: devSlug }, published: true },
+      where: { development: { slug: devSlug }, ...live() },
       orderBy: [{ sortOrder: 'asc' }, { areaSqmMin: 'asc' }],
       include: {
-        units: { where: LIVE, select: { status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true } },
+        units: { where: LIVE(), select: { status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true } },
         mediaSets: { include: { assets: true }, take: 1 },
       },
     });

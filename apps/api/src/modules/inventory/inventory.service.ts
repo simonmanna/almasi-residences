@@ -2,13 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import Redis from 'ioredis';
 import { effectivePriceMinor } from '@avida/types';
 import { PrismaService } from '../../common/prisma.service.js';
+import { live, previewing } from '../../common/preview.js';
 
 /** §4.5 — the hottest query on the site. Cached 30s, busted on any admin write. */
 const CACHE_TTL_SECONDS = 30;
 const cacheKey = (slug: string) => `inventory:stack:${slug}`;
 
 /** §32 — only residences the admin has published, and not archived, reach a visitor. */
-const LIVE = { published: true, archivedAt: null } as const;
+const LIVE = () => ({ ...live() });
 
 @Injectable()
 export class InventoryService {
@@ -26,7 +27,8 @@ export class InventoryService {
   }
 
   async elevationStack(slug: string) {
-    const cached = await this.readCache(slug);
+    // A preview shows unpublished residences: it neither reads nor fills the shared cache.
+    const cached = previewing() ? null : await this.readCache(slug);
     if (cached) return cached;
 
     const dev = await this.prisma.client.development.findUnique({
@@ -45,7 +47,7 @@ export class InventoryService {
         floors: {
           // §2.5 — ground floor at the bottom of the drawing; the client
           // reverses for rendering, the API stays in building order.
-          where: { published: true },
+          where: { ...live() },
           orderBy: { level: 'asc' },
           select: {
             id: true,
@@ -54,7 +56,7 @@ export class InventoryService {
             displayName: true,
             heightM: true,
             units: {
-              where: LIVE,
+              where: LIVE(),
               orderBy: { positionIndex: 'asc' },
               select: {
                 id: true,
@@ -120,7 +122,7 @@ export class InventoryService {
       generatedAt: new Date().toISOString(),
     };
 
-    await this.writeCache(slug, payload);
+    if (!previewing()) await this.writeCache(slug, payload);
     return payload;
   }
 
@@ -130,7 +132,7 @@ export class InventoryService {
    */
   async live(slug: string) {
     const units = await this.prisma.client.unit.findMany({
-      where: { development: { slug }, ...LIVE, floor: { published: true } },
+      where: { development: { slug }, ...LIVE(), floor: { ...live() } },
       select: { id: true, status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true },
       orderBy: { code: 'asc' },
     });

@@ -626,3 +626,12 @@ button.stat { text-align: left; cursor: pointer; border: 1px solid var(--line); 
 .serp-title { font-size: 19px; color: #1a0dab; line-height: 1.3; }
 .serp-desc { font-size: 13px; color: #4d5156; line-height: 1.5; }
 .text-danger { color: #c0392b; }
+
+/* Page switcher in the content editor */
+.page-switch { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 16px; }
+.page-switch a { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--navy); text-decoration: none; font-size: 13px; background: #fff; }
+.page-switch a:hover { border-color: var(--sky, #4aa3df); }
+.page-switch a.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+.usage-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.usage-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 8px; font-size: 13px; }

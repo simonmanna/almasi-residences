@@ -80,12 +80,12 @@ test.describe('presentation comes from the admin', () => {
   test('P5. page copy has no fallback in code: an emptied field renders nothing', async () => {
     const before = await api.get<{ content: Record<string, unknown> }>('/admin/pages/location');
     const lede = before.content.heroLede as string;
-    await api.put('/admin/pages/location', { content: { heroLede: '' } });
+    await api.put('/admin/pages/location', { content: { heroLede: '' }, publish: true });
     try {
       const gone = await eventually(async () => !(await html('/location')).includes(lede.slice(0, 40)));
       expect(gone, 'the old sentence is still printed after the field was emptied').toBeTruthy();
     } finally {
-      await api.put('/admin/pages/location', { content: { heroLede: lede } });
+      await api.put('/admin/pages/location', { content: { heroLede: lede }, publish: true });
     }
   });
 

@@ -41,3 +41,23 @@ export function toDate(value: string | null | undefined): Date | null | undefine
 export function defined<T extends Record<string, unknown>>(obj: T): Partial<T> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
 }
+
+/**
+ * §40.2 / §49 — putting marketing content live, or taking it down, needs
+ * `content.publish`; saving a draft needs only the right to edit. Returns the
+ * columns to write: the flag plus who published it and when.
+ *
+ * On create, a role that may not publish gets a draft rather than a refusal.
+ */
+export function publishStamp(actor: Actor, published: boolean | undefined, creating = false): { published?: boolean; publishedAt?: Date | null; publishedById?: string | null; unpublishedAt?: Date | null } {
+  const allowed = can(actor.role, 'content.publish');
+  if (published === undefined) {
+    if (!creating) return {};
+    return allowed ? { published: true, publishedAt: new Date(), publishedById: actor.id } : { published: false };
+  }
+  if (!allowed) {
+    if (creating) return { published: false };
+    throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL['content.publish'].toLowerCase()}.`);
+  }
+  return published ? { published: true, publishedAt: new Date(), publishedById: actor.id, unpublishedAt: null } : { published: false, unpublishedAt: new Date() };
+}

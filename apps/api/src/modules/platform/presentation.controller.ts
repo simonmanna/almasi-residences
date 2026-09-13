@@ -124,7 +124,7 @@ export class PresentationController {
   async specifications() {
     const developmentId = await this.dev.id();
     const [rows, types] = await Promise.all([
-      this.prisma.client.specification.findMany({ where: { developmentId }, orderBy: [{ typologyId: 'asc' }, { sortOrder: 'asc' }] }),
+      this.prisma.client.specification.findMany({ where: { developmentId, archivedAt: null }, orderBy: [{ typologyId: 'asc' }, { sortOrder: 'asc' }] }),
       this.prisma.client.typology.findMany({ where: { developmentId }, orderBy: { sortOrder: 'asc' }, select: { id: true, name: true } }),
     ]);
     return { data: rows, types };
@@ -175,8 +175,8 @@ export class PresentationController {
     const developmentId = await this.dev.id();
     const row = await this.prisma.client.specification.findFirst({ where: { id, developmentId } });
     if (!row) throw new NotFoundException('No such specification');
-    await this.prisma.client.specification.delete({ where: { id } });
-    await this.audit.record({ actorId: actorOf(req).id, action: 'specification.delete', entity: 'specification', entityId: id, target: row.label, summary: `Deleted specification “${row.label}”`, before: { value: row.value }, req });
+    await this.prisma.client.specification.update({ where: { id }, data: { archivedAt: new Date(), published: false } });
+    await this.audit.record({ actorId: actorOf(req).id, action: 'specification.archive', entity: 'specification', entityId: id, target: row.label, summary: `Archived specification “${row.label}”`, before: { value: row.value }, req });
     await this.sync.changed('content');
     return { ok: true };
   }
@@ -194,7 +194,7 @@ export class PresentationController {
   async tours() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.tour.findMany({
-      where: { developmentId },
+      where: { developmentId, archivedAt: null },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: { scenes: { orderBy: { sortOrder: 'asc' }, include: { image: true } } },
     });

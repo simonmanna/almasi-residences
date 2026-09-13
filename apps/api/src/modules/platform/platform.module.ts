@@ -13,6 +13,7 @@ import { ParkingController } from './parking.controller.js';
 import { PaymentPlansController } from './payment-plans.controller.js';
 import { PresentationController } from './presentation.controller.js';
 import { PropertyController } from './property.controller.js';
+import { PublishingController } from './publishing.controller.js';
 import { ResidencesController } from './residences.controller.js';
 import { ResidencesService } from './residences.service.js';
 import { ResidentsController } from './residents.controller.js';
@@ -42,6 +43,7 @@ import { UsersController } from './users.controller.js';
     UsersController,
     AuditController,
     PresentationController,
+    PublishingController,
   ],
   providers: [ResidencesService],
 })

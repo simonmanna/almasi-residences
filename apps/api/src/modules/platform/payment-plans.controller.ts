@@ -41,7 +41,7 @@ export class PaymentPlansController {
   async list() {
     const developmentId = await this.dev.id();
     const plans = await this.prisma.client.paymentPlan.findMany({
-      where: { developmentId },
+      where: { developmentId, archivedAt: null },
       orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }, { name: 'asc' }],
       include: { milestones: { orderBy: { sortOrder: 'asc' } }, _count: { select: { units: true } } },
     });

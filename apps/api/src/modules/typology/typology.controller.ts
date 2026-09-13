@@ -1,7 +1,10 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseInterceptors } from '@nestjs/common';
+import { PreviewInterceptor } from '../../common/preview.js';
 import { PublicCache } from '../../common/cache-control.decorator.js';
 import { TypologyService } from './typology.service.js';
 
+// §40.2 — a signed preview token on the request shows drafts; nothing else does.
+@UseInterceptors(PreviewInterceptor)
 @Controller('typology')
 export class TypologyController {
   constructor(private readonly typology: TypologyService) {}

@@ -1,9 +1,12 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseInterceptors } from '@nestjs/common';
+import { PreviewInterceptor } from '../../common/preview.js';
 import { PublicCache } from '../../common/cache-control.decorator.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { DevelopmentService } from './development.service.js';
 import { InventoryService } from '../inventory/inventory.service.js';
 
+// §40.2 — a signed preview token on the request shows drafts; nothing else does.
+@UseInterceptors(PreviewInterceptor)
 @Controller('development')
 export class DevelopmentController {
   constructor(

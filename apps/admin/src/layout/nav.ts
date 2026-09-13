@@ -23,6 +23,7 @@ import {
   LayoutDashboard,
   PenTool,
   Search,
+  Send,
   Settings,
   Shapes,
   ShieldCheck,
@@ -98,6 +99,7 @@ export const NAV: NavGroup[] = [
   {
     title: 'Website',
     items: [
+      { label: 'Publishing', to: '/publishing', icon: Send, needs: 'content.view', sub: 'Drafts waiting to go live, and the archive' },
       { label: 'Page content', to: '/content/home', icon: FileText, needs: 'content.view', sub: 'Headlines and words, page by page' },
       { label: 'Placements', to: '/placements', icon: Home, needs: 'content.view', sub: 'Which image or film fills each place on the site' },
       { label: 'Tours', to: '/tours', icon: Map, needs: 'content.view', sub: 'The walkthroughs and the homepage story' },

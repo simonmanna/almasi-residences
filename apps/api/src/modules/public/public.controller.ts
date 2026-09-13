@@ -1,4 +1,6 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Query, UseInterceptors, UnauthorizedException } from '@nestjs/common';
+import { PreviewInterceptor, verifyPreviewToken } from '../../common/preview.js';
+import { NoStore } from '../../common/cache-control.decorator.js';
 import { PublicCache } from '../../common/cache-control.decorator.js';
 import { PublicService, type PublicResidenceFilter } from './public.service.js';
 
@@ -6,6 +8,8 @@ import { PublicService, type PublicResidenceFilter } from './public.service.js';
  * §22 — the public read API the website renders. Read-only, no auth, and
  * nothing private: see the field-by-field selects in PublicService.
  */
+// §40.2 — a signed preview token on the request shows drafts; nothing else does.
+@UseInterceptors(PreviewInterceptor)
 @Controller()
 export class PublicController {
   constructor(private readonly svc: PublicService) {}
@@ -128,5 +132,14 @@ export class PublicController {
   @PublicCache()
   typologyCards() {
     return this.svc.typologyCards();
+  }
+
+  /** The website asks before entering Draft Mode: is this preview token genuine and unexpired? */
+  @Get('preview/verify')
+  @NoStore()
+  verifyPreview(@Headers('x-preview-token') token?: string) {
+    const ok = verifyPreviewToken(token);
+    if (!ok) throw new UnauthorizedException('This preview link has expired. Open a new one from the admin.');
+    return { ok: true, expiresAt: new Date(ok.exp * 1000) };
   }
 }

@@ -48,7 +48,7 @@ export class TypesController {
   async list() {
     const developmentId = await this.dev.id();
     const types = await this.prisma.client.typology.findMany({
-      where: { developmentId },
+      where: { developmentId, archivedAt: null },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: { units: { where: { archivedAt: null }, select: { status: true, areaSqm: true, priceMinor: true } } },
     });

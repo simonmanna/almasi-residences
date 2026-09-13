@@ -71,6 +71,7 @@ export const PERMISSIONS = [
   'media.edit',
   'gallery.edit',
   'content.edit',
+  'content.publish',
   'user.manage',
   'audit.view',
   'settings.edit',
@@ -111,6 +112,7 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
   'media.edit': 'Upload and manage media',
   'gallery.edit': 'Manage galleries',
   'content.edit': 'Edit website content and FAQs',
+  'content.publish': 'Publish, unpublish and archive website content',
   'user.manage': 'Manage users and roles',
   'audit.view': 'Read the audit log',
   'settings.edit': 'Change settings',
@@ -144,6 +146,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'resident.view',
     'resident.edit',
     'media.edit',
+    'content.publish',
     'audit.view',
   ],
   SALES_MANAGER: [
@@ -182,6 +185,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'media.edit',
     'gallery.edit',
     'content.edit',
+    'content.publish',
     'amenity.edit',
   ],
   // Read-only, and that is now an explicit grant rather than the absence of

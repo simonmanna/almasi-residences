@@ -6,13 +6,15 @@
  * about the property arrives through these calls; nothing here is a fixture.
  */
 import { SITE_TAGS, type Orientation, type SiteTag, type UnitStatus } from '@avida/types';
+import { previewToken } from './preview';
 
 // On the single VPS the server reaches the API over the private network
 // (API_INTERNAL_URL); browsers always use the public NEXT_PUBLIC_API_URL.
 const API_URL =
   process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
-export const DEVELOPMENT_SLUG = process.env.NEXT_PUBLIC_DEVELOPMENT_SLUG ?? 'almasi-residences';
+export { DEVELOPMENT_SLUG } from './slug';
+import { DEVELOPMENT_SLUG } from './slug';
 
 export class ApiError extends Error {
   constructor(
@@ -30,9 +32,11 @@ export class ApiError extends Error {
  * window is the backstop, not the mechanism.
  */
 async function get<T>(path: string, tags: SiteTag[], revalidateSeconds = 3600): Promise<T> {
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
-    next: { revalidate: revalidateSeconds, tags: [SITE_TAGS.site, ...tags] },
-  });
+  // §40.2 — in Draft Mode every read carries the admin's preview token and is never cached.
+  const token = await previewToken();
+  const res = await fetch(`${API_URL}/api/v1${path}`, token
+    ? { cache: 'no-store', headers: { 'x-preview-token': token } }
+    : { next: { revalidate: revalidateSeconds, tags: [SITE_TAGS.site, ...tags] } });
   if (!res.ok) throw new ApiError(`GET ${path} failed with ${res.status}`, res.status);
   return (await res.json()) as T;
 }
@@ -262,12 +266,7 @@ export interface LiveInventoryDto {
   generatedAt: string;
 }
 
-/**
- * Browser-side path. next.config rewrites /api/v1/* to the API, so client
- * fetches are same-origin and never carry the API host.
- */
-export const livePath = (slug: string = DEVELOPMENT_SLUG) =>
-  `/api/v1/inventory/live?development=${encodeURIComponent(slug)}`;
+export { livePath } from './live';
 
 export interface StackFloorDto {
   id: string;

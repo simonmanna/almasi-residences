@@ -52,6 +52,7 @@ const ROUTES: [string, Page, Permission?][] = [
   ['/tours/:id', page(() => import('./pages/Tours')), 'content.view'],
   ['/film', page(() => import('./pages/Film')), 'content.view'],
   ['/seo', page(() => import('./pages/Seo')), 'content.view'],
+  ['/publishing', page(() => import('./pages/Publishing')), 'content.view'],
   ['/progress', page(() => import('./pages/Progress')), 'content.view'],
   ['/users', page(() => import('./pages/Users')), 'user.manage'],
   ['/audit', page(() => import('./pages/Audit')), 'audit.view'],

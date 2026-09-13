@@ -403,6 +403,8 @@ export class GalleryItemsDto {
 // ─── Website content ─────────────────────────────────────────────────────
 
 export class UpdatePageDto {
+  /** Publish at once instead of saving a draft (needs content.publish). */
+  @IsOptional() @IsBoolean() publish?: boolean;
   @IsObject() content!: Record<string, unknown>;
   @IsOptional() @IsBoolean() published?: boolean;
 }

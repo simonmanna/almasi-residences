@@ -1,9 +1,13 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, UseInterceptors } from '@nestjs/common';
+import { PreviewInterceptor } from '../../common/preview.js';
 import { effectivePriceMinor } from '@avida/types';
 import { PublicCache } from '../../common/cache-control.decorator.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { PricingService } from '../pricing/pricing.service.js';
+import { live } from '../../common/preview.js';
 
+// §40.2 — a signed preview token on the request shows drafts; nothing else does.
+@UseInterceptors(PreviewInterceptor)
 @Controller('unit')
 export class UnitController {
   constructor(
@@ -20,7 +24,7 @@ export class UnitController {
   @PublicCache()
   async findOne(@Param('id') id: string) {
     const unit = await this.prisma.client.unit.findFirst({
-      where: { id, published: true, archivedAt: null, floor: { published: true } },
+      where: { id, ...live(), floor: { ...live() } },
       select: {
         id: true,
         code: true,

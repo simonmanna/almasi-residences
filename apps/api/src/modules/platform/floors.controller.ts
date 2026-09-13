@@ -48,7 +48,7 @@ export class FloorsController {
     const developmentId = await this.dev.id();
     const [floors, grouped, covers] = await Promise.all([
       this.prisma.client.floor.findMany({
-        where: { building: { developmentId } },
+        where: { building: { developmentId }, archivedAt: null },
         orderBy: [{ sortOrder: 'desc' }, { level: 'desc' }],
         include: { _count: { select: { media: true } } },
       }),

@@ -23,7 +23,7 @@ import { PrismaService } from '../../common/prisma.service.js';
 import { PublicSync } from '../../common/public-sync.service.js';
 import { StorageService } from '../../common/storage.service.js';
 import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
-import { actorOf, defined, requireNonNull, toDate } from './actor.js';
+import { actorOf, assertCan, defined, publishStamp, requireNonNull, toDate } from './actor.js';
 import {
   CreateAmenityDto,
   CreateFaqDto,
@@ -64,7 +64,7 @@ export class ContentController {
     const users = new Map((await this.prisma.client.adminUser.findMany({ select: { id: true, name: true } })).map((u) => [u.id, u.name]));
     return CONTENT_PAGES.map((def) => {
       const row = rows.find((r) => r.key === def.key);
-      return { ...def, content: (row?.content ?? {}) as Record<string, unknown>, published: row?.published ?? true, updatedAt: row?.updatedAt ?? null, updatedBy: row?.updatedById ? (users.get(row.updatedById) ?? null) : null };
+      return { ...def, content: (row?.content ?? {}) as Record<string, unknown>, hasDraft: Boolean(row?.draftContent), published: row?.published ?? true, updatedAt: row?.updatedAt ?? null, publishedAt: row?.publishedAt ?? null, updatedBy: row?.updatedById ? (users.get(row.updatedById) ?? null) : null };
     });
   }
 
@@ -75,17 +75,28 @@ export class ContentController {
     if (!def) throw new NotFoundException('No such page');
     const developmentId = await this.dev.id();
     const row = await this.prisma.client.contentPage.findUnique({ where: { developmentId_key: { developmentId, key } } });
-    const content = (row?.content ?? {}) as Record<string, unknown>;
+    const published = (row?.content ?? {}) as Record<string, unknown>;
+    const draft = (row?.draftContent ?? null) as Record<string, unknown> | null;
+    // The editor works on the draft over the published copy (§40.2).
+    const content = { ...published, ...(draft ?? {}) };
     const mediaIds = def.fields.filter((f) => f.type === 'media').map((f) => content[f.key]).filter((v): v is string => typeof v === 'string');
     const media = mediaIds.length ? await this.prisma.client.media.findMany({ where: { id: { in: mediaIds }, developmentId } }) : [];
-    return { ...def, content, published: row?.published ?? true, updatedAt: row?.updatedAt ?? null, media: Object.fromEntries(media.map((m) => [m.id, this.storage.present(m)])) };
+    const draftFields = draft ? Object.keys(draft).filter((k) => JSON.stringify(published[k] ?? null) !== JSON.stringify(draft[k] ?? null)) : [];
+    return { ...def, content, published: row?.published ?? true, publishedContent: published, draftFields, hasDraft: draftFields.length > 0, draftUpdatedAt: row?.draftUpdatedAt ?? null, publishedAt: row?.publishedAt ?? null, updatedAt: row?.updatedAt ?? null, media: Object.fromEntries(media.map((m) => [m.id, this.storage.present(m)])) };
   }
 
+  /**
+   * §40.2 — an edit is saved as a draft. Visitors keep reading the published
+   * copy until someone with `content.publish` publishes it (or saves with
+   * `publish: true`); the draft is visible in a preview meanwhile.
+   */
   @Put('pages/:key')
   @RequirePermission('content.edit')
   async savePage(@Param('key') key: string, @Body() dto: UpdatePageDto, @Req() req: AdminRequest) {
     const def = contentPageDef(key);
     if (!def) throw new NotFoundException('No such page');
+    const actor = actorOf(req);
+    if (dto.publish || dto.published !== undefined) assertCan(actor, 'content.publish');
     const developmentId = await this.dev.id();
     const clean: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(dto.content)) {
@@ -94,27 +105,35 @@ export class ContentController {
       clean[k] = await this.validateField(field, v, developmentId);
     }
     const existing = await this.prisma.client.contentPage.findUnique({ where: { developmentId_key: { developmentId, key } } });
-    const before = (existing?.content ?? {}) as Record<string, unknown>;
-    const merged = { ...before, ...clean };
-    const changed = Object.keys(clean).filter((k) => JSON.stringify(before[k] ?? null) !== JSON.stringify(clean[k] ?? null));
-    const row = await this.prisma.client.contentPage.upsert({
-      where: { developmentId_key: { developmentId, key } },
-      create: { developmentId, key, title: def.title, content: merged as Prisma.InputJsonValue, published: dto.published ?? true, updatedById: actorOf(req).id },
-      update: { content: merged as Prisma.InputJsonValue, ...(dto.published !== undefined ? { published: dto.published } : {}), updatedById: actorOf(req).id },
-    });
+    const published = (existing?.content ?? {}) as Record<string, unknown>;
+    const draft = { ...((existing?.draftContent ?? {}) as Record<string, unknown>), ...clean };
+    const changed = Object.keys(clean).filter((k) => JSON.stringify(published[k] ?? null) !== JSON.stringify(clean[k] ?? null));
+    const now = new Date();
+
+    const row = dto.publish
+      ? await this.prisma.client.contentPage.upsert({
+          where: { developmentId_key: { developmentId, key } },
+          create: { developmentId, key, title: def.title, content: draft as Prisma.InputJsonValue, published: dto.published ?? true, publishedAt: now, publishedById: actor.id, updatedById: actor.id },
+          update: { content: { ...published, ...draft } as Prisma.InputJsonValue, draftContent: Prisma.DbNull, draftUpdatedAt: null, draftUpdatedById: null, ...(dto.published !== undefined ? { published: dto.published } : {}), publishedAt: now, publishedById: actor.id, updatedById: actor.id },
+        })
+      : await this.prisma.client.contentPage.upsert({
+          where: { developmentId_key: { developmentId, key } },
+          create: { developmentId, key, title: def.title, content: {}, draftContent: draft as Prisma.InputJsonValue, draftUpdatedAt: now, draftUpdatedById: actor.id, published: true, updatedById: actor.id },
+          update: { draftContent: draft as Prisma.InputJsonValue, draftUpdatedAt: now, draftUpdatedById: actor.id, ...(dto.published !== undefined ? { published: dto.published } : {}), updatedById: actor.id },
+        });
     if (changed.length || dto.published !== undefined) {
       await this.audit.record({
-        actorId: actorOf(req).id,
-        action: 'content.update',
+        actorId: actor.id,
+        action: dto.publish ? 'content.publish' : 'content.draft',
         entity: 'page',
         entityId: key,
         target: def.title,
-        summary: `Edited ${def.title}: ${changed.map((k) => def.fields.find((f) => f.key === k)!.label.toLowerCase()).join(', ') || 'visibility'}`,
-        before: Object.fromEntries(changed.map((k) => [k, before[k] ?? null])),
+        summary: `${dto.publish ? 'Published' : 'Saved a draft of'} ${def.title}: ${changed.map((k) => def.fields.find((f) => f.key === k)!.label.toLowerCase()).join(', ') || 'visibility'}`,
+        before: Object.fromEntries(changed.map((k) => [k, published[k] ?? null])),
         after: Object.fromEntries(changed.map((k) => [k, clean[k] ?? null])),
         req,
       });
-      await this.sync.changed('content');
+      if (dto.publish || dto.published !== undefined) await this.sync.changed('content');
     }
     return row;
   }
@@ -148,7 +167,7 @@ export class ContentController {
   @Get('faqs')
   @RequirePermission('content.view')
   async faqs() {
-    return this.prisma.client.faq.findMany({ where: { developmentId: await this.dev.id() }, orderBy: { sortOrder: 'asc' } });
+    return this.prisma.client.faq.findMany({ where: { developmentId: await this.dev.id(), archivedAt: null }, orderBy: { sortOrder: 'asc' } });
   }
 
   @Post('faqs')
@@ -157,7 +176,7 @@ export class ContentController {
     const developmentId = await this.dev.id();
     const max = await this.prisma.client.faq.aggregate({ where: { developmentId }, _max: { sortOrder: true } });
     const faq = await this.prisma.client.faq.create({
-      data: { developmentId, question: dto.question, answerMd: dto.answerMd, category: dto.category ?? 'General', published: dto.published ?? true, sortOrder: (max._max.sortOrder ?? -1) + 1 },
+      data: { developmentId, question: dto.question, answerMd: dto.answerMd, category: dto.category ?? 'General', ...publishStamp(actorOf(req), dto.published, true), sortOrder: (max._max.sortOrder ?? -1) + 1 },
     });
     await this.audit.record({ actorId: actorOf(req).id, action: 'faq.create', entity: 'faq', entityId: faq.id, target: faq.question, summary: `Added FAQ “${faq.question}”`, req });
     await this.sync.changed('content');
@@ -169,7 +188,7 @@ export class ContentController {
   async updateFaq(@Param('id') id: string, @Body() dto: UpdateFaqDto, @Req() req: AdminRequest) {
     requireNonNull(dto, ['question', 'answerMd', 'category', 'published']);
     await this.ownedFaq(id);
-    const faq = await this.prisma.client.faq.update({ where: { id }, data: defined({ ...dto }) });
+    const faq = await this.prisma.client.faq.update({ where: { id }, data: { ...defined({ ...dto, published: undefined }), ...publishStamp(actorOf(req), dto.published) } });
     await this.audit.record({ actorId: actorOf(req).id, action: 'faq.update', entity: 'faq', entityId: id, target: faq.question, summary: `Edited FAQ “${faq.question}”`, req });
     await this.sync.changed('content');
     return faq;
@@ -190,8 +209,8 @@ export class ContentController {
   @RequirePermission('content.edit')
   async deleteFaq(@Param('id') id: string, @Req() req: AdminRequest) {
     const faq = await this.ownedFaq(id);
-    await this.prisma.client.faq.delete({ where: { id } });
-    await this.audit.record({ actorId: actorOf(req).id, action: 'faq.delete', entity: 'faq', entityId: id, target: faq.question, summary: `Deleted FAQ “${faq.question}”`, req });
+    await this.prisma.client.faq.update({ where: { id }, data: { archivedAt: new Date(), published: false } });
+    await this.audit.record({ actorId: actorOf(req).id, action: 'faq.archive', entity: 'faq', entityId: id, target: faq.question, summary: `Archived FAQ “${faq.question}”`, req });
     await this.sync.changed('content');
     return { ok: true };
   }
@@ -207,7 +226,7 @@ export class ContentController {
   @Get('progress')
   @RequirePermission('content.view')
   async progress() {
-    return this.prisma.client.progressUpdate.findMany({ where: { developmentId: await this.dev.id() }, orderBy: { capturedOn: 'desc' } });
+    return this.prisma.client.progressUpdate.findMany({ where: { developmentId: await this.dev.id(), archivedAt: null }, orderBy: { capturedOn: 'desc' } });
   }
 
   @Post('progress')
@@ -221,7 +240,7 @@ export class ContentController {
         title: dto.title,
         bodyMd: dto.bodyMd ?? null,
         percentComplete: dto.percentComplete ?? null,
-        published: dto.published ?? true,
+        ...publishStamp(actorOf(req), dto.published, true),
         mediaAssetIds: dto.mediaAssetIds ?? [],
       },
     });
@@ -237,7 +256,7 @@ export class ContentController {
     const developmentId = await this.dev.id();
     const exists = await this.prisma.client.progressUpdate.count({ where: { id, developmentId } });
     if (!exists) throw new NotFoundException('No such progress update');
-    const row = await this.prisma.client.progressUpdate.update({ where: { id }, data: defined({ ...dto, capturedOn: toDate(dto.capturedOn) ?? undefined }) });
+    const row = await this.prisma.client.progressUpdate.update({ where: { id }, data: { ...defined({ ...dto, published: undefined, capturedOn: toDate(dto.capturedOn) ?? undefined }), ...publishStamp(actorOf(req), dto.published) } });
     await this.audit.record({ actorId: actorOf(req).id, action: 'progress.update', entity: 'progress', entityId: id, target: row.title, summary: `Edited progress update “${row.title}”`, req });
     await this.sync.changed('content');
     return row;
@@ -249,8 +268,8 @@ export class ContentController {
     const developmentId = await this.dev.id();
     const row = await this.prisma.client.progressUpdate.findFirst({ where: { id, developmentId } });
     if (!row) throw new NotFoundException('No such progress update');
-    await this.prisma.client.progressUpdate.delete({ where: { id } });
-    await this.audit.record({ actorId: actorOf(req).id, action: 'progress.delete', entity: 'progress', entityId: id, target: row.title, summary: `Deleted progress update “${row.title}”`, req });
+    await this.prisma.client.progressUpdate.update({ where: { id }, data: { archivedAt: new Date(), published: false } });
+    await this.audit.record({ actorId: actorOf(req).id, action: 'progress.archive', entity: 'progress', entityId: id, target: row.title, summary: `Archived progress update “${row.title}”`, req });
     await this.sync.changed('content');
     return { ok: true };
   }
@@ -262,7 +281,7 @@ export class ContentController {
   async amenities() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.amenity.findMany({
-      where: { developmentId },
+      where: { developmentId, archivedAt: null },
       orderBy: { sortOrder: 'asc' },
       include: { media: { orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }] } },
     });
@@ -290,7 +309,7 @@ export class ContentController {
         iconKey: dto.iconKey ?? null,
         location: dto.location ?? null,
         specifications: (dto.specifications ?? []) as unknown as Prisma.InputJsonValue,
-        published: dto.published ?? true,
+        ...publishStamp(actorOf(req), dto.published, true),
         sortOrder: (max._max.sortOrder ?? -1) + 1,
       },
     });
@@ -309,7 +328,7 @@ export class ContentController {
     if (dto.slug) await this.assertAmenitySlug(dto.slug, developmentId, id);
     const row = await this.prisma.client.amenity.update({
       where: { id },
-      data: defined({ ...dto, specifications: dto.specifications as unknown as Prisma.InputJsonValue | undefined }),
+      data: { ...defined({ ...dto, published: undefined, specifications: dto.specifications as unknown as Prisma.InputJsonValue | undefined }), ...publishStamp(actorOf(req), dto.published) },
     });
     await this.audit.record({ actorId: actorOf(req).id, action: 'amenity.update', entity: 'amenity', entityId: id, target: row.name, summary: `Edited amenity ${row.name}`, req });
     await this.sync.changed('content');
@@ -333,11 +352,9 @@ export class ContentController {
     const developmentId = await this.dev.id();
     const row = await this.prisma.client.amenity.findFirst({ where: { id, developmentId } });
     if (!row) throw new NotFoundException('No such amenity');
-    await this.prisma.client.$transaction([
-      this.prisma.client.media.updateMany({ where: { amenityId: id }, data: { amenityId: null, isCover: false } }),
-      this.prisma.client.amenity.delete({ where: { id } }),
-    ]);
-    await this.audit.record({ actorId: actorOf(req).id, action: 'amenity.delete', entity: 'amenity', entityId: id, target: row.name, summary: `Deleted amenity ${row.name}`, req });
+    // Archived, not deleted: its photographs stay attached, so a restore brings it back whole.
+    await this.prisma.client.amenity.update({ where: { id }, data: { archivedAt: new Date(), published: false } });
+    await this.audit.record({ actorId: actorOf(req).id, action: 'amenity.archive', entity: 'amenity', entityId: id, target: row.name, summary: `Archived amenity ${row.name}`, req });
     await this.sync.changed('content');
     return { ok: true };
   }

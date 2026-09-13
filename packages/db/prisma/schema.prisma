@@ -23,23 +23,23 @@ datasource db {
 /// page reads it. Counts (residences, availability, value) are never stored
 /// here — they are derived from Unit rows at query time (D-33).
 model Development {
-  id            String   @id @default(cuid())
-  slug          String   @unique
+  id            String            @id @default(cuid())
+  slug          String            @unique
   name          String
   tagline       String?
-  descriptionMd String   @db.Text
+  descriptionMd String            @db.Text
   city          String
   country       String
   addressLine   String?
   latitude      Float
   longitude     Float
   handoverDate  DateTime?
-  currency      String   @default("USD")
+  currency      String            @default("USD")
   /// Legacy, unused: the residence count is derived. Kept so old rows load.
-  totalUnits    Int      @default(0)
+  totalUnits    Int               @default(0)
   status        DevelopmentStatus @default(SELLING)
 
-  propertyType        String   @default("Residential apartments")
+  propertyType        String             @default("Residential apartments")
   /// "B + G + 4" — how the developer describes the stack.
   buildingConfig      String?
   constructionStatus  ConstructionStatus @default(STRUCTURE)
@@ -49,51 +49,51 @@ model Development {
   contractor          String?
   yearStarted         Int?
 
-  logoMediaId   String?
-  logoMedia     Media?   @relation("DevelopmentLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
-  heroMediaId   String?
-  heroMedia     Media?   @relation("DevelopmentHero", fields: [heroMediaId], references: [id], onDelete: SetNull)
-  mainMediaId   String?
-  mainMedia     Media?   @relation("DevelopmentMain", fields: [mainMediaId], references: [id], onDelete: SetNull)
-  videoMediaId  String?
-  videoMedia    Media?   @relation("DevelopmentVideo", fields: [videoMediaId], references: [id], onDelete: SetNull)
+  logoMediaId  String?
+  logoMedia    Media?  @relation("DevelopmentLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+  heroMediaId  String?
+  heroMedia    Media?  @relation("DevelopmentHero", fields: [heroMediaId], references: [id], onDelete: SetNull)
+  mainMediaId  String?
+  mainMedia    Media?  @relation("DevelopmentMain", fields: [mainMediaId], references: [id], onDelete: SetNull)
+  videoMediaId String?
+  videoMedia   Media?  @relation("DevelopmentVideo", fields: [videoMediaId], references: [id], onDelete: SetNull)
 
   // Contact — one place, read by the footer, the enquiry panel and WhatsApp links.
-  contactPhone    String?
-  contactEmail    String?
-  whatsappNumber  String?
-  officeAddress   String?
-  officeHours     String?
+  contactPhone   String?
+  contactEmail   String?
+  whatsappNumber String?
+  officeAddress  String?
+  officeHours    String?
   /// { instagram, facebook, linkedin, youtube, x, tiktok } — URLs.
-  socials         Json?
+  socials        Json?
 
-  buildings     Building[]
-  typologies    Typology[]
-  amenities     Amenity[]
-  milestones    PaymentMilestone[]
-  paymentPlans  PaymentPlan[]
-  landmarks     Landmark[]
-  mediaSets     MediaSet[]
-  tours         Tour[]
-  progress      ProgressUpdate[]
-  faqs          Faq[]
-  seo           SeoMeta?
-  units         Unit[]
-  features      Feature[]
-  parkingSpaces ParkingSpace[]
-  residents     Resident[]
-  buyers        Buyer[]
-  media         Media[]        @relation("DevelopmentMedia")
-  galleries     Gallery[]
-  pages         ContentPage[]
-  mediaSlots    MediaSlot[]
+  buildings      Building[]
+  typologies     Typology[]
+  amenities      Amenity[]
+  milestones     PaymentMilestone[]
+  paymentPlans   PaymentPlan[]
+  landmarks      Landmark[]
+  mediaSets      MediaSet[]
+  tours          Tour[]
+  progress       ProgressUpdate[]
+  faqs           Faq[]
+  seo            SeoMeta?
+  units          Unit[]
+  features       Feature[]
+  parkingSpaces  ParkingSpace[]
+  residents      Resident[]
+  buyers         Buyer[]
+  media          Media[]            @relation("DevelopmentMedia")
+  galleries      Gallery[]
+  pages          ContentPage[]
+  mediaSlots     MediaSlot[]
   specifications Specification[]
-  seoPages      SeoPage[]
-  videos        VideoAsset[]
-  enquiries     Enquiry[]
+  seoPages       SeoPage[]
+  videos         VideoAsset[]
+  enquiries      Enquiry[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum DevelopmentStatus {
@@ -117,37 +117,44 @@ enum ConstructionStatus {
 // ─────────────────────────── Building / Floors / Residences ────────
 
 model Building {
-  id             String  @id @default(cuid())
-  developmentId  String
-  development    Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
-  name           String
-  floorCount     Int
-  groundLabel    String  @default("Ground")
+  id            String      @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name          String
+  floorCount    Int
+  groundLabel   String      @default("Ground")
   // GLB for the 3D selector — see §8.4
-  modelUrl       String?
-  modelScale     Float   @default(1)
-  floors         Floor[]
+  modelUrl      String?
+  modelScale    Float       @default(1)
+  floors        Floor[]
 
   @@index([developmentId])
 }
 
 model Floor {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   buildingId  String
   building    Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  level       Int              // 0 = ground, -1 = basement
-  label       String           // "Floor 1", "Penthouse"
-  displayName String?          // "Penthouse level" — what visitors read, when it differs
+  level       Int // 0 = ground, -1 = basement
+  label       String // "Floor 1", "Penthouse"
+  displayName String? // "Penthouse level" — what visitors read, when it differs
   description String?  @db.Text
-  heightM     Float            // cumulative height above ground, for the view simulator
+  heightM     Float // cumulative height above ground, for the view simulator
   published   Boolean  @default(true)
   sortOrder   Int      @default(0)
   // A floor holding residences cannot be deleted: they must be moved first (D-34).
   units       Unit[]
   media       Media[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 
   @@unique([buildingId, level])
   @@index([buildingId])
@@ -155,20 +162,20 @@ model Floor {
 
 /// A residence. "Unit" is the historical table name; the admin calls it a residence.
 model Unit {
-  id            String  @id @default(cuid())
+  id            String      @id @default(cuid())
   /// Denormalised from floor → building so the unit code can be unique per property.
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   floorId       String
   // Restrict: deleting a floor never silently deletes the homes on it.
-  floor         Floor   @relation(fields: [floorId], references: [id], onDelete: Restrict)
+  floor         Floor       @relation(fields: [floorId], references: [id], onDelete: Restrict)
   typologyId    String
-  typology      Typology @relation(fields: [typologyId], references: [id], onDelete: Restrict)
+  typology      Typology    @relation(fields: [typologyId], references: [id], onDelete: Restrict)
 
-  code          String            // "A1", "PH-A"
-  status        UnitStatus @default(AVAILABLE)
-  priceMinor    Int               // store money in minor units, never Float
-  currency      String  @default("USD")
+  code                String // "A1", "PH-A"
+  status              UnitStatus @default(AVAILABLE)
+  priceMinor          Int // store money in minor units, never Float
+  currency            String     @default("USD")
   /// Optional list-price reduction, minor units. Public price = price − discount.
   discountMinor       Int?
   /// A time-boxed promotional price, shown instead of the list price when set.
@@ -177,24 +184,24 @@ model Unit {
   reservationFeeMinor Int?
   depositPercent      Float?
 
-  bedrooms      Int
-  bathrooms     Float
-  areaSqm       Float             // total saleable size
-  interiorSqm   Float?
-  exteriorSqm   Float?
-  balconySqm    Float?
-  terraceSqm    Float?
-  parkingIncluded Int   @default(0)
-  hasStorage    Boolean @default(false)
-  storageNote   String?
-  orientation   Orientation
-  viewTags      String[]          // ["hills", "city"]
+  bedrooms         Int
+  bathrooms        Float
+  areaSqm          Float // total saleable size
+  interiorSqm      Float?
+  exteriorSqm      Float?
+  balconySqm       Float?
+  terraceSqm       Float?
+  parkingIncluded  Int         @default(0)
+  hasStorage       Boolean     @default(false)
+  storageNote      String?
+  orientation      Orientation
+  viewTags         String[] // ["hills", "city"]
   availabilityDate DateTime?
 
   shortDescription String?
-  description   String? @db.Text
+  description      String? @db.Text
 
-  positionIndex Int              // left-to-right order on the elevation stack
+  positionIndex Int // left-to-right order on the elevation stack
   widthRatio    Float   @default(1) // relative width in the stack drawing
   // maps this unit to a mesh name inside the building GLB
   meshName      String?
@@ -206,14 +213,14 @@ model Unit {
   paymentPlanId String?
   paymentPlan   PaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: SetNull)
   buyerId       String?
-  buyer         Buyer?  @relation("UnitBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
+  buyer         Buyer?       @relation("UnitBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
 
-  published     Boolean @default(true)
-  featured      Boolean @default(false)
-  archivedAt    DateTime?
-  tags          String[] @default([])
+  published  Boolean   @default(true)
+  featured   Boolean   @default(false)
+  archivedAt DateTime?
+  tags       String[]  @default([])
   /// PRIVATE — never selected by a public endpoint.
-  notes         String? @db.Text
+  notes      String?   @db.Text
 
   enquiries     EnquiryUnit[]
   statusLog     UnitStatusLog[]
@@ -226,8 +233,13 @@ model Unit {
   parkingSpaces ParkingSpace[]
   interests     BuyerInterest[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
 
   @@unique([developmentId, code])
   @@unique([floorId, code])
@@ -273,15 +285,15 @@ model UnitStatusLog {
 }
 
 model PriceHistory {
-  id         String   @id @default(cuid())
-  unitId     String
-  unit       Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  fromMinor  Int
-  toMinor    Int
-  currency   String
-  actor      String
-  reason     String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  unitId    String
+  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  fromMinor Int
+  toMinor   Int
+  currency  String
+  actor     String
+  reason    String?
+  createdAt DateTime @default(now())
 
   @@index([unitId, createdAt])
 }
@@ -328,13 +340,13 @@ enum RoomType {
 
 /// The feature catalogue — "Fitted kitchen", "Walk-in wardrobe"… — assigned per residence.
 model Feature {
-  id            String  @id @default(cuid())
+  id            String        @id @default(cuid())
   developmentId String
-  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  development   Development   @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   name          String
-  category      String  @default("General")
+  category      String        @default("General")
   iconKey       String?
-  sortOrder     Int     @default(0)
+  sortOrder     Int           @default(0)
   units         UnitFeature[]
 
   @@unique([developmentId, name])
@@ -357,32 +369,39 @@ model UnitFeature {
 /// admin — the public site groups by `isPenthouse` and bedroom count, never by
 /// a list in code.
 model Typology {
-  id            String  @id @default(cuid())
+  id            String      @id @default(cuid())
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   slug          String
-  name          String            // "Two-bedroom corner"
+  name          String // "Two-bedroom corner"
   bedrooms      Int
-  bathrooms     Float             // 2.5 is legal
+  bathrooms     Float // 2.5 is legal
   areaSqmMin    Float
   areaSqmMax    Float
-  descriptionMd String? @db.Text
+  descriptionMd String?     @db.Text
   /// One line for the homepage card: what living in this type is like.
   summary       String?
-  isPenthouse   Boolean @default(false)
-  sortOrder     Int     @default(0)
-  published     Boolean @default(true)
+  isPenthouse   Boolean     @default(false)
+  sortOrder     Int         @default(0)
+  published     Boolean     @default(true)
 
-  floorPlanSvgUrl String?         // interactive plan, see §8.3
+  floorPlanSvgUrl String? // interactive plan, see §8.3
   floorPlanPngUrl String?
-  glbUrl          String?         // per-unit 3D model, F12
-  frameSeqId      String?         // interactive video frame sequence
+  glbUrl          String? // per-unit 3D model, F12
+  frameSeqId      String? // interactive video frame sequence
 
-  units         Unit[]
-  tours         Tour[]
-  mediaSets     MediaSet[]
-  media         Media[]
+  units          Unit[]
+  tours          Tour[]
+  mediaSets      MediaSet[]
+  media          Media[]
   specifications Specification[]
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 
   @@unique([developmentId, slug])
 }
@@ -393,55 +412,55 @@ model Typology {
 /// architectural drawings. One table, attached to at most one owner (unit,
 /// floor, amenity, room, typology) — or to none, which means "the project".
 model Media {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   developmentId String
   development   Development @relation("DevelopmentMedia", fields: [developmentId], references: [id], onDelete: Cascade)
 
-  kind          MediaKind
-  collection    MediaCollection @default(LIBRARY)
+  kind       MediaKind
+  collection MediaCollection @default(LIBRARY)
   /// Validated against the lists in @avida/types (IMAGE_CATEGORIES, DESIGN_CATEGORIES…).
-  category      String   @default("OTHER")
+  category   String          @default("OTHER")
 
-  title         String?
-  caption       String?
-  altText       String?
+  title   String?
+  caption String?
+  altText String?
 
-  storageKey    String   @unique
-  mimeType      String
-  sizeBytes     Int
-  width         Int?
-  height        Int?
-  durationSec   Float?
+  storageKey  String  @unique
+  mimeType    String
+  sizeBytes   Int
+  width       Int?
+  height      Int?
+  durationSec Float?
   /// { "400": key, "800": key, "1600": key } — web-friendly WebP renditions.
-  variants      Json?
-  posterKey     String?
-  blurDataUrl   String?  @db.Text
-  dominantHex   String?
+  variants    Json?
+  posterKey   String?
+  blurDataUrl String? @db.Text
+  dominantHex String?
 
-  published     Boolean  @default(true)
-  isCover       Boolean  @default(false)
-  sortOrder     Int      @default(0)
+  published  Boolean         @default(true)
+  isCover    Boolean         @default(false)
+  sortOrder  Int             @default(0)
   /// §49 — what this file is. A CG render must never read as a photograph.
-  provenance    MediaProvenance @default(PHOTOGRAPH)
+  provenance MediaProvenance @default(PHOTOGRAPH)
   /// Focal point, 0–100 on each axis: what a cover crop keeps in frame.
-  focusX        Float?
-  focusY        Float?
+  focusX     Float?
+  focusY     Float?
 
-  unitId        String?
-  unit          Unit?     @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  floorId       String?
-  floor         Floor?    @relation(fields: [floorId], references: [id], onDelete: Cascade)
-  amenityId     String?
-  amenity       Amenity?  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
-  roomId        String?
-  room          Room?     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  typologyId    String?
-  typology      Typology? @relation(fields: [typologyId], references: [id], onDelete: Cascade)
+  unitId     String?
+  unit       Unit?     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  floorId    String?
+  floor      Floor?    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  amenityId  String?
+  amenity    Amenity?  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  roomId     String?
+  room       Room?     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  typologyId String?
+  typology   Typology? @relation(fields: [typologyId], references: [id], onDelete: Cascade)
 
-  uploadedById  String?
+  uploadedById String?
 
   galleryItems  GalleryItem[]
-  galleryCovers Gallery[]  @relation("GalleryCover")
+  galleryCovers Gallery[]     @relation("GalleryCover")
   residents     Resident[]
   logoFor       Development[] @relation("DevelopmentLogo")
   heroFor       Development[] @relation("DevelopmentHero")
@@ -455,8 +474,15 @@ model Media {
   filmPosters   VideoAsset[]  @relation("FilmPoster")
   seoImages     SeoPage[]     @relation("SeoImage")
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 
   @@index([developmentId, collection, kind])
   @@index([unitId])
@@ -485,17 +511,17 @@ enum MediaProvenance {
 /// decides which library file fills it. An empty slot renders a neutral frame,
 /// never a substitute image.
 model MediaSlot {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   key           String
   imageId       String?
-  image         Media?   @relation("SlotImage", fields: [imageId], references: [id], onDelete: SetNull)
+  image         Media?      @relation("SlotImage", fields: [imageId], references: [id], onDelete: SetNull)
   videoId       String?
-  video         Media?   @relation("SlotVideo", fields: [videoId], references: [id], onDelete: SetNull)
+  video         Media?      @relation("SlotVideo", fields: [videoId], references: [id], onDelete: SetNull)
   updatedById   String?
-  updatedAt     DateTime @updatedAt
-  createdAt     DateTime @default(now())
+  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime    @default(now())
 
   @@unique([developmentId, key])
 }
@@ -507,20 +533,27 @@ enum MediaCollection {
 }
 
 model Gallery {
-  id            String  @id @default(cuid())
+  id            String        @id @default(cuid())
   developmentId String
-  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  development   Development   @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   slug          String
   title         String
-  description   String? @db.Text
+  description   String?       @db.Text
   coverMediaId  String?
-  coverMedia    Media?  @relation("GalleryCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
-  sortOrder     Int     @default(0)
-  published     Boolean @default(true)
+  coverMedia    Media?        @relation("GalleryCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  sortOrder     Int           @default(0)
+  published     Boolean       @default(true)
   items         GalleryItem[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 
   @@unique([developmentId, slug])
 }
@@ -541,19 +574,19 @@ model GalleryItem {
 /// A MediaSet groups the SAME view captured across time states.
 /// This is the backbone of the day/night/aerial system (F7).
 model MediaSet {
-  id            String  @id @default(cuid())
+  id            String       @id @default(cuid())
   developmentId String?
   development   Development? @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   typologyId    String?
-  typology      Typology? @relation(fields: [typologyId], references: [id], onDelete: Cascade)
+  typology      Typology?    @relation(fields: [typologyId], references: [id], onDelete: Cascade)
 
-  key           String            // "hero-exterior", "rooftop", "lobby"
-  label         String
-  kind          MediaSetKind
-  cameraNote    String?           // for the render team: focal length, position
-  sortOrder     Int     @default(0)
+  key        String // "hero-exterior", "rooftop", "lobby"
+  label      String
+  kind       MediaSetKind
+  cameraNote String? // for the render team: focal length, position
+  sortOrder  Int          @default(0)
 
-  assets        MediaAsset[]
+  assets MediaAsset[]
 
   @@unique([developmentId, key])
   @@index([typologyId])
@@ -573,22 +606,22 @@ model MediaAsset {
   mediaSetId String
   mediaSet   MediaSet @relation(fields: [mediaSetId], references: [id], onDelete: Cascade)
 
-  timeState  TimeState
-  role       AssetRole @default(PRIMARY)
+  timeState TimeState
+  role      AssetRole @default(PRIMARY)
 
   // originals + derivatives, all keys relative to R2 bucket root
   originalKey String
   width       Int
   height      Int
-  variants    Json      // { avif: {400:key,...}, webp: {...} }
-  depthKey    String?   // depth map PNG for parallax (F8)
+  variants    Json // { avif: {400:key,...}, webp: {...} }
+  depthKey    String? // depth map PNG for parallax (F8)
   thumbhash   String
   dominantHex String?
 
-  altText     String?
-  credit      String?
+  altText String?
+  credit  String?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([mediaSetId, timeState, role])
   @@index([mediaSetId])
@@ -610,32 +643,32 @@ enum AssetRole {
 // ─────────────────────────── Video ──────────────────────────────────
 
 model VideoAsset {
-  id           String @id @default(cuid())
-  key          String @unique          // "walkthrough-2bed", "timelapse-hero"
-  label        String
-  kind         VideoKind
-  typologyId   String?
+  id            String       @id @default(cuid())
+  key           String       @unique // "walkthrough-2bed", "timelapse-hero"
+  label         String
+  kind          VideoKind
+  typologyId    String?
   developmentId String?
-  development  Development? @relation(fields: [developmentId], references: [id], onDelete: Cascade)
-  description  String?  @db.Text
+  development   Development? @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  description   String?      @db.Text
   /// The film itself, from the media library (§5.7). The keys below are the
   /// encode pipeline's outputs, kept for the HLS path.
-  mediaId      String?
-  media        Media?   @relation("FilmVideo", fields: [mediaId], references: [id], onDelete: SetNull)
+  mediaId       String?
+  media         Media?       @relation("FilmVideo", fields: [mediaId], references: [id], onDelete: SetNull)
   posterMediaId String?
-  posterMedia  Media?   @relation("FilmPoster", fields: [posterMediaId], references: [id], onDelete: SetNull)
-  published    Boolean  @default(true)
+  posterMedia   Media?       @relation("FilmPoster", fields: [posterMediaId], references: [id], onDelete: SetNull)
+  published     Boolean      @default(true)
 
-  posterKey    String
-  hlsKey       String?                 // .m3u8 master
-  mp4Key       String?                 // fallback, h.264 720p
-  durationSec  Float
-  width        Int
-  height       Int
+  posterKey   String
+  hlsKey      String? // .m3u8 master
+  mp4Key      String? // fallback, h.264 720p
+  durationSec Float
+  width       Int
+  height      Int
 
-  chapters     VideoChapter[]
+  chapters VideoChapter[]
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 enum VideoKind {
@@ -646,15 +679,15 @@ enum VideoKind {
 }
 
 model VideoChapter {
-  id           String @id @default(cuid())
-  videoAssetId String
-  videoAsset   VideoAsset @relation(fields: [videoAssetId], references: [id], onDelete: Cascade)
-  label        String
-  startSec     Float
-  thumbKey     String?
+  id            String     @id @default(cuid())
+  videoAssetId  String
+  videoAsset    VideoAsset @relation(fields: [videoAssetId], references: [id], onDelete: Cascade)
+  label         String
+  startSec      Float
+  thumbKey      String?
   /// Where in the building the film is at this point.
-  place        String?
-  sortOrder    Int     @default(0)
+  place         String?
+  sortOrder     Int        @default(0)
   /// optional: jump into the panorama tour at this point
   linkedSceneId String?
 
@@ -664,18 +697,18 @@ model VideoChapter {
 /// Scroll-driven interactive video (F11, F12). Stored as a frame ladder,
 /// not a video file — see §8.5 for why.
 model FrameSequence {
-  id          String @id @default(cuid())
-  key         String @unique          // "building-orbit", "typo-2bed-orbit"
-  label       String
-  kind        FrameSeqKind
-  frameCount  Int
+  id         String       @id @default(cuid())
+  key        String       @unique // "building-orbit", "typo-2bed-orbit"
+  label      String
+  kind       FrameSeqKind
+  frameCount Int
   // Multiple resolution ladders: { "480": {prefix, ext}, "960": {...} }
-  ladders     Json
-  loopable    Boolean @default(true)
+  ladders    Json
+  loopable   Boolean      @default(true)
   /// maps a frame index range to a unit / hotspot for click targeting
-  hotspots    Json?
+  hotspots   Json?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 enum FrameSeqKind {
@@ -688,53 +721,60 @@ enum FrameSeqKind {
 // ─────────────────────────── Virtual tour ───────────────────────────
 
 model Tour {
-  id            String @id @default(cuid())
+  id            String      @id @default(cuid())
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   typologyId    String?
-  typology      Typology? @relation(fields: [typologyId], references: [id])
+  typology      Typology?   @relation(fields: [typologyId], references: [id])
 
-  slug          String
-  name          String
-  description   String?  @db.Text
-  startSceneId  String?
-  published     Boolean  @default(true)
-  sortOrder     Int      @default(0)
-  scenes        Scene[]
-  updatedAt     DateTime @default(now()) @updatedAt
+  slug         String
+  name         String
+  description  String?  @db.Text
+  startSceneId String?
+  published    Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  scenes       Scene[]
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 
   @@unique([developmentId, slug])
 }
 
 model Scene {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   tourId    String
-  tour      Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  key       String            // "living", "kitchen", "master-bed"
+  tour      Tour    @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  key       String // "living", "kitchen", "master-bed"
   label     String
-  sortOrder Int    @default(0)
+  sortOrder Int     @default(0)
   /// The walkthrough station's words: where it is, and what to notice.
   place     String?
-  body      String?  @db.Text
+  body      String? @db.Text
   /// The homepage story gauge: where in the building this station is (TOUR_LEVELS).
   level     String?
   imageId   String?
-  image     Media?   @relation("SceneImage", fields: [imageId], references: [id], onDelete: SetNull)
+  image     Media?  @relation("SceneImage", fields: [imageId], references: [id], onDelete: SetNull)
   videoId   String?
-  video     Media?   @relation("SceneVideo", fields: [videoId], references: [id], onDelete: SetNull)
-  published Boolean  @default(true)
+  video     Media?  @relation("SceneVideo", fields: [videoId], references: [id], onDelete: SetNull)
+  published Boolean @default(true)
 
   /// Panoramas per time state — the tour respects the global time selector
   panoramas PanoramaAsset[]
 
   /// initial camera
-  yawDeg    Float @default(0)
-  pitchDeg  Float @default(0)
-  fovDeg    Float @default(70)
+  yawDeg   Float @default(0)
+  pitchDeg Float @default(0)
+  fovDeg   Float @default(70)
 
   /// position on the floor plan SVG, in plan viewBox coordinates
-  planX     Float?
-  planY     Float?
+  planX      Float?
+  planY      Float?
   planRotDeg Float?
 
   hotspots  Hotspot[]
@@ -744,33 +784,33 @@ model Scene {
 }
 
 model PanoramaAsset {
-  id         String    @id @default(cuid())
-  sceneId    String
-  scene      Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
-  timeState  TimeState
+  id          String    @id @default(cuid())
+  sceneId     String
+  scene       Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  timeState   TimeState
   /// low-res immediate preview, equirect 1024x512
-  previewKey String
+  previewKey  String
   /// full equirect original
   originalKey String
   /// cube-face tile manifest: { faceSize, levels:[{size,tileSize,prefix}] }
-  tiles      Json
-  width      Int
-  height     Int
+  tiles       Json
+  width       Int
+  height      Int
 
   @@unique([sceneId, timeState])
 }
 
 model Hotspot {
-  id            String @id @default(cuid())
+  id            String      @id @default(cuid())
   sceneId       String
-  scene         Scene  @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  scene         Scene       @relation(fields: [sceneId], references: [id], onDelete: Cascade)
   kind          HotspotKind
   yawDeg        Float
   pitchDeg      Float
   label         String?
   targetSceneId String?
-  targetScene   Scene? @relation("HotspotTarget", fields: [targetSceneId], references: [id])
-  infoMd        String? @db.Text
+  targetScene   Scene?      @relation("HotspotTarget", fields: [targetSceneId], references: [id])
+  infoMd        String?     @db.Text
   mediaAssetId  String?
 
   @@index([sceneId])
@@ -788,36 +828,43 @@ enum HotspotKind {
 /// A named payment plan. The default plan's milestones are what the public
 /// payment timeline shows; a residence may be put on a different plan.
 model PaymentPlan {
-  id                  String  @id @default(cuid())
+  id                  String             @id @default(cuid())
   developmentId       String
-  development         Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  development         Development        @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   name                String
-  description         String? @db.Text
-  isDefault           Boolean @default(false)
-  published           Boolean @default(true)
+  description         String?            @db.Text
+  isDefault           Boolean            @default(false)
+  published           Boolean            @default(true)
   depositPercent      Float?
   reservationFeeMinor Int?
   installmentCount    Int?
   durationMonths      Int?
-  sortOrder           Int     @default(0)
+  sortOrder           Int                @default(0)
   milestones          PaymentMilestone[]
   units               Unit[]
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 
   @@index([developmentId])
 }
 
 model PaymentMilestone {
-  id            String @id @default(cuid())
+  id            String           @id @default(cuid())
   developmentId String
-  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  development   Development      @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   paymentPlanId String?
-  paymentPlan   PaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: Cascade)
+  paymentPlan   PaymentPlan?     @relation(fields: [paymentPlanId], references: [id], onDelete: Cascade)
   sortOrder     Int
-  label         String            // "On reservation", "On completion of structure"
-  percent       Float             // 10 = 10%
+  label         String // "On reservation", "On completion of structure"
+  percent       Float // 10 = 10%
   triggerType   MilestoneTrigger
   triggerDate   DateTime?
   triggerNote   String?
@@ -835,32 +882,39 @@ enum MilestoneTrigger {
 }
 
 model Amenity {
-  id            String @id @default(cuid())
-  developmentId String
-  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
-  name          String
+  id               String      @id @default(cuid())
+  developmentId    String
+  development      Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name             String
   /// Stable handle the public site uses to pair an amenity with its scene art.
-  slug          String?
-  descriptionMd String?
+  slug             String?
+  descriptionMd    String?
   shortDescription String?
-  iconKey       String?
-  mediaAssetId  String?
+  iconKey          String?
+  mediaAssetId     String?
   /// [{ label, value }] — "Length: 15 m", "Hours: 06:00–22:00".
-  specifications Json?
-  location      String?
-  published     Boolean @default(true)
-  sortOrder     Int    @default(0)
-  media         Media[]
+  specifications   Json?
+  location         String?
+  published        Boolean     @default(true)
+  sortOrder        Int         @default(0)
+  media            Media[]
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 
   @@index([developmentId])
 }
 
 model Landmark {
-  id            String @id @default(cuid())
+  id            String           @id @default(cuid())
   developmentId String
-  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  development   Development      @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   name          String
-  category       LandmarkCategory
+  category      LandmarkCategory
   latitude      Float
   longitude     Float
   /// computed by PostGIS at seed/update time, not hardcoded
@@ -884,23 +938,23 @@ enum LandmarkCategory {
 // ─────────────────────────── Parking ────────────────────────────────
 
 model ParkingSpace {
-  id            String  @id @default(cuid())
+  id            String        @id @default(cuid())
   developmentId String
-  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
-  code          String            // "P-01"
-  level         String  @default("Basement")
-  type          ParkingType @default(STANDARD)
+  development   Development   @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  code          String // "P-01"
+  level         String        @default("Basement")
+  type          ParkingType   @default(STANDARD)
   sizeSqm       Float?
   status        ParkingStatus @default(AVAILABLE)
   unitId        String?
-  unit          Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  unit          Unit?         @relation(fields: [unitId], references: [id], onDelete: SetNull)
   residentId    String?
-  resident      Resident? @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  resident      Resident?     @relation(fields: [residentId], references: [id], onDelete: SetNull)
   priceMinor    Int?
   notes         String?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([developmentId, code])
   @@index([status])
@@ -928,31 +982,31 @@ enum ParkingStatus {
 
 /// Someone living in a residence. PRIVATE: never reachable from a public endpoint.
 model Resident {
-  id              String  @id @default(cuid())
+  id              String          @id @default(cuid())
   developmentId   String
-  development     Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  development     Development     @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   fullName        String
   email           String?
   phone           String?
   countryIso      String?
   unitId          String?
-  unit            Unit?   @relation(fields: [unitId], references: [id], onDelete: SetNull)
-  residentType    ResidentType @default(OWNER)
+  unit            Unit?           @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  residentType    ResidentType    @default(OWNER)
   occupancyStatus OccupancyStatus @default(UPCOMING)
   moveInDate      DateTime?
   moveOutDate     DateTime?
-  notes           String? @db.Text
+  notes           String?         @db.Text
   profileMediaId  String?
-  profileMedia    Media?  @relation(fields: [profileMediaId], references: [id], onDelete: SetNull)
+  profileMedia    Media?          @relation(fields: [profileMediaId], references: [id], onDelete: SetNull)
   buyerId         String?
-  buyer           Buyer?  @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  buyer           Buyer?          @relation(fields: [buyerId], references: [id], onDelete: SetNull)
   archivedAt      DateTime?
 
-  residencies     Residency[]
-  parkingSpaces   ParkingSpace[]
+  residencies   Residency[]
+  parkingSpaces ParkingSpace[]
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([unitId])
   @@index([developmentId, archivedAt])
@@ -973,12 +1027,12 @@ enum OccupancyStatus {
 
 /// Residence history — one row per stay.
 model Residency {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   residentId String
-  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  resident   Resident  @relation(fields: [residentId], references: [id], onDelete: Cascade)
   unitId     String
-  unit       Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  startedAt  DateTime @default(now())
+  unit       Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  startedAt  DateTime  @default(now())
   endedAt    DateTime?
   actor      String
 
@@ -988,27 +1042,27 @@ model Residency {
 
 /// A client — prospect through owner. PRIVATE.
 model Buyer {
-  id            String  @id @default(cuid())
+  id            String      @id @default(cuid())
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   fullName      String
   email         String?
   phone         String?
   countryIso    String?
-  stage         BuyerStage @default(PROSPECT)
+  stage         BuyerStage  @default(PROSPECT)
   source        String?
   assignedToId  String?
-  assignedTo    AdminUser? @relation("BuyerAgent", fields: [assignedToId], references: [id], onDelete: SetNull)
-  notes         String? @db.Text
+  assignedTo    AdminUser?  @relation("BuyerAgent", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notes         String?     @db.Text
   archivedAt    DateTime?
 
-  units         Unit[]  @relation("UnitBuyer")
-  interests     BuyerInterest[]
-  enquiries     Enquiry[]
-  residents     Resident[]
+  units     Unit[]          @relation("UnitBuyer")
+  interests BuyerInterest[]
+  enquiries Enquiry[]
+  residents Resident[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([stage])
   @@index([developmentId, archivedAt])
@@ -1026,9 +1080,9 @@ enum BuyerStage {
 
 model BuyerInterest {
   buyerId   String
-  buyer     Buyer   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  buyer     Buyer    @relation(fields: [buyerId], references: [id], onDelete: Cascade)
   unitId    String
-  unit      Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@id([buyerId, unitId])
@@ -1038,33 +1092,33 @@ model BuyerInterest {
 // ─────────────────────────── Leads ──────────────────────────────────
 
 model Enquiry {
-  id         String @id @default(cuid())
+  id            String        @id @default(cuid())
   /// §40.5 — every lead belongs to a property. Backfilled from its residences.
   developmentId String
-  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
-  name       String
-  email      String
-  phone      String
-  countryIso String?
-  message    String? @db.Text
-  intent     EnquiryIntent @default(INFORMATION)
+  development   Development   @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name          String
+  email         String
+  phone         String
+  countryIso    String?
+  message       String?       @db.Text
+  intent        EnquiryIntent @default(INFORMATION)
 
-  units      EnquiryUnit[]
+  units EnquiryUnit[]
 
-  source     String?          // "unit-panel", "footer", "floating-cta"
-  utmSource  String?
-  utmMedium  String?
+  source      String? // "unit-panel", "footer", "floating-cta"
+  utmSource   String?
+  utmMedium   String?
   utmCampaign String?
-  referrer   String?
+  referrer    String?
   landingPath String?
-  userAgent  String?
+  userAgent   String?
 
-  status     EnquiryStatus @default(NEW)
+  status       EnquiryStatus @default(NEW)
   /// AdminUser id of the agent working the lead.
-  assignedTo String?
-  internalNote String? @db.Text
-  buyerId    String?
-  buyer      Buyer?  @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  assignedTo   String?
+  internalNote String?       @db.Text
+  buyerId      String?
+  buyer        Buyer?        @relation(fields: [buyerId], references: [id], onDelete: SetNull)
 
   // §6.7 — Turnstile unreachable: keep the lead, flag it for manual review
   // rather than dropping it. Never silently trust an unverified submission.
@@ -1074,8 +1128,8 @@ model Enquiry {
   // on any status change. The nightly job hard-deletes rows past this date.
   purgeAfter DateTime
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([createdAt])
@@ -1116,52 +1170,76 @@ model EnquiryUnit {
 // ─────────────────────────── Content ────────────────────────────────
 
 model ProgressUpdate {
-  id            String @id @default(cuid())
-  developmentId String
-  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
-  capturedOn    DateTime
-  title         String
-  bodyMd        String? @db.Text
+  id              String      @id @default(cuid())
+  developmentId   String
+  development     Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  capturedOn      DateTime
+  title           String
+  bodyMd          String?     @db.Text
   percentComplete Int?
-  mediaAssetIds String[]
-  splatUrl      String?
-  published     Boolean @default(true)
+  mediaAssetIds   String[]
+  splatUrl        String?
+  published       Boolean     @default(true)
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 
   @@index([developmentId, capturedOn])
 }
 
 model Faq {
-  id            String @id @default(cuid())
+  id            String      @id @default(cuid())
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   question      String
-  answerMd      String @db.Text
-  category      String @default("General")
-  published     Boolean @default(true)
-  sortOrder     Int    @default(0)
+  answerMd      String      @db.Text
+  category      String      @default("General")
+  published     Boolean     @default(true)
+  sortOrder     Int         @default(0)
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 }
 
 /// Editable copy for one public page. `content` is a flat object whose keys are
 /// declared in @avida/types (CONTENT_PAGES), so the admin renders the form and
 /// the site knows every key it may read.
 model ContentPage {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
-  key           String   // "home" | "about" | "amenities" | "buying" | "gallery" | "contact"
+  key           String // "home" | "about" | "amenities" | "buying" | "gallery" | "contact"
   title         String
   content       Json
-  published     Boolean  @default(true)
+  published     Boolean     @default(true)
   updatedById   String?
-  updatedAt     DateTime @updatedAt
-  createdAt     DateTime @default(now())
+  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime    @default(now())
+
+  /// §40.2 — edits are saved here first. Publishing copies them into `content`,
+  /// which is all a visitor ever reads; a preview reads the draft.
+  draftContent     Json?
+  draftUpdatedAt   DateTime?
+  draftUpdatedById String?
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt      DateTime?
+  publishedById    String?
+  unpublishedAt    DateTime?
 
   @@unique([developmentId, key])
 }
 
 model SeoMeta {
-  id            String @id @default(cuid())
-  developmentId String @unique
+  id            String      @id @default(cuid())
+  developmentId String      @unique
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   title         String
   description   String
@@ -1173,17 +1251,17 @@ model SeoMeta {
 /// `path` is the route ("/", "/amenities"). A missing field falls back to the
 /// site-wide SeoMeta.
 model SeoPage {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   path          String
   title         String?
   description   String?
   ogImageId     String?
-  ogImage       Media?   @relation("SeoImage", fields: [ogImageId], references: [id], onDelete: SetNull)
-  noindex       Boolean  @default(false)
+  ogImage       Media?      @relation("SeoImage", fields: [ogImageId], references: [id], onDelete: SetNull)
+  noindex       Boolean     @default(false)
   updatedById   String?
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime    @updatedAt
 
   @@unique([developmentId, path])
 }
@@ -1192,18 +1270,25 @@ model SeoPage {
 /// with a typology applies to that type only and replaces a development-wide
 /// row with the same label.
 model Specification {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   developmentId String
   development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   typologyId    String?
-  typology      Typology? @relation(fields: [typologyId], references: [id], onDelete: Cascade)
-  category      String   @default("General")
+  typology      Typology?   @relation(fields: [typologyId], references: [id], onDelete: Cascade)
+  category      String      @default("General")
   label         String
-  value         String   @db.Text
-  sortOrder     Int      @default(0)
-  published     Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  value         String      @db.Text
+  sortOrder     Int         @default(0)
+  published     Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  /// §40.2 — who published it and when; set by the publish action, not by an edit.
+  publishedAt   DateTime?
+  publishedById String?
+  unpublishedAt DateTime?
+  /// Soft delete (§40.2): hidden everywhere, restorable until permanently deleted.
+  archivedAt    DateTime?
 
   @@index([developmentId, typologyId])
 }
@@ -1236,16 +1321,16 @@ enum SyncStatus {
 // ─────────────────────────── Ops ────────────────────────────────────
 
 model MediaJob {
-  id         String @id @default(cuid())
-  kind       String            // "variants" | "depth" | "tile" | "hls" | "frames"
+  id         String    @id @default(cuid())
+  kind       String // "variants" | "depth" | "tile" | "hls" | "frames"
   refType    String
   refId      String
   status     JobStatus @default(QUEUED)
-  attempts   Int    @default(0)
-  error      String? @db.Text
+  attempts   Int       @default(0)
+  error      String?   @db.Text
   startedAt  DateTime?
   finishedAt DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   @@index([status])
 }
@@ -1258,44 +1343,44 @@ enum JobStatus {
 }
 
 model AdminUser {
-  id           String @id @default(cuid())
-  email        String @unique
-  passwordHash String
-  name         String
-  role         AdminRole @default(VIEWER)
-  active       Boolean   @default(true)
-  totpSecret   String?
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  passwordHash       String
+  name               String
+  role               AdminRole @default(VIEWER)
+  active             Boolean   @default(true)
+  totpSecret         String?
   // §5.9 — issued once at enrolment, stored hashed, single use.
-  totpEnrolledAt   DateTime?
-  recoveryCodeHashes String[] @default([])
+  totpEnrolledAt     DateTime?
+  recoveryCodeHashes String[]  @default([])
   /// Bumped by a password change or "sign out everywhere": every session issued
   /// before the new value stops verifying, without a session store.
-  tokenVersion Int      @default(0)
+  tokenVersion       Int       @default(0)
   // §5.9 — login throttle state, per account (the per-IP limit is in the gateway).
-  failedLoginCount Int      @default(0)
-  lockedUntil      DateTime?
-  lastLoginAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now()) @updatedAt
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @default(now()) @updatedAt
 
-  auditLogs    AdminAuditLog[]
-  buyers       Buyer[]   @relation("BuyerAgent")
+  auditLogs AdminAuditLog[]
+  buyers    Buyer[]         @relation("BuyerAgent")
 }
 
 // §5.9 — every consequential admin action writes one row: who, what, which
 // record, and the before/after values that changed.
 model AdminAuditLog {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   actorId   String
   actor     AdminUser @relation(fields: [actorId], references: [id], onDelete: Cascade)
-  action    String    // "residence.price", "media.upload", "enquiry.export"
-  entity    String?   // "residence", "floor", "media"…
+  action    String // "residence.price", "media.upload", "enquiry.export"
+  entity    String? // "residence", "floor", "media"…
   entityId  String?
-  target    String?   // human handle: "A1", "Floor 2"
-  summary   String?   // "Price $120,000 → $125,000"
+  target    String? // human handle: "A1", "Floor 2"
+  summary   String? // "Price $120,000 → $125,000"
   before    Json?
   after     Json?
-  rowCount  Int?      // how many records the action touched
+  rowCount  Int? // how many records the action touched
   ip        String?
   userAgent String?
   createdAt DateTime  @default(now())

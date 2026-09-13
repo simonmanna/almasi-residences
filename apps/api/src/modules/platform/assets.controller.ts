@@ -16,7 +16,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import type { Prisma } from '@avida/db';
-import { categoriesFor, MEDIA_COLLECTIONS, type MediaCollectionValue } from '@avida/types';
+import { categoriesFor, MEDIA_COLLECTIONS, MEDIA_SLOTS, type MediaCollectionValue } from '@avida/types';
 import { AuditService } from '../../common/audit.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { boolOrUndefined, pageOf, paged } from '../../common/http.js';
@@ -64,6 +64,7 @@ export class AssetsController {
     const developmentId = await this.dev.id();
     const p = pageOf(q.page, q.pageSize ?? '60', 500);
     const where: Prisma.MediaWhereInput = {
+      archivedAt: null,
       developmentId,
       ...(q.collection ? { collection: q.collection as Prisma.MediaWhereInput['collection'] } : {}),
       ...(q.kind ? { kind: { in: q.kind.split(',') as NonNullable<Prisma.MediaWhereInput['kind']>[] as never } } : {}),
@@ -102,8 +103,27 @@ export class AssetsController {
   @RequirePermission('media.view')
   async get(@Param('id') id: string) {
     const m = await this.owned(id);
-    const galleries = await this.prisma.client.galleryItem.findMany({ where: { mediaId: id }, include: { gallery: { select: { id: true, title: true } } } });
-    return { ...this.view(m), galleries: galleries.map((g) => g.gallery) };
+    const [galleries, slots, scenes, films, seo] = await Promise.all([
+      this.prisma.client.galleryItem.findMany({ where: { mediaId: id }, include: { gallery: { select: { id: true, title: true } } } }),
+      this.prisma.client.mediaSlot.findMany({ where: { OR: [{ imageId: id }, { videoId: id }] }, select: { key: true } }),
+      this.prisma.client.scene.findMany({ where: { OR: [{ imageId: id }, { videoId: id }] }, select: { label: true, tour: { select: { id: true, slug: true, name: true } } } }),
+      this.prisma.client.videoAsset.findMany({ where: { OR: [{ mediaId: id }, { posterMediaId: id }] }, select: { label: true } }),
+      this.prisma.client.seoPage.findMany({ where: { ogImageId: id }, select: { path: true } }),
+    ]);
+    // Roadmap item 39 — "where will this appear?", each with the page to preview.
+    const tourPath = (slug: string) => (slug === 'building' ? '/tour' : slug === 'penthouse' ? '/tour/penthouse' : '/');
+    const slotPath: Record<string, string> = { 'page-amenities': '/amenities', 'page-location': '/location', 'film-poster': '/film' };
+    const usage = [
+      ...slots.map((s) => ({ label: `Placement: ${MEDIA_SLOTS.find((d) => d.key === s.key)?.label ?? s.key}`, path: slotPath[s.key] ?? '/', adminPath: '/placements' })),
+      ...scenes.map((s) => ({ label: `${s.tour.name}: ${s.label}`, path: tourPath(s.tour.slug), adminPath: `/tours/${s.tour.id}` })),
+      ...films.map((f) => ({ label: `Film: ${f.label}`, path: '/film', adminPath: '/film' })),
+      ...seo.map((p) => ({ label: `Share image for ${p.path}`, path: p.path, adminPath: '/seo' })),
+      ...galleries.map((g) => ({ label: `Gallery: ${g.gallery.title}`, path: '/gallery', adminPath: `/galleries/${g.gallery.id}` })),
+      ...(m.unitId && m.unit ? [{ label: `Residence ${m.unit.code}`, path: `/residences/${m.unit.code.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, adminPath: `/residences/${m.unitId}` }] : []),
+      ...(m.amenityId ? [{ label: 'Amenity', path: '/amenities', adminPath: '/amenities' }] : []),
+      ...(m.typologyId ? [{ label: 'Residence type (every residence of the type without its own photographs)', path: '/residences', adminPath: '/types' }] : []),
+    ];
+    return { ...this.view(m), galleries: galleries.map((g) => g.gallery), usage };
   }
 
   /**

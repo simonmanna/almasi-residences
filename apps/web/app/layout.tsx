@@ -14,6 +14,7 @@ import { SiteNav } from '../components/layout/SiteNav';
 import { RouteFade } from '../components/layout/RouteFade';
 import { StickyMobileCta } from '../components/layout/StickyMobileCta';
 import { CursorLabel } from '../components/layout/CursorLabel';
+import { PreviewBanner } from '../components/layout/PreviewBanner';
 import '../styles/tokens.css';
 import '../styles/app.css';
 
@@ -131,6 +132,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </ContactProvider>
         </SmoothScroll>
         <CursorLabel />
+        <PreviewBanner />
       </body>
     </html>
   );

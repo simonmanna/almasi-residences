@@ -78,7 +78,7 @@ export default function Faqs() {
               <span className="row" style={{ gap: 4 }}>
                 <Button size="sm" variant="ghost" icon={f.published ? <Eye size={15} /> : <EyeOff size={15} />} aria-label={f.published ? 'Hide' : 'Show'} onClick={async () => { await patch(`/admin/faqs/${f.id}`, { published: !f.published }); invalidate('faqs'); }} />
                 <Button size="sm" icon={<Pencil size={14} />} onClick={() => setEdit(f)}>Edit</Button>
-                <Button size="sm" variant="ghost" icon={<Trash2 size={15} />} aria-label="Delete" onClick={async () => { if (await confirm({ title: 'Delete this question?', body: f.question, confirm: 'Delete', danger: true })) { await del(`/admin/faqs/${f.id}`); invalidate('faqs'); } }} />
+                <Button size="sm" variant="ghost" icon={<Trash2 size={15} />} aria-label="Archive" onClick={async () => { if (await confirm({ title: 'Archive this question?', body: `${f.question} — restorable from Website → Publishing.`, confirm: 'Archive' })) { await del(`/admin/faqs/${f.id}`); invalidate('faqs', 'publishing'); } }} />
               </span>
             )}
           </div>

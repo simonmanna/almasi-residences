@@ -40,6 +40,7 @@ import { StatusSelect } from '../components/StatusSelect';
 import { useToast } from '../components/Toast';
 import { Alert, Badge, Button, Card, CardHead, Empty, ErrorBox, Field, Input, KV, LoadingPage, MediaImg, Menu, Modal, NumberInput, PageHead, Select, StatusBadge, Tabs, Textarea, Toggle, useConfirm } from '../components/ui';
 import { SITE_URL } from '../lib/site';
+import { PreviewButton } from '../components/PreviewButton';
 
 const residenceSlug = (code: string) => code.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
@@ -360,61 +361,26 @@ function ActivityTab({ u }: { u: Detail }) {
   );
 }
 
-interface PublicResidence {
-  label: string;
-  status: string;
-  priceMinor: number | null;
-  listPriceMinor: number | null;
-  currency: string;
-  bedrooms: number;
-  bathrooms: number;
-  areaSqm: number;
-  orientation: string;
-  floor: { label: string };
-  type: { name: string; isPenthouse: boolean };
-  shortDescription: string | null;
-  description: string | null;
-  images: MediaView[];
-  floorPlans: MediaView[];
-  features: { name: string }[];
-  rooms: { name: string; areaSqm: number | null }[];
-  preview?: { published: boolean };
-}
-
-/** §38 — the residence exactly as the website presents it. */
+/**
+ * §37 — the residence as the website renders it: the real page, in preview, so
+ * an unpublished residence and unsaved-to-live photographs show exactly as a
+ * visitor will see them once published. (The admin used to draw its own copy.)
+ */
 function PreviewTab({ u }: { u: Detail }) {
-  const { data: p, error } = useQuery(`residence:${u.id}:preview`, () => get<PublicResidence>(`/admin/residences/${u.id}/preview`));
-  if (error) return <ErrorBox error={error} />;
-  if (!p) return <LoadingPage />;
-  const statusText: Record<string, string> = { available: 'Available', reserved: 'Reserved', sold: 'Sold', unavailable: 'Unavailable' };
+  const slug = u.code.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return (
     <div className="stack">
-      {!p.preview?.published && <Alert tone="warn" icon={<EyeOff size={18} />}>This residence is hidden. Visitors see nothing until it is published — this is how it will look.</Alert>}
-      <div className="preview-frame">
-        <div className="pv-hero">{p.images[0] && <MediaImg m={p.images[0]} sizes="900px" />}</div>
-        <div className="pv-body">
-          <div className="pv-kicker">Almasi Residences · {p.floor.label}</div>
-          <h2>Residence {p.label}</h2>
-          <div style={{ fontSize: 18, color: '#57504a' }}>{p.type.isPenthouse ? 'Penthouse' : `${p.bedrooms} bedroom apartment`}</div>
-          <span className="pv-status">{statusText[p.status] ?? p.status}</span>
-          <div className="pv-facts">
-            <span><strong>{p.areaSqm} m²</strong>Size</span>
-            <span><strong>{p.bedrooms}</strong>Bedrooms</span>
-            <span><strong>{p.bathrooms}</strong>Bathrooms</span>
-            <span><strong>{ORIENTATION_TEXT[p.orientation]}</strong>Aspect</span>
-            <span><strong>{p.priceMinor !== null ? money(p.priceMinor, p.currency) : 'On request'}</strong>{p.listPriceMinor ? <s>{money(p.listPriceMinor, p.currency)}</s> : 'Price'}</span>
+      {(!u.published || u.archivedAt) && <Alert tone="warn" icon={<EyeOff size={18} />}>This residence is hidden. Visitors see nothing until it is published — the preview shows how it will look.</Alert>}
+      <Card pad>
+        <div className="row" style={{ gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <strong style={{ color: 'var(--navy)' }}>/residences/{slug}</strong>
+            <p className="muted small" style={{ margin: '4px 0 0' }}>Opens the real website page in a new tab, with every draft and unpublished change visible. A banner marks it as a preview.</p>
           </div>
-          {p.shortDescription && <p style={{ margin: 0, fontSize: 17 }}>{p.shortDescription}</p>}
-          {p.description && <p style={{ margin: 0, color: '#57504a', whiteSpace: 'pre-line' }}>{p.description}</p>}
-          <div className="pv-actions">
-            <span className="pv-btn">View floor plan{p.floorPlans.length ? '' : ' (none yet)'}</span>
-            <span className="pv-btn">View gallery ({p.images.length})</span>
-            <span className="pv-btn solid">Enquire now</span>
-          </div>
-          {p.features.length > 0 && <p style={{ margin: 0, font: '500 13px var(--font)', color: '#57504a' }}>{p.features.map((f) => f.name).join(' · ')}</p>}
+          <PreviewButton path={`/residences/${slug}`} label="Open preview" variant="primary" />
+          {u.published && !u.archivedAt && <a className="btn" href={`${SITE_URL}/residences/${slug}`} target="_blank" rel="noreferrer"><ExternalLink size={15} /> Live page</a>}
         </div>
-      </div>
-      <p className="muted small">Prices are shown to visitors only while a residence is available. Resident, buyer and internal notes never appear.</p>
+      </Card>
     </div>
   );
 }

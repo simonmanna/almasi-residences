@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { effectivePriceMinor } from '@avida/types';
 import { PrismaService } from '../../common/prisma.service.js';
+import { live } from '../../common/preview.js';
 
-const LIVE = { published: true, archivedAt: null } as const;
+const LIVE = () => ({ ...live() });
 
 @Injectable()
 export class DevelopmentService {
@@ -45,12 +46,12 @@ export class DevelopmentService {
         officeHours: true,
         socials: true,
         typologies: {
-          where: { published: true },
+          where: { ...live() },
           orderBy: [{ sortOrder: 'asc' }, { areaSqmMin: 'asc' }],
-          include: { units: { where: LIVE, select: { status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true } } },
+          include: { units: { where: LIVE(), select: { status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true } } },
         },
         amenities: {
-          where: { published: true },
+          where: { ...live() },
           orderBy: { sortOrder: 'asc' },
           select: { id: true, slug: true, name: true, shortDescription: true, descriptionMd: true, iconKey: true, location: true },
         },
@@ -60,7 +61,7 @@ export class DevelopmentService {
           select: { milestones: { orderBy: { sortOrder: 'asc' } } },
         },
         landmarks: { orderBy: { distanceM: 'asc' } },
-        faqs: { where: { published: true }, orderBy: { sortOrder: 'asc' }, select: { id: true, question: true, answerMd: true, category: true } },
+        faqs: { where: { ...live() }, orderBy: { sortOrder: 'asc' }, select: { id: true, question: true, answerMd: true, category: true } },
         seo: true,
         mediaSets: { include: { assets: true }, orderBy: { sortOrder: 'asc' } },
         buildings: { select: { id: true, name: true, floorCount: true, modelUrl: true } },
@@ -99,7 +100,7 @@ export class DevelopmentService {
   /** §4.4 — derived values, computed at query time. */
   async summarise(developmentId: string) {
     const units = await this.prisma.client.unit.findMany({
-      where: { developmentId, ...LIVE, floor: { published: true } },
+      where: { developmentId, ...LIVE(), floor: { ...live() } },
       select: { status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true },
     });
     const counts: Record<string, number> = {};

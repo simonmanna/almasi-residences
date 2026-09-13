@@ -11,12 +11,14 @@ import {
   type UnitStatus,
 } from '@avida/types';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
+import { live, previewing, shown } from '../../common/preview.js';
 import { csvList, numberOrUndefined } from '../../common/http.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { StorageService } from '../../common/storage.service.js';
 
 /** What a visitor may see of a residence. Anything not here is private (§32). */
-const LIVE: Prisma.UnitWhereInput = { published: true, archivedAt: null, floor: { published: true } };
+/** Residences a visitor may see; in a preview, unpublished ones too (never archived). */
+const LIVE = (): Prisma.UnitWhereInput => ({ ...live(), floor: { ...live() } });
 
 const cardSelect = {
   id: true,
@@ -37,7 +39,7 @@ const cardSelect = {
   positionIndex: true,
   floor: { select: { id: true, level: true, label: true, displayName: true } },
   typology: { select: { id: true, slug: true, name: true, isPenthouse: true } },
-  media: { where: { kind: 'IMAGE', collection: 'LIBRARY', published: true, roomId: null }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }], take: 1 },
+  media: { where: { kind: 'IMAGE', collection: 'LIBRARY', published: true, archivedAt: null, roomId: null }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }], take: 1 },
 } satisfies Prisma.UnitSelect;
 
 type CardRow = Prisma.UnitGetPayload<{ select: typeof cardSelect }>;
@@ -97,6 +99,12 @@ export class PublicService {
       shortDescription: u.shortDescription,
       cover: u.media[0] ? this.publicMedia(u.media[0]) : null,
     };
+  }
+
+  /** A related file, if a visitor may see it (a preview also sees unpublished files). */
+  mediaOrNull(m: (Parameters<StorageService['present']>[0] & { archivedAt?: Date | null }) | null | undefined) {
+    if (!m || m.archivedAt || (!m.published && !previewing())) return null;
+    return this.publicMedia(m);
   }
 
   /** The public face of a media row: URLs and words, never owner ids or storage keys. */
@@ -164,7 +172,7 @@ export class PublicService {
       },
     });
     const units = await this.prisma.client.unit.findMany({
-      where: { developmentId, ...LIVE },
+      where: { developmentId, ...LIVE() },
       select: { status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true, areaSqm: true, bedrooms: true, typology: { select: { isPenthouse: true } } },
     });
     const byStatus: Record<PublicUnitStatus, number> = { available: 0, reserved: 0, sold: 0, unavailable: 0 };
@@ -199,7 +207,7 @@ export class PublicService {
   async floors() {
     const developmentId = await this.dev.id();
     const floors = await this.prisma.client.floor.findMany({
-      where: { building: { developmentId }, published: true },
+      where: { building: { developmentId }, ...live() },
       orderBy: [{ sortOrder: 'desc' }, { level: 'desc' }],
       select: {
         id: true,
@@ -207,7 +215,7 @@ export class PublicService {
         label: true,
         displayName: true,
         description: true,
-        units: { where: { published: true, archivedAt: null }, select: { status: true } },
+        units: { where: { ...live() }, select: { status: true } },
       },
     });
     return floors.map(({ units, displayName, label, ...f }) => ({
@@ -221,18 +229,18 @@ export class PublicService {
   async floor(id: string) {
     const developmentId = await this.dev.id();
     const floor = await this.prisma.client.floor.findFirst({
-      where: { building: { developmentId }, published: true, OR: [{ id }, ...(/^-?\d+$/.test(id) ? [{ level: Number(id) }] : [])] },
+      where: { building: { developmentId }, ...live(), OR: [{ id }, ...(/^-?\d+$/.test(id) ? [{ level: Number(id) }] : [])] },
       select: {
         id: true,
         level: true,
         label: true,
         displayName: true,
         description: true,
-        media: { where: { published: true }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }] },
+        media: { where: { ...live() }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }] },
       },
     });
     if (!floor) throw new NotFoundException('No such floor');
-    const units = await this.prisma.client.unit.findMany({ where: { floorId: floor.id, ...LIVE }, select: cardSelect, orderBy: { positionIndex: 'asc' } });
+    const units = await this.prisma.client.unit.findMany({ where: { floorId: floor.id, ...LIVE() }, select: cardSelect, orderBy: { positionIndex: 'asc' } });
     const { media, displayName, label, ...f } = floor;
     return {
       ...f,
@@ -261,8 +269,8 @@ export class PublicService {
 
     const where: Prisma.UnitWhereInput = {
       developmentId,
-      ...LIVE,
-      ...(floors.length ? { floor: { published: true, level: { in: floors } } } : {}),
+      ...LIVE(),
+      ...(floors.length ? { floor: { ...live(), level: { in: floors } } } : {}),
       ...(beds.length ? { bedrooms: { in: beds } } : {}),
       ...(types.length ? { OR: [{ typology: { slug: { in: types } } }, ...(types.includes('penthouse') ? [{ typology: { isPenthouse: true } }] : [])] } : {}),
       ...(statuses.length ? { status: { in: statuses.flatMap(toDb) } } : {}),
@@ -281,7 +289,7 @@ export class PublicService {
     const developmentId = await this.dev.id();
     const candidates = [code, code.toUpperCase(), code.toUpperCase().replace(/[\s-]+/g, '-'), code.toUpperCase().replace(/[\s-]+/g, '')];
     const unit = await this.prisma.client.unit.findFirst({
-      where: { developmentId, ...LIVE, code: { in: candidates, mode: 'insensitive' } },
+      where: { developmentId, ...LIVE(), code: { in: candidates, mode: 'insensitive' } },
       select: { id: true },
     });
     if (!unit) throw new NotFoundException('No such residence');
@@ -292,7 +300,7 @@ export class PublicService {
   async residenceById(id: string, opts: { includeUnpublished?: boolean } = {}) {
     const developmentId = await this.dev.id();
     const u = await this.prisma.client.unit.findFirst({
-      where: { id, developmentId, ...(opts.includeUnpublished ? {} : LIVE) },
+      where: { id, developmentId, ...(opts.includeUnpublished ? {} : LIVE()) },
       select: {
         ...cardSelect,
         typologyId: true,
@@ -313,7 +321,7 @@ export class PublicService {
         features: { select: { feature: { select: { name: true, category: true, iconKey: true } } }, orderBy: { feature: { sortOrder: 'asc' } } },
         rooms: {
           orderBy: { sortOrder: 'asc' },
-          select: { id: true, name: true, type: true, areaSqm: true, description: true, features: true, planX: true, planY: true, planW: true, planH: true, planOpen: true, media: { where: { published: true }, orderBy: { sortOrder: 'asc' } } },
+          select: { id: true, name: true, type: true, areaSqm: true, description: true, features: true, planX: true, planY: true, planW: true, planH: true, planOpen: true, media: { where: { ...live() }, orderBy: { sortOrder: 'asc' } } },
         },
         paymentPlan: { select: { name: true, description: true, depositPercent: true, published: true, milestones: { orderBy: { sortOrder: 'asc' }, select: { label: true, percent: true, triggerType: true, triggerDate: true, triggerNote: true } } } },
       },
@@ -324,7 +332,7 @@ export class PublicService {
       this.prisma.client.media.findMany({
         where: {
           developmentId,
-          published: true,
+          ...live(),
           OR: [{ unitId: u.id, roomId: null }, { typologyId: u.typologyId }, { floorId: u.floorId, collection: 'FLOOR_PLAN' }],
         },
         orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }],
@@ -369,7 +377,7 @@ export class PublicService {
 
   private defaultPlan(developmentId: string) {
     return this.prisma.client.paymentPlan.findFirst({
-      where: { developmentId, isDefault: true, published: true },
+      where: { developmentId, isDefault: true, ...live() },
       select: { name: true, description: true, depositPercent: true, published: true, milestones: { orderBy: { sortOrder: 'asc' }, select: { label: true, percent: true, triggerType: true, triggerDate: true, triggerNote: true } } },
     });
   }
@@ -379,7 +387,7 @@ export class PublicService {
   async amenities() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.amenity.findMany({
-      where: { developmentId, published: true },
+      where: { developmentId, ...live() },
       orderBy: { sortOrder: 'asc' },
       select: {
         id: true,
@@ -390,7 +398,7 @@ export class PublicService {
         iconKey: true,
         location: true,
         specifications: true,
-        media: { where: { published: true }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }] },
+        media: { where: { ...live() }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }] },
       },
     });
     return rows.map(({ media, ...a }) => ({
@@ -404,21 +412,21 @@ export class PublicService {
   async galleries() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.gallery.findMany({
-      where: { developmentId, published: true },
+      where: { developmentId, ...live() },
       orderBy: { sortOrder: 'asc' },
       select: {
         slug: true,
         title: true,
         description: true,
         coverMedia: true,
-        items: { where: { media: { published: true } }, orderBy: { sortOrder: 'asc' }, select: { media: true } },
+        items: { where: { media: { ...live() } }, orderBy: { sortOrder: 'asc' }, select: { media: true } },
       },
     });
     return rows
       .filter((g) => g.items.length > 0)
       .map(({ coverMedia, items, ...g }) => ({
         ...g,
-        cover: coverMedia?.published ? this.publicMedia(coverMedia) : this.publicMedia(items[0]!.media),
+        cover: (this.mediaOrNull(coverMedia) ?? this.publicMedia(items[0]!.media)),
         items: items.map((i) => this.publicMedia(i.media)),
       }));
   }
@@ -427,12 +435,12 @@ export class PublicService {
   async gallery(slug: string) {
     const developmentId = await this.dev.id();
     const g = await this.prisma.client.gallery.findFirst({
-      where: { developmentId, slug, published: true },
-      select: { slug: true, title: true, description: true, coverMedia: true, items: { where: { media: { published: true } }, orderBy: { sortOrder: 'asc' }, select: { media: true } } },
+      where: { developmentId, slug, ...live() },
+      select: { slug: true, title: true, description: true, coverMedia: true, items: { where: { media: { ...live() } }, orderBy: { sortOrder: 'asc' }, select: { media: true } } },
     });
     if (!g || g.items.length === 0) throw new NotFoundException('No such gallery');
     const { coverMedia, items, ...rest } = g;
-    return { ...rest, cover: coverMedia?.published ? this.publicMedia(coverMedia) : this.publicMedia(items[0]!.media), items: items.map((i) => this.publicMedia(i.media)) };
+    return { ...rest, cover: (this.mediaOrNull(coverMedia) ?? this.publicMedia(items[0]!.media)), items: items.map((i) => this.publicMedia(i.media)) };
   }
 
   async media(category?: string, collection?: string) {
@@ -440,12 +448,12 @@ export class PublicService {
     const rows = await this.prisma.client.media.findMany({
       where: {
         developmentId,
-        published: true,
+        ...live(),
         collection: (collection ?? 'LIBRARY') as Prisma.MediaWhereInput['collection'],
         ...(category ? { category: { in: csvList(category) } } : {}),
         // A residence's own photographs are shown with the residence, but
         // only while that residence is itself on the website.
-        OR: [{ unitId: null }, { unit: LIVE }],
+        OR: [{ unitId: null }, { unit: LIVE() }],
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       take: 300,
@@ -469,7 +477,7 @@ export class PublicService {
   async paymentPlans() {
     const developmentId = await this.dev.id();
     return this.prisma.client.paymentPlan.findMany({
-      where: { developmentId, published: true },
+      where: { developmentId, ...live() },
       orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }],
       select: {
         id: true,
@@ -490,9 +498,9 @@ export class PublicService {
   async pages() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.contentPage.findMany({ where: { developmentId } });
-    const contents = new Map(rows.map((r) => [r.key, r.published === false ? {} : ((r.content ?? {}) as Record<string, unknown>)]));
+    const contents = new Map(rows.map((r) => [r.key, this.pageContent(r)]));
     const ids = CONTENT_PAGES.flatMap((def) => def.fields.filter((f) => f.type === 'media').map((f) => contents.get(def.key)?.[f.key])).filter((v): v is string => typeof v === 'string');
-    const media = ids.length ? await this.prisma.client.media.findMany({ where: { id: { in: ids }, developmentId, published: true } }) : [];
+    const media = ids.length ? await this.prisma.client.media.findMany({ where: { id: { in: ids }, developmentId, ...live() } }) : [];
     const byId = new Map(media.map((m) => [m.id, m]));
     const out: Record<string, Record<string, unknown>> = {};
     for (const def of CONTENT_PAGES) out[def.key] = this.resolvePage(def.key, contents.get(def.key) ?? {}, byId);
@@ -504,10 +512,17 @@ export class PublicService {
     if (!def) throw new NotFoundException('No such page');
     const developmentId = await this.dev.id();
     const row = await this.prisma.client.contentPage.findUnique({ where: { developmentId_key: { developmentId, key } } });
-    const content = row?.published === false ? {} : ((row?.content ?? {}) as Record<string, unknown>);
+    const content = row ? this.pageContent(row) : {};
     const ids = def.fields.filter((f) => f.type === 'media').map((f) => content[f.key]).filter((v): v is string => typeof v === 'string');
-    const media = ids.length ? await this.prisma.client.media.findMany({ where: { id: { in: ids }, developmentId, published: true } }) : [];
+    const media = ids.length ? await this.prisma.client.media.findMany({ where: { id: { in: ids }, developmentId, ...live() } }) : [];
     return { key, title: def.title, content: this.resolvePage(key, content, new Map(media.map((m) => [m.id, m]))), updatedAt: row?.updatedAt ?? null };
+  }
+
+  /** What a visitor reads of a page; a preview reads the unpublished draft over it (§40.2). */
+  private pageContent(row: { published: boolean; content: unknown; draftContent: unknown }): Record<string, unknown> {
+    const published = (row.content ?? {}) as Record<string, unknown>;
+    if (previewing()) return { ...published, ...((row.draftContent ?? {}) as Record<string, unknown>) };
+    return row.published === false ? {} : published;
   }
 
   /** Media fields resolve to the file itself, so the site needs no second request. */
@@ -527,7 +542,7 @@ export class PublicService {
   async faqs() {
     const developmentId = await this.dev.id();
     return this.prisma.client.faq.findMany({
-      where: { developmentId, published: true },
+      where: { developmentId, ...live() },
       orderBy: { sortOrder: 'asc' },
       select: { id: true, question: true, answerMd: true, category: true },
     });
@@ -543,7 +558,7 @@ export class PublicService {
     for (const key of MEDIA_SLOTS.map((d) => d.key)) {
       const row = rows.find((r) => r.key === key);
       out[key] = {
-        image: row?.image?.published ? this.publicMedia(row.image) : null,
+        image: (this.mediaOrNull(row?.image)),
         video: row?.video?.published && row.video.kind === 'VIDEO' ? this.publicMedia(row.video) : null,
       };
     }
@@ -553,7 +568,7 @@ export class PublicService {
   /** The specification a residence of this type shows: type rows replace same-label development rows. */
   async specifications(developmentId: string, typologyId: string | null) {
     const rows = await this.prisma.client.specification.findMany({
-      where: { developmentId, published: true, OR: [{ typologyId: null }, ...(typologyId ? [{ typologyId }] : [])] },
+      where: { developmentId, ...live(), OR: [{ typologyId: null }, ...(typologyId ? [{ typologyId }] : [])] },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       select: { category: true, label: true, value: true, typologyId: true },
     });
@@ -564,13 +579,13 @@ export class PublicService {
   async tour(slug: string) {
     const developmentId = await this.dev.id();
     const t = await this.prisma.client.tour.findFirst({
-      where: { developmentId, slug, published: true },
+      where: { developmentId, slug, ...live() },
       select: {
         slug: true,
         name: true,
         description: true,
         scenes: {
-          where: { published: true },
+          where: { ...shown() },
           orderBy: { sortOrder: 'asc' },
           select: { key: true, label: true, place: true, body: true, level: true, image: true, video: true },
         },
@@ -587,7 +602,7 @@ export class PublicService {
         place: sc.place,
         body: sc.body,
         level: sc.level,
-        image: sc.image?.published ? this.publicMedia(sc.image) : null,
+        image: (this.mediaOrNull(sc.image)),
         video: sc.video?.published && sc.video.kind === 'VIDEO' ? this.publicMedia(sc.video) : null,
       })),
     };
@@ -596,7 +611,7 @@ export class PublicService {
   async film() {
     const developmentId = await this.dev.id();
     const f = await this.prisma.client.videoAsset.findFirst({
-      where: { developmentId, published: true },
+      where: { developmentId, ...shown() },
       orderBy: { createdAt: 'asc' },
       select: {
         key: true,
@@ -615,7 +630,7 @@ export class PublicService {
       description: f.description,
       durationSec: f.durationSec,
       video: this.publicMedia(f.media),
-      poster: f.posterMedia?.published ? this.publicMedia(f.posterMedia) : null,
+      poster: (this.mediaOrNull(f.posterMedia)),
       chapters: f.chapters,
     };
   }
@@ -630,7 +645,7 @@ export class PublicService {
     return {
       site: site ?? null,
       pages: Object.fromEntries(
-        pages.map((pg) => [pg.path, { title: pg.title, description: pg.description, noindex: pg.noindex, ogImage: pg.ogImage?.published ? this.publicMedia(pg.ogImage) : null }]),
+        pages.map((pg) => [pg.path, { title: pg.title, description: pg.description, noindex: pg.noindex, ogImage: (this.mediaOrNull(pg.ogImage)) }]),
       ),
     };
   }
@@ -639,7 +654,7 @@ export class PublicService {
   async typologyCards() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.typology.findMany({
-      where: { developmentId, published: true },
+      where: { developmentId, ...live() },
       orderBy: { sortOrder: 'asc' },
       select: {
         slug: true,
@@ -647,7 +662,7 @@ export class PublicService {
         bedrooms: true,
         isPenthouse: true,
         summary: true,
-        media: { where: { published: true, kind: 'IMAGE', collection: 'LIBRARY', unitId: null }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }], take: 1 },
+        media: { where: { ...live(), kind: 'IMAGE', collection: 'LIBRARY', unitId: null }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }], take: 1 },
       },
     });
     return rows.map(({ media, ...t }) => ({ ...t, cover: media[0] ? this.publicMedia(media[0]) : null }));

@@ -22,7 +22,7 @@ import { PrismaService } from '../../common/prisma.service.js';
 import { PublicSync } from '../../common/public-sync.service.js';
 import { StorageService } from '../../common/storage.service.js';
 import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
-import { actorOf, defined, requireNonNull } from './actor.js';
+import { actorOf, defined, requireNonNull, publishStamp } from './actor.js';
 import { CreateGalleryDto, GalleryItemsDto, IdsDto, UpdateGalleryDto } from './dto.js';
 
 const slugify = (s: string) =>
@@ -52,7 +52,7 @@ export class GalleriesController {
   async list() {
     const developmentId = await this.dev.id();
     const rows = await this.prisma.client.gallery.findMany({
-      where: { developmentId },
+      where: { developmentId, archivedAt: null },
       orderBy: { sortOrder: 'asc' },
       include: {
         coverMedia: true,
@@ -97,7 +97,7 @@ export class GalleriesController {
           slug: dto.slug ?? slugify(dto.title),
           description: dto.description ?? null,
           coverMediaId: dto.coverMediaId ?? null,
-          published: dto.published ?? true,
+          ...publishStamp(actorOf(req), dto.published, true),
           sortOrder: (max._max.sortOrder ?? -1) + 1,
         },
       })
@@ -114,7 +114,7 @@ export class GalleriesController {
     const g = await this.owned(id);
     if (dto.coverMediaId) await this.assertMedia([dto.coverMediaId], g.developmentId);
     const after = await this.prisma.client.gallery
-      .update({ where: { id }, data: defined({ ...dto }) })
+      .update({ where: { id }, data: { ...defined({ ...dto, published: undefined }), ...publishStamp(actorOf(req), dto.published) } })
       .catch((e) => rethrowPrisma(e, { unique: 'Another gallery already uses that slug.' }));
     await this.audit.record({ actorId: actorOf(req).id, action: 'gallery.update', entity: 'gallery', entityId: id, target: after.title, summary: `Updated gallery ${after.title}`, req });
     await this.sync.changed('media');

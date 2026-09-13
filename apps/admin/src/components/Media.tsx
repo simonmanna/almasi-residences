@@ -5,7 +5,8 @@ import { API_ORIGIN, csrfToken, del, get, mediaUrl, patch, qs } from '../lib/api
 import { useAuth } from '../lib/auth';
 import { bytes, date } from '../lib/format';
 import { invalidate, useQuery } from '../lib/query';
-import { useDebounced } from '../lib/router';
+import { Link, useDebounced } from '../lib/router';
+import { PreviewButton } from './PreviewButton';
 import type { MediaView, Paged } from '../lib/types';
 import { useToast } from './Toast';
 import { Alert, Badge, Button, Drawer, Empty, Field, Input, KV, MediaImg, Modal, Pagination, Select, Textarea, Toggle, useConfirm } from './ui';
@@ -389,6 +390,7 @@ export function MediaEditor({ media, onClose }: { media: MediaView; onClose: () 
       <Field label="Category">
         <Select value={draft.category} disabled={!editable} onChange={(e) => setDraft({ ...draft, category: e.target.value })} options={cats.map((c) => ({ value: c, label: categoryLabel(c) }))} />
       </Field>
+      <UsageList id={media.id} />
       {(media.kind === 'IMAGE' || media.kind === 'VIDEO') && (
         <Field label="What this file is" hint="A render is never shown as if it were a photograph: the website prints the note for it beside the image.">
           <Select value={draft.provenance} disabled={!editable} onChange={(e) => setDraft({ ...draft, provenance: e.target.value })} options={MEDIA_PROVENANCES.map((v) => ({ value: v, label: `${PROVENANCE_LABEL[v]}${PROVENANCE_NOTE[v] ? ` — “${PROVENANCE_NOTE[v]}”` : ''}` }))} />
@@ -418,6 +420,25 @@ export function MediaEditor({ media, onClose }: { media: MediaView; onClose: () 
         </>
       )}
     </Drawer>
+  );
+}
+
+/** Roadmap item 39 — where this file appears on the website, each with a preview of that page. */
+function UsageList({ id }: { id: string }) {
+  const { data } = useQuery(`assets:usage:${id}`, () => get<MediaView>(`/admin/assets/${id}`));
+  const usage = data?.usage;
+  if (!usage) return null;
+  return (
+    <Field label="Where it appears" hint={usage.length ? undefined : 'Not used anywhere on the website yet.'}>
+      <ul className="usage-list">
+        {usage.map((u, i) => (
+          <li key={i}>
+            <Link to={u.adminPath}>{u.label}</Link>
+            <PreviewButton path={u.path} size="xs" label="Preview" variant="ghost" />
+          </li>
+        ))}
+      </ul>
+    </Field>
   );
 }
 

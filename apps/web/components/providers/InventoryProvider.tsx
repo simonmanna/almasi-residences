@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { livePath, type InventoryDto, type LiveInventoryDto } from '../../lib/api';
+import type { InventoryDto, LiveInventoryDto } from '../../lib/api';
+import { livePath } from '../../lib/live';
 import {
   applyLive,
   floorsOf,
