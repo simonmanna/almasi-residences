@@ -56,6 +56,9 @@ export interface MediaView {
   published: boolean;
   isCover: boolean;
   sortOrder: number;
+  provenance: string;
+  focusX: number | null;
+  focusY: number | null;
   url: string;
   originalUrl: string;
   thumbUrl: string;
@@ -89,6 +92,9 @@ type MediaRow = {
   published: boolean;
   isCover: boolean;
   sortOrder: number;
+  provenance?: string;
+  focusX?: number | null;
+  focusY?: number | null;
   unitId: string | null;
   floorId: string | null;
   amenityId: string | null;
@@ -228,6 +234,9 @@ export class StorageService {
       published: m.published,
       isCover: m.isCover,
       sortOrder: m.sortOrder,
+      provenance: m.provenance ?? 'PHOTOGRAPH',
+      focusX: m.focusX ?? null,
+      focusY: m.focusY ?? null,
       url: pick(1600),
       originalUrl: this.publicUrl(m.storageKey),
       thumbUrl: pick(400),

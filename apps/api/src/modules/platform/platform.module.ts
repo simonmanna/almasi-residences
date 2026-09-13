@@ -11,6 +11,7 @@ import { FloorsController } from './floors.controller.js';
 import { GalleriesController } from './galleries.controller.js';
 import { ParkingController } from './parking.controller.js';
 import { PaymentPlansController } from './payment-plans.controller.js';
+import { PresentationController } from './presentation.controller.js';
 import { PropertyController } from './property.controller.js';
 import { ResidencesController } from './residences.controller.js';
 import { ResidencesService } from './residences.service.js';
@@ -40,6 +41,7 @@ import { UsersController } from './users.controller.js';
     ContentController,
     UsersController,
     AuditController,
+    PresentationController,
   ],
   providers: [ResidencesService],
 })

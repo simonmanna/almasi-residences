@@ -20,6 +20,7 @@ import { CurrentDevelopment } from '../../common/current-development.service.js'
 import { rethrowPrisma } from '../../common/http.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
+import { PublicSync } from '../../common/public-sync.service.js';
 import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
 import { actorOf, defined, requireNonNull } from './actor.js';
 import { CreateParkingDto, UpdateParkingDto } from './dto.js';
@@ -33,6 +34,7 @@ export class ParkingController {
     private readonly prisma: PrismaService,
     private readonly dev: CurrentDevelopment,
     private readonly audit: AuditService,
+    private readonly sync: PublicSync,
   ) {}
 
   @Get()
@@ -45,21 +47,24 @@ export class ParkingController {
       ...(type ? { type: type as Prisma.ParkingSpaceWhereInput['type'] } : {}),
       ...(q ? { OR: [{ code: { contains: q, mode: 'insensitive' } }, { unit: { code: { contains: q, mode: 'insensitive' } } }] } : {}),
     };
-    const [rows, all] = await Promise.all([
+    // Statistics are two grouped counts, not a second full scan (roadmap item 58).
+    const [rows, byStatus, byType, total] = await Promise.all([
       this.prisma.client.parkingSpace.findMany({
         where,
         orderBy: { code: 'asc' },
         include: { unit: { select: { id: true, code: true, status: true } }, resident: { select: { id: true, fullName: true } } },
       }),
-      this.prisma.client.parkingSpace.findMany({ where: { developmentId }, select: { status: true, type: true } }),
+      this.prisma.client.parkingSpace.groupBy({ by: ['status'], where: { developmentId }, _count: true }),
+      this.prisma.client.parkingSpace.groupBy({ by: ['type'], where: { developmentId }, _count: true }),
+      this.prisma.client.parkingSpace.count({ where: { developmentId } }),
     ]);
     const showPeople = can(actorOf(req).role, 'resident.view');
     return {
       data: rows.map((r) => ({ ...r, resident: showPeople ? r.resident : r.resident ? { id: r.resident.id, fullName: 'Assigned' } : null })),
       stats: {
-        total: all.length,
-        byStatus: Object.fromEntries(PARKING_STATUSES.map((s) => [s, all.filter((b) => b.status === s).length])),
-        byType: Object.fromEntries(PARKING_TYPES.map((t) => [t, all.filter((b) => b.type === t).length])),
+        total,
+        byStatus: Object.fromEntries(PARKING_STATUSES.map((st) => [st, byStatus.find((b) => b.status === st)?._count ?? 0])),
+        byType: Object.fromEntries(PARKING_TYPES.map((t) => [t, byType.find((b) => b.type === t)?._count ?? 0])),
       },
     };
   }
@@ -86,6 +91,7 @@ export class ParkingController {
       })
       .catch((e) => rethrowPrisma(e, { unique: `Bay ${dto.code} already exists.` }));
     await this.audit.record({ actorId: actorOf(req).id, action: 'parking.create', entity: 'parking', entityId: row.id, target: row.code, summary: `Added parking bay ${row.code}`, req });
+    await this.sync.changed('inventory');
     return row;
   }
 
@@ -111,6 +117,7 @@ export class ParkingController {
     changes.keys = changes.keys.filter((k) => k !== 'updatedAt');
     if (changes.keys.length) {
       await this.audit.record({ actorId: actorOf(req).id, action: 'parking.update', entity: 'parking', entityId: id, target: after.code, summary: `Updated bay ${after.code}: ${changes.keys.join(', ')}`, before: changes.before, after: changes.after, req });
+      await this.sync.changed('inventory');
     }
     return after;
   }
@@ -124,6 +131,7 @@ export class ParkingController {
     if (row.status === 'SOLD') throw new BadRequestException(`Bay ${row.code} is sold. Mark it unavailable instead.`);
     await this.prisma.client.parkingSpace.delete({ where: { id } });
     await this.audit.record({ actorId: actorOf(req).id, action: 'parking.delete', entity: 'parking', entityId: id, target: row.code, summary: `Deleted bay ${row.code}`, before: row, req });
+    await this.sync.changed('inventory');
     return { ok: true };
   }
 

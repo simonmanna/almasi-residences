@@ -10,9 +10,9 @@ import type { MediaView } from '../lib/types';
 import { MediaPicker } from '../components/Media';
 import { useToast } from '../components/Toast';
 import { Alert, Button, Card, CardHead, ErrorBox, Field, Input, LoadingPage, MediaImg, PageHead, Textarea, Toggle } from '../components/ui';
+import { SITE_URL } from '../lib/site';
 
-const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined) || 'http://localhost:3000';
-const PAGE_PATH: Record<string, string> = { home: '/', about: '/', amenities: '/amenities', buying: '/buying', gallery: '/gallery', contact: '/enquire' };
+const PAGE_PATH: Record<string, string> = { home: '/', about: '/buying', residences: '/residences', amenities: '/amenities', location: '/location', buying: '/buying', gallery: '/gallery', progress: '/progress', film: '/film', contact: '/enquire' };
 
 interface PageData {
   key: string;

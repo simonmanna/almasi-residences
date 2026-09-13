@@ -354,6 +354,23 @@ html.lenis, html.lenis body { height: auto; }
 }
 .motion-media[data-playing='true'] .motion-media-video { opacity: 1; }
 
+/* An empty placement: intentional and quiet, never a substitute image (roadmap item 17). */
+.media-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  background:
+    repeating-linear-gradient(135deg, transparent 0 14px, color-mix(in srgb, var(--ink-muted) 8%, transparent) 14px 15px),
+    var(--surface-sunk);
+  color: var(--ink-muted);
+  font-size: 0.9375rem;
+}
+
 /* The opening sequence owns the screen until it ends. */
 html[data-intro] header[data-mode] { opacity: 0; pointer-events: none; }
 

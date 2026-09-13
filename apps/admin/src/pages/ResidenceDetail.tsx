@@ -22,9 +22,6 @@ import {
 } from 'lucide-react';
 import {
   humanise,
-  MODEL_GROUND_LETTERS,
-  MODEL_PENTHOUSE_CODES,
-  MODEL_TYPICAL_LETTERS,
   ROOM_TYPES,
   STATUS_LABEL,
   UNPLACED_IN_MODEL_NOTE,
@@ -42,8 +39,8 @@ import { BasicFields, DescriptionFields, FeaturePicker, PricingFields, SizeField
 import { StatusSelect } from '../components/StatusSelect';
 import { useToast } from '../components/Toast';
 import { Alert, Badge, Button, Card, CardHead, Empty, ErrorBox, Field, Input, KV, LoadingPage, MediaImg, Menu, Modal, NumberInput, PageHead, Select, StatusBadge, Tabs, Textarea, Toggle, useConfirm } from '../components/ui';
+import { SITE_URL } from '../lib/site';
 
-const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined) || 'http://localhost:3000';
 const residenceSlug = (code: string) => code.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
 type Tab = 'overview' | 'pricing' | 'specs' | 'plan' | 'images' | 'videos' | 'features' | 'rooms' | 'people' | 'enquiries' | 'activity' | 'preview';
@@ -153,6 +150,7 @@ function RoomsTab({ u, refetch }: { u: Detail; refetch: () => void }) {
               <th>Type</th>
               <th className="num">Area</th>
               <th>Description</th>
+              <th title="Position and size on the plan drawing, in plan units">Plan (x, y, w, h)</th>
               <th className="actions" />
             </tr>
           </thead>
@@ -171,6 +169,28 @@ function RoomsTab({ u, refetch }: { u: Detail; refetch: () => void }) {
                 <td>{editable ? <Select className="sm" value={r.type} onChange={(e) => void save(r, { type: e.target.value })} options={ROOM_TYPES.map((t) => ({ value: t, label: humanise(t) }))} /> : humanise(r.type)}</td>
                 <td className="num" style={{ width: 120 }}>{editable ? <NumberInput key={String(r.areaSqm)} defaultValue={r.areaSqm} suffix="m²" aria-label={`Area of ${r.name} in square metres`} onBlur={(e) => { const n = e.target.value === '' ? null : Number(e.target.value); if (n !== r.areaSqm) void save(r, { areaSqm: n }); }} /> : area(r.areaSqm)}</td>
                 <td>{editable ? <Input className="sm" defaultValue={r.description ?? ''} placeholder="Optional" onBlur={(e) => e.target.value !== (r.description ?? '') && void save(r, { description: e.target.value || null })} /> : r.description}</td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  {editable ? (
+                    <span className="row" style={{ gap: 4 }}>
+                      {(['planX', 'planY', 'planW', 'planH'] as const).map((k) => (
+                        <input
+                          key={`${k}:${String(r[k])}`}
+                          className="input sm"
+                          style={{ width: 58 }}
+                          inputMode="decimal"
+                          aria-label={`${r.name} plan ${k.slice(4).toLowerCase()}`}
+                          placeholder={k.slice(4).toLowerCase()}
+                          defaultValue={r[k] ?? ''}
+                          onBlur={(e) => {
+                            const n = e.target.value === '' ? null : Number(e.target.value);
+                            if (n !== (r[k] ?? null) && (n === null || Number.isFinite(n))) void save(r, { [k]: n });
+                          }}
+                        />
+                      ))}
+                      <label className="small row" style={{ gap: 4 }}><input type="checkbox" checked={Boolean(r.planOpen)} onChange={(e) => void save(r, { planOpen: e.target.checked })} /> Outside</label>
+                    </span>
+                  ) : r.planX != null ? `${r.planX}, ${r.planY}, ${r.planW}×${r.planH}` : <span className="muted">Not drawn</span>}
+                </td>
                 <td className="actions">
                   {editable && (
                     <Button size="sm" variant="ghost" icon={<Trash2 size={15} />} aria-label={`Remove ${r.name}`} onClick={async () => {
@@ -550,8 +570,21 @@ export default function ResidenceDetail({ params }: { params: Record<string, str
 
       {!u.placedInModel && (
         <Alert tone="warn" icon={<TriangleAlert size={18} />}>
-          {UNPLACED_IN_MODEL_NOTE} Codes the model can place are {MODEL_GROUND_LETTERS.join(', ')} on the
-          ground floor, {MODEL_TYPICAL_LETTERS.join(', ')} above it, and {MODEL_PENTHOUSE_CODES.join(', ')}.
+          {UNPLACED_IN_MODEL_NOTE}
+          {can('residence.edit') && !archived && (u.modelSlotOptions ?? []).length > 0 && (
+            <span className="row" style={{ gap: 8, marginTop: 8 }}>
+              <Select
+                className="sm"
+                aria-label="Position in the 3D model"
+                value={u.modelSlot ?? ''}
+                onChange={async (e) => {
+                  await patch(`/admin/residences/${u.id}`, { modelSlot: e.target.value || null });
+                  invalidate(`residence:${u.id}`, 'residences');
+                }}
+                options={[{ value: '', label: 'Choose its position…' }, ...(u.modelSlotOptions ?? []).map((o) => ({ value: o.key, label: `${o.key} — ${o.label}` }))]}
+              />
+            </span>
+          )}
         </Alert>
       )}
 

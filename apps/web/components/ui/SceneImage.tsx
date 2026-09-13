@@ -1,41 +1,43 @@
-import Image from 'next/image';
-import { scene, type SceneId } from '../../lib/media-manifest';
+import type { PublicMediaDto } from '../../lib/api';
+import { ApiImage } from './ApiImage';
 
 /**
- * A scene as a responsive, cover-fitted image. next/image serves AVIF/WebP at
- * the right width for `sizes`; the blur placeholder is generated with the
- * rendition, so a slow connection sees the room's colour at once, not a hole.
+ * A still from the admin's media library, cover-fitted — or, when the admin has
+ * not chosen one, a neutral frame that says so.
+ *
+ * Roadmap items 16–17: before this, the site drew from a static manifest of 24
+ * renders and fell back to one of them whenever the library had nothing, so a
+ * missing photograph looked like the wrong photograph. There is no substitute
+ * any more; an empty placement is visibly, intentionally empty.
  */
 export function SceneImage({
-  id,
+  media,
   sizes = '100vw',
   priority = false,
-  quality = 75,
-  alt,
   focus,
+  label,
   className,
 }: {
-  id: SceneId;
+  media: PublicMediaDto | null | undefined;
   sizes?: string;
   priority?: boolean;
-  quality?: 60 | 70 | 75 | 82;
-  alt?: string;
   focus?: string;
+  /** Printed in the empty frame, so a manager previewing the site knows what belongs here. */
+  label?: string;
   className?: string;
 }) {
-  const s = scene(id);
+  if (!media || media.kind !== 'IMAGE') return <MediaEmpty label={label} className={className} />;
+  return <ApiImage m={media} sizes={sizes} priority={priority} focus={focus ?? media.focus ?? undefined} className={className} />;
+}
+
+export function MediaEmpty({ label, className }: { label?: string; className?: string }) {
   return (
-    <Image
-      src={s.src}
-      alt={alt ?? s.alt}
-      fill
-      sizes={sizes}
-      priority={priority}
-      quality={quality}
-      placeholder="blur"
-      blurDataURL={s.blur}
-      className={className}
-      style={{ objectFit: 'cover', objectPosition: focus ?? s.focus ?? '50% 50%' }}
-    />
+    <div className={`media-empty ${className ?? ''}`} role="img" aria-label={label ? `${label}: image to follow` : 'Image to follow'}>
+      {label && <span className="mark">{label}</span>}
+      <span>Image to follow</span>
+    </div>
   );
 }
+
+/** The provenance note printed beside a file (§49); empty for a photograph or no file. */
+export const noteFor = (m: PublicMediaDto | null | undefined): string => m?.note ?? '';

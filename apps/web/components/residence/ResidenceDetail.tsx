@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useState, type KeyboardEvent } from 'react';
 import { formatCount, formatDate, formatMoney, formatPercent } from '@avida/types';
 import type { MilestoneDto, PublicResidenceDto, UnitDetailDto } from '../../lib/api';
-import { PROVENANCE_NOTE, scene, TYPE_MEDIA } from '../../lib/media-manifest';
 import {
   ORIENTATION_TEXT,
   STATUS_TEXT,
@@ -25,24 +24,6 @@ import { SceneImage } from '../ui/SceneImage';
 import { PlanDrawing } from './PlanDrawing';
 import styles from './ResidenceDetail.module.css';
 
-/** Only what the developer's own materials state. The sale contract is the authority. */
-const SPECIFICATION = [
-  { label: 'Floors', text: 'Tiled throughout.' },
-  { label: 'Kitchen', text: 'Fitted, with granite worktops.' },
-  { label: 'Storage', text: 'Built-in wardrobes.' },
-  { label: 'Bathrooms', text: 'Modern sanitaryware and fittings.' },
-  { label: 'Windows', text: 'Double-glazed.' },
-  {
-    label: 'Power',
-    text: 'A standby generator for common areas, lifts and water pumps, and a dedicated essential circuit in every residence.',
-  },
-  { label: 'Parking', text: 'One basement bay per residence, with visitor bays at ground level.' },
-  {
-    label: 'Shared',
-    text: 'Swimming pool, gym, sauna and massage room, restaurant, co-working space and a staffed reception.',
-  },
-];
-
 export function ResidenceDetail({
   fallback,
   schedule,
@@ -56,7 +37,7 @@ export function ResidenceDetail({
   schedule: UnitDetailDto['schedule'] | null;
   balconySqm: number | null;
   typologyText: string | null;
-  handover: string;
+  handover: string | null;
   milestones: MilestoneDto[];
   /** The residence's own record from the admin: photographs, plans, features. */
   publicData?: PublicResidenceDto | null;
@@ -67,19 +48,20 @@ export function ResidenceDetail({
   const router = useRouter();
   const [tab, setTab] = useState<'plan' | 'furnished'>('plan');
 
-  const media = TYPE_MEDIA[r.type];
-  // Photographs and plans uploaded in the admin win; the type's artwork stands in until then.
+  // Photographs and plans come from the admin: the residence's own, else its type's (API).
+  // With none, an empty frame says so — never another type's artwork (roadmap item 17).
   const photos = (publicData?.images ?? []).filter((m) => m.kind === 'IMAGE');
+  const videos = (publicData?.videos ?? []).filter((m) => m.kind === 'VIDEO');
   const heroPhoto = photos[0] ?? null;
   const planImage = (publicData?.floorPlans ?? []).find((m) => m.kind === 'IMAGE') ?? null;
   const planFile = (publicData?.floorPlans ?? []).find((m) => m.kind !== 'IMAGE') ?? null;
+  // §5.4 — the specification is data from the admin; parking and storage are this residence's own facts.
   const spec = [
     ...(publicData && publicData.features.length ? [{ label: 'This residence', text: `${publicData.features.map((f) => f.name).join(', ')}.` }] : []),
-    ...SPECIFICATION.map((s) =>
-      s.label === 'Parking' && publicData
-        ? { ...s, text: `${publicData.parkingIncluded === 1 ? 'One basement bay' : `${publicData.parkingIncluded} basement bays`} with this residence${publicData.hasStorage ? ', and a private storage room' : ''}; visitor bays at ground level.` }
-        : s,
-    ),
+    ...(publicData?.specifications ?? []).map((x) => ({ label: x.label, text: x.value })),
+    ...(publicData && publicData.parkingIncluded > 0
+      ? [{ label: 'Parking', text: `${publicData.parkingIncluded === 1 ? 'One parking bay' : `${publicData.parkingIncluded} parking bays`} with this residence${publicData.hasStorage ? ', and a private storage room' : ''}.` }]
+      : []),
   ];
   const price = visiblePriceMinor(r);
   const enquiry: EnquiryResidence = {
@@ -107,7 +89,7 @@ export function ResidenceDetail({
       {/* ─── Opening ─────────────────────────────────────────────────── */}
       <section className={styles.hero} data-ground="night" data-nav-over aria-labelledby="residence-title">
         <div className={styles.heroMedia}>
-          {heroPhoto ? <ApiImage m={heroPhoto} priority sizes="100vw" /> : <MotionMedia id={media.hero} priority sizes="100vw" />}
+          <MotionMedia image={heroPhoto} video={videos[0] ?? null} priority sizes="100vw" label={`Residence ${r.label}`} />
           <div className={styles.heroShade} aria-hidden="true" />
         </div>
         <div className={`container ${styles.heroContent}`}>
@@ -171,7 +153,7 @@ export function ResidenceDetail({
             <ContactActions residence={enquiry} whatsappSubject={whatsappSubject} source="residence-hero" />
           </div>
         </div>
-        <p className={`cgi-note ${styles.heroNote}`}>{heroPhoto ? (heroPhoto.caption ?? '') : `${PROVENANCE_NOTE[scene(media.hero).provenance]} Shows the residence type.`}</p>
+        <p className={`cgi-note ${styles.heroNote}`}>{heroPhoto?.note || (heroPhoto?.caption ?? '')}</p>
       </section>
 
       {/* ─── The spaces ──────────────────────────────────────────────── */}
@@ -196,29 +178,25 @@ export function ResidenceDetail({
             </div>
           </header>
           <div className={styles.grid}>
-            {photos.length > 1
-              ? photos.slice(0, 5).map((m, i) => (
-                  <figure key={m.id} className={styles.space} data-first={i === 0 ? 'true' : 'false'}>
-                    <Reveal className={styles.spaceMedia}>
-                      <ApiImage m={m} sizes={i === 0 ? '(max-width: 900px) 100vw, 66vw' : '(max-width: 900px) 100vw, 33vw'} />
-                    </Reveal>
-                    <figcaption className={styles.spaceCaption}>
-                      <span>{m.title ?? ''}</span>
-                      {m.caption && <span className="cgi-note">{m.caption}</span>}
-                    </figcaption>
-                  </figure>
-                ))
-              : media.spaces.map((s, i) => (
-                  <figure key={s.id} className={styles.space} data-first={i === 0 ? 'true' : 'false'}>
-                    <Reveal className={styles.spaceMedia}>
-                      <SceneImage id={s.id} sizes={i === 0 ? '(max-width: 900px) 100vw, 66vw' : '(max-width: 900px) 100vw, 33vw'} />
-                    </Reveal>
-                    <figcaption className={styles.spaceCaption}>
-                      <span>{s.label}</span>
-                      <span className="cgi-note">{PROVENANCE_NOTE[scene(s.id).provenance]}</span>
-                    </figcaption>
-                  </figure>
-                ))}
+            {photos.length > 0 ? (
+              photos.slice(0, 5).map((m, i) => (
+                <figure key={m.id} className={styles.space} data-first={i === 0 ? 'true' : 'false'}>
+                  <Reveal className={styles.spaceMedia}>
+                    <ApiImage m={m} sizes={i === 0 ? '(max-width: 900px) 100vw, 66vw' : '(max-width: 900px) 100vw, 33vw'} focus={m.focus ?? undefined} />
+                  </Reveal>
+                  <figcaption className={styles.spaceCaption}>
+                    <span>{m.title ?? ''}</span>
+                    {(m.note || m.caption) && <span className="cgi-note">{m.note || m.caption}</span>}
+                  </figcaption>
+                </figure>
+              ))
+            ) : (
+              <figure className={styles.space} data-first="true">
+                <div className={styles.spaceMedia} style={{ position: 'relative' }}>
+                  <SceneImage media={null} label={`Residence ${r.label}`} />
+                </div>
+              </figure>
+            )}
           </div>
           <p className="caption">
             Images are artist’s impressions of the residence type, furnished for illustration. Finishes
@@ -265,14 +243,14 @@ export function ResidenceDetail({
           <div className={styles.planLayout}>
             <div>
               <div id="panel-plan" role="tabpanel" aria-labelledby="tab-plan" hidden={tab !== 'plan'}>
-                <PlanDrawing type={r.type} orientation={r.orientation} areaSqm={r.areaSqm} label={r.label} />
+                <PlanDrawing rooms={publicData?.rooms ?? []} orientation={r.orientation} areaSqm={r.areaSqm} label={r.label} />
               </div>
               <div id="panel-furnished" role="tabpanel" aria-labelledby="tab-furnished" hidden={tab !== 'furnished'}>
                 <div className={styles.furnished} style={{ position: 'relative' }}>
-                  {planImage ? <ApiImage m={planImage} sizes="(max-width: 1100px) 100vw, 60vw" focus="50% 50%" /> : <SceneImage id={media.plan} sizes="(max-width: 1100px) 100vw, 60vw" />}
+                  <SceneImage media={planImage} sizes="(max-width: 1100px) 100vw, 60vw" focus="50% 50%" label="Furnished plan" />
                 </div>
                 <p className="caption">
-                  {planImage ? (planImage.caption ?? planImage.title ?? '') : `${PROVENANCE_NOTE[scene(media.plan).provenance]} Furnished for illustration.`}
+                  {planImage ? (planImage.caption ?? planImage.title ?? planImage.note ?? '') : ''}
                   {planFile && (
                     <>
                       {' '}
@@ -303,6 +281,7 @@ export function ResidenceDetail({
       </section>
 
       {/* ─── Specification ───────────────────────────────────────────── */}
+      {spec.length > 0 && (
       <section className={`section ${styles.spec}`} data-ground="night" aria-labelledby="spec-title">
         <div className={`container ${styles.specLayout}`}>
           <div>
@@ -326,6 +305,7 @@ export function ResidenceDetail({
           </div>
         </div>
       </section>
+      )}
 
       {/* ─── Payment ─────────────────────────────────────────────────── */}
       <section className={`section ${styles.payment}`} aria-labelledby="payment-title">
@@ -338,8 +318,7 @@ export function ResidenceDetail({
               </h2>
             </div>
             <p className="lead">
-              Each payment is tied to a stage of construction rather than a date. Handover is planned for{' '}
-              {handover}.
+              Each payment is tied to a stage of construction rather than a date.{handover ? ` Handover is planned for ${handover}.` : ''}
             </p>
           </header>
           {schedule && price !== null ? (
@@ -369,7 +348,7 @@ export function ResidenceDetail({
                     <th scope="row">Total</th>
                     <td className="tabular">100%</td>
                     <td className="tabular">{formatMoney({ amountMinor: schedule.totalMinor, currency: schedule.currency })}</td>
-                    <td>Handover {handover}</td>
+                    <td>{handover ? `Handover ${handover}` : ''}</td>
                   </tr>
                 </tfoot>
               </table>

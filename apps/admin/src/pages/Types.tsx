@@ -19,6 +19,7 @@ function TypeForm({ t, onClose }: { t?: Typology; onClose: () => void }) {
     areaSqmMin: t?.areaSqmMin ?? (null as number | null),
     areaSqmMax: t?.areaSqmMax ?? (null as number | null),
     descriptionMd: t?.descriptionMd ?? '',
+    summary: t?.summary ?? '',
     isPenthouse: t?.isPenthouse ?? false,
     published: t?.published ?? true,
   });
@@ -26,7 +27,7 @@ function TypeForm({ t, onClose }: { t?: Typology; onClose: () => void }) {
   const save = async () => {
     setBusy(true);
     try {
-      const body = { ...d, descriptionMd: d.descriptionMd.trim() || null, areaSqmMin: d.areaSqmMin ?? undefined, areaSqmMax: d.areaSqmMax ?? undefined };
+      const body = { ...d, descriptionMd: d.descriptionMd.trim() || null, summary: d.summary.trim() || null, areaSqmMin: d.areaSqmMin ?? undefined, areaSqmMax: d.areaSqmMax ?? undefined };
       if (t) await patch(`/admin/types/${t.id}`, body);
       else await post('/admin/types', body);
       toast.success('Residence type saved.');
@@ -46,6 +47,7 @@ function TypeForm({ t, onClose }: { t?: Typology; onClose: () => void }) {
         <Field label="Bathrooms"><NumberInput value={d.bathrooms} step="0.5" min={0} onChange={(v) => setD({ ...d, bathrooms: v })} /></Field>
         <Field label="Smallest size" hint="Shown as a range until residences of this type exist."><NumberInput value={d.areaSqmMin} suffix="m²" onChange={(v) => setD({ ...d, areaSqmMin: v })} /></Field>
         <Field label="Largest size"><NumberInput value={d.areaSqmMax} suffix="m²" onChange={(v) => setD({ ...d, areaSqmMax: v })} /></Field>
+        <Field label="Homepage line" className="full" hint="One sentence on the homepage card for this kind of residence."><Input value={d.summary} maxLength={300} onChange={(e) => setD({ ...d, summary: e.target.value })} /></Field>
         <Field label="Description" className="full"><Textarea rows={5} value={d.descriptionMd} onChange={(e) => setD({ ...d, descriptionMd: e.target.value })} /></Field>
         <Toggle checked={d.isPenthouse} onChange={(v) => setD({ ...d, isPenthouse: v })} label="Penthouse — listed apart from the bedroom groups" />
         <Toggle checked={d.published} onChange={(v) => setD({ ...d, published: v })} label="Show on the website" />

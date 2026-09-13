@@ -7,8 +7,8 @@ import { dateTime } from '../lib/format';
 import { useToast } from '../components/Toast';
 import { TwoFactor } from '../components/TwoFactor';
 import { Alert, Badge, Button, Card, CardHead, Field, Input, KV, PageHead } from '../components/ui';
+import { SITE_URL } from '../lib/site';
 
-const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined) || 'http://localhost:3000';
 
 /** Your account, your password, and where the platform points. */
 export default function Settings() {

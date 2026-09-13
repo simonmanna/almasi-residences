@@ -1,6 +1,6 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { Check, FileText, Film, ImagePlus, Replace, Star, Trash2, UploadCloud } from 'lucide-react';
-import { categoriesFor, categoryLabel, type MediaCollectionValue } from '@avida/types';
+import { categoriesFor, categoryLabel, MEDIA_PROVENANCES, PROVENANCE_LABEL, PROVENANCE_NOTE, type MediaCollectionValue } from '@avida/types';
 import { API_ORIGIN, csrfToken, del, get, mediaUrl, patch, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { bytes, date } from '../lib/format';
@@ -8,7 +8,7 @@ import { invalidate, useQuery } from '../lib/query';
 import { useDebounced } from '../lib/router';
 import type { MediaView, Paged } from '../lib/types';
 import { useToast } from './Toast';
-import { Badge, Button, Drawer, Empty, Field, Input, KV, MediaImg, Modal, Pagination, Select, Textarea, Toggle, useConfirm } from './ui';
+import { Alert, Badge, Button, Drawer, Empty, Field, Input, KV, MediaImg, Modal, Pagination, Select, Textarea, Toggle, useConfirm } from './ui';
 
 export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/avif,image/gif,image/svg+xml';
 export const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime';
@@ -260,6 +260,9 @@ export function MediaEditor({ media, onClose }: { media: MediaView; onClose: () 
     caption: media.caption ?? '',
     category: media.category,
     published: media.published,
+    provenance: media.provenance ?? 'PHOTOGRAPH',
+    focusX: media.focusX ?? null,
+    focusY: media.focusY ?? null,
   });
   const [busy, setBusy] = useState(false);
   const replaceInput = useRef<HTMLInputElement>(null);
@@ -342,7 +345,21 @@ export function MediaEditor({ media, onClose }: { media: MediaView; onClose: () 
       }
     >
       <div className="featured-photo" style={{ aspectRatio: media.width && media.height ? `${media.width} / ${media.height}` : '16 / 10', maxHeight: 340 }}>
-        {media.kind === 'IMAGE' && <MediaImg m={media} sizes="480px" style={{ objectFit: 'contain', background: '#0f2540' }} />}
+        {media.kind === 'IMAGE' && (
+          <button
+            type="button"
+            className="focal-picker"
+            disabled={!editable}
+            aria-label="Set the focal point: click the part of the image that must stay in frame"
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setDraft({ ...draft, focusX: Math.round(((e.clientX - r.left) / r.width) * 100), focusY: Math.round(((e.clientY - r.top) / r.height) * 100) });
+            }}
+          >
+            <MediaImg m={media} sizes="480px" style={{ objectFit: 'contain', background: '#0f2540' }} />
+            {draft.focusX !== null && draft.focusY !== null && <span className="focal-dot" style={{ left: `${draft.focusX}%`, top: `${draft.focusY}%` }} aria-hidden="true" />}
+          </button>
+        )}
         {media.kind === 'VIDEO' && <video src={mediaUrl(media.url)} controls style={{ width: '100%', height: '100%' }} />}
         {media.kind !== 'IMAGE' && media.kind !== 'VIDEO' && (
           <a className="doc" href={mediaUrl(media.originalUrl)} target="_blank" rel="noreferrer" style={{ height: '100%' }}>
@@ -372,6 +389,25 @@ export function MediaEditor({ media, onClose }: { media: MediaView; onClose: () 
       <Field label="Category">
         <Select value={draft.category} disabled={!editable} onChange={(e) => setDraft({ ...draft, category: e.target.value })} options={cats.map((c) => ({ value: c, label: categoryLabel(c) }))} />
       </Field>
+      {(media.kind === 'IMAGE' || media.kind === 'VIDEO') && (
+        <Field label="What this file is" hint="A render is never shown as if it were a photograph: the website prints the note for it beside the image.">
+          <Select value={draft.provenance} disabled={!editable} onChange={(e) => setDraft({ ...draft, provenance: e.target.value })} options={MEDIA_PROVENANCES.map((v) => ({ value: v, label: `${PROVENANCE_LABEL[v]}${PROVENANCE_NOTE[v] ? ` — “${PROVENANCE_NOTE[v]}”` : ''}` }))} />
+        </Field>
+      )}
+      {media.kind === 'IMAGE' && (
+        <p className="muted small" style={{ margin: 0 }}>
+          Focal point: {draft.focusX !== null ? `${draft.focusX}% across, ${draft.focusY}% down` : 'centre'}. Click the image to keep that part in frame on narrow screens.
+          {draft.focusX !== null && editable && (
+            <>
+              {' '}
+              <button type="button" className="link" onClick={() => setDraft({ ...draft, focusX: null, focusY: null })}>Reset</button>
+            </>
+          )}
+        </p>
+      )}
+      {media.kind === 'IMAGE' && media.published && !draft.altText.trim() && (
+        <Alert tone="warn">This image has no alt text. Visitors using a screen reader will hear nothing about it.</Alert>
+      )}
       <Toggle checked={draft.published} disabled={!editable} onChange={(v) => setDraft({ ...draft, published: v })} label="Show on the website" />
       {editable && (
         <>

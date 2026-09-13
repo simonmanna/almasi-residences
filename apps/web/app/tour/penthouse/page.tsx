@@ -1,22 +1,20 @@
 import type { Metadata } from 'next';
-import { PENTHOUSE_TOUR } from '../../../lib/tour';
+import { getWalkthrough } from '../../../lib/api';
+import { pageMetadata } from '../../../lib/page-metadata';
 import { TourExperience } from '../../../components/tour/TourExperience';
 
-export const metadata: Metadata = {
-  title: 'The penthouse tour',
-  description:
-    'Walk through a penthouse at Almasi Residences, Kigali: the living room, kitchen, master suite, en-suite and the private roof terrace with its pool and view over the city.',
-  alternates: { canonical: '/tour/penthouse' },
-};
+export const revalidate = 3600;
 
-export default function PenthouseTourPage() {
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('/tour/penthouse', { title: 'The penthouse tour' });
+}
+
+/** The stations are a walkthrough edited in the admin (Website → Tours, roadmap item 22). */
+export default async function PenthouseTourPage() {
+  const tour = await getWalkthrough('penthouse').catch(() => null);
   return (
     <main id="main" data-nav-ground="night">
-      <TourExperience
-        stations={PENTHOUSE_TOUR}
-        title="The penthouse tour"
-        otherTour={{ href: '/tour', label: 'Building tour' }}
-      />
+      <TourExperience stations={tour?.stations ?? []} title={tour?.name ?? ''} otherTour={{ href: '/tour', label: 'Building tour' }} />
     </main>
   );
 }

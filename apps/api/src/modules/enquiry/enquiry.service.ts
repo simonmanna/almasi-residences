@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { parsePhoneNumberWithError } from 'libphonenumber-js';
 import { buildWhatsAppUrl } from '@avida/types';
+import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import type { CreateEnquiryDto } from './enquiry.dto.js';
 import { NotifyService } from './notify.service.js';
@@ -17,6 +18,7 @@ export class EnquiryService {
     private readonly prisma: PrismaService,
     private readonly turnstile: TurnstileService,
     private readonly notify: NotifyService,
+    private readonly dev: CurrentDevelopment,
   ) {}
 
   async create(dto: CreateEnquiryDto, meta: { ip?: string; userAgent?: string }) {
@@ -33,34 +35,21 @@ export class EnquiryService {
       throw new BadRequestException('Could not verify that you are human. Please try again.');
     }
 
+    // §40.5 — a lead belongs to this property, and may only name residences a
+    // visitor can see on it. An id from another property, an unpublished or an
+    // archived residence is ignored rather than linked.
+    const current = await this.dev.get();
+    const development = await this.prisma.client.development.findUniqueOrThrow({
+      where: { id: current.id },
+      select: { id: true, name: true, country: true, slug: true },
+    });
     const units = await this.prisma.client.unit.findMany({
-      where: { id: { in: dto.unitIds } },
-      select: {
-        id: true,
-        code: true,
-        priceMinor: true,
-        currency: true,
-        areaSqm: true,
-        typology: { select: { name: true } },
-        floor: {
-          select: {
-            building: {
-              select: { development: { select: { name: true, country: true, slug: true } } },
-            },
-          },
-        },
-      },
+      where: { id: { in: dto.unitIds }, developmentId: development.id, published: true, archivedAt: null },
+      select: { id: true, code: true, priceMinor: true, currency: true, areaSqm: true, typology: { select: { name: true } } },
     });
 
-    const development =
-      units[0]?.floor.building.development ??
-      (await this.prisma.client.development.findFirst({
-        select: { name: true, country: true, slug: true },
-      }));
-    if (!development) throw new BadRequestException('No development configured');
-
     // §5.7 step 3 — normalise to E.164, defaulting to the development's country.
-    const phone = this.normalisePhone(dto.phone, development.country);
+    const { phone, country } = this.normalisePhone(dto.phone, development.country);
 
     const now = new Date();
     const purgeAfter = new Date(now);
@@ -69,10 +58,12 @@ export class EnquiryService {
     // §5.7 step 4 — enquiry and its unit links in one transaction.
     const enquiry = await this.prisma.client.enquiry.create({
       data: {
+        developmentId: development.id,
         name: dto.name.trim(),
         email: dto.email.trim().toLowerCase(),
         phone,
-        countryIso: development.country,
+        // The visitor's country, from their number — not the property's (audit §15.7).
+        countryIso: country,
         message: dto.message?.trim() || null,
         intent: dto.intent,
         source: dto.source ?? null,
@@ -125,11 +116,11 @@ export class EnquiryService {
     return { id: enquiry.id, whatsappUrl };
   }
 
-  private normalisePhone(input: string, defaultCountry: string): string {
+  private normalisePhone(input: string, defaultCountry: string): { phone: string; country: string | null } {
     try {
       const parsed = parsePhoneNumberWithError(input, defaultCountry as never);
       if (!parsed.isValid()) throw new Error('invalid');
-      return parsed.number;
+      return { phone: parsed.number, country: parsed.country ?? null };
     } catch {
       throw new BadRequestException(
         'That phone number does not look valid. Include the country code, for example +250 788 123 456.',

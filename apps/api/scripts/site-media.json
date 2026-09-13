@@ -1,0 +1,172 @@
+{
+  "aerial": {
+    "title": "Kimihurura from the air",
+    "alt": "Aerial view at dusk over the green hills of Kimihurura, Kigali, with Almasi Residences on a rise in the middle distance.",
+    "provenance": "concept",
+    "focusX": 50,
+    "focusY": 60,
+    "src": "/media/almasi/aerial.jpg",
+    "video": "/media/almasi/video/aerial-hd.mp4"
+  },
+  "street": {
+    "title": "Arrival on KG 15 Ave",
+    "alt": "Almasi Residences from KG 15 Ave at dusk: a stone and walnut facade with deep glass balconies behind a gatehouse and palms.",
+    "provenance": "supplied",
+    "focusX": 58,
+    "focusY": 50,
+    "src": "/media/almasi/street.jpg",
+    "video": "/media/almasi/video/street-hd.mp4"
+  },
+  "arrival": {
+    "title": "The porte-cochère",
+    "alt": "The covered drop-off at dusk: a walnut canopy, a water wall and the glowing lobby behind a curved driveway.",
+    "provenance": "supplied",
+    "focusX": 55,
+    "focusY": 55,
+    "src": "/media/almasi/arrival.jpg",
+    "video": "/media/almasi/video/arrival-hd.mp4"
+  },
+  "lobby": {
+    "title": "Reception",
+    "alt": "The double-height reception lobby in travertine and walnut, with a marble desk, a lounge and a ring chandelier.",
+    "provenance": "concept",
+    "src": "/media/almasi/lobby.jpg",
+    "video": "/media/almasi/video/lobby-hd.mp4"
+  },
+  "pool": {
+    "title": "The pool deck",
+    "alt": "The residents’ fifteen-metre pool at blue hour, lit from below, with loungers and the building rising behind.",
+    "provenance": "concept",
+    "src": "/media/almasi/pool.jpg",
+    "video": "/media/almasi/video/pool-hd.mp4"
+  },
+  "restaurant": {
+    "title": "The restaurant",
+    "alt": "The residents’ restaurant: olive leather banquettes, marble tables laid for dinner and a backlit bar.",
+    "provenance": "concept",
+    "src": "/media/almasi/restaurant.jpg"
+  },
+  "gym": {
+    "title": "The fitness studio",
+    "alt": "The fitness studio with strength equipment and treadmills facing full-height glass and the hills at dusk.",
+    "provenance": "concept",
+    "src": "/media/almasi/gym.jpg"
+  },
+  "wellness": {
+    "title": "Sauna and massage",
+    "alt": "The wellness suite: a glass-fronted cedar sauna beside a calm massage room in travertine.",
+    "provenance": "concept",
+    "src": "/media/almasi/wellness.jpg"
+  },
+  "cowork": {
+    "title": "The co-working lounge",
+    "alt": "The residents’ co-working lounge with a long oak table, brass lamps and walnut-slat walls.",
+    "provenance": "concept",
+    "src": "/media/almasi/cowork.jpg"
+  },
+  "parking": {
+    "title": "Basement parking",
+    "alt": "The basement car park in board-formed concrete, with EV charging and a walnut-lined lift lobby.",
+    "provenance": "concept",
+    "src": "/media/almasi/parking.jpg"
+  },
+  "living-2br": {
+    "title": "A two-bedroom living room",
+    "alt": "A two-bedroom living and dining room at sunset, opening onto a balcony above the Kigali hills.",
+    "provenance": "supplied",
+    "focusX": 40,
+    "focusY": 55,
+    "src": "/media/almasi/living-2br.jpg",
+    "video": "/media/almasi/video/living-2br-hd.mp4"
+  },
+  "two-kitchen": {
+    "title": "A two-bedroom kitchen",
+    "alt": "An open kitchen with a marble island, walnut joinery and glass pendant lights.",
+    "provenance": "supplied",
+    "src": "/media/almasi/two-kitchen.jpg"
+  },
+  "one-living": {
+    "title": "A one-bedroom living room",
+    "alt": "A one-bedroom living room and kitchen at dusk, with a balcony over the valley.",
+    "provenance": "supplied",
+    "focusX": 45,
+    "focusY": 55,
+    "src": "/media/almasi/one-living.jpg",
+    "video": "/media/almasi/video/one-living-hd.mp4"
+  },
+  "one-bedroom": {
+    "title": "A one-bedroom bedroom",
+    "alt": "A bedroom with a slatted walnut wall, an upholstered bed and a window onto the hills.",
+    "provenance": "supplied",
+    "src": "/media/almasi/one-bedroom.jpg"
+  },
+  "one-kitchen": {
+    "title": "A one-bedroom kitchen",
+    "alt": "A compact kitchen in walnut and marble with an integrated refrigerator.",
+    "provenance": "supplied",
+    "src": "/media/almasi/one-kitchen.jpg"
+  },
+  "ph-living": {
+    "title": "Penthouse living and dining",
+    "alt": "Penthouse living and dining room under a walnut ceiling, with a sunset over Kigali beyond the glass.",
+    "provenance": "supplied",
+    "focusX": 45,
+    "focusY": 55,
+    "src": "/media/almasi/ph-living.jpg",
+    "video": "/media/almasi/video/ph-living-hd.mp4"
+  },
+  "ph-kitchen": {
+    "title": "The penthouse kitchen",
+    "alt": "The penthouse kitchen with an island, walnut cabinetry and a lit staircase.",
+    "provenance": "supplied",
+    "src": "/media/almasi/ph-kitchen.jpg"
+  },
+  "ph-bedroom": {
+    "title": "The penthouse master suite",
+    "alt": "A penthouse master bedroom with a lit walk-in closet and a dusk view over the city.",
+    "provenance": "supplied",
+    "focusX": 55,
+    "focusY": 55,
+    "src": "/media/almasi/ph-bedroom.jpg",
+    "video": "/media/almasi/video/ph-bedroom-hd.mp4"
+  },
+  "ph-bath": {
+    "title": "The penthouse en-suite",
+    "alt": "A marble en-suite with a freestanding stone bath in front of a window onto the hills at dusk.",
+    "provenance": "concept",
+    "src": "/media/almasi/ph-bath.jpg"
+  },
+  "ph-terrace": {
+    "title": "The penthouse roof terrace",
+    "alt": "A private roof terrace with an infinity pool and loungers, facing the sunset over Kigali.",
+    "provenance": "supplied",
+    "focusX": 60,
+    "focusY": 50,
+    "src": "/media/almasi/ph-terrace.jpg",
+    "video": "/media/almasi/video/ph-terrace-hd.mp4"
+  },
+  "view": {
+    "title": "The view west over Kigali",
+    "alt": "The sun setting over the hills of Kigali, seen from the roof terrace.",
+    "provenance": "supplied",
+    "src": "/media/almasi/view.jpg"
+  },
+  "plan-1br": {
+    "title": "One bedroom, furnished plan",
+    "alt": "Indicative furnished plan of a one-bedroom residence: living and dining, kitchen, bedroom, bathroom and balcony.",
+    "provenance": "concept",
+    "src": "/media/almasi/plan-1br.jpg"
+  },
+  "plan-2br": {
+    "title": "Two bedroom, furnished plan",
+    "alt": "Indicative furnished plan of a two-bedroom residence: living and dining, island kitchen, two bedrooms, two bathrooms and a balcony.",
+    "provenance": "concept",
+    "src": "/media/almasi/plan-2br.jpg"
+  },
+  "plan-ph": {
+    "title": "Penthouse, furnished plan",
+    "alt": "Indicative furnished plan of a three-bedroom penthouse with a study and a wrap-around terrace.",
+    "provenance": "concept",
+    "src": "/media/almasi/plan-ph.jpg"
+  }
+}

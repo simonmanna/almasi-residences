@@ -7,13 +7,13 @@
  * by the orientation the inventory gives it (A south, B south-east, D east,
  * F west …) and sized roughly in proportion to its area. When the architect's
  * decimated glTF arrives, meshes named `unit_<code>` (Unit.meshName) slot into
- * the same selection code and this file retires.
+ * the same selection code.
  */
 
-import { isPlacedInModel } from '@avida/types';
+import { resolveModelSlot, type ModelRect } from '@avida/types';
 
 /** [x0, z0, x1, z1] in plan. */
-export type Rect = readonly [number, number, number, number];
+export type Rect = ModelRect;
 
 export const FLOOR_H = 3.4;
 export const SLAB = 0.35;
@@ -56,52 +56,25 @@ const ROOM_TOP = FLOOR_H - 0.12;
 
 // ─── Residences ──────────────────────────────────────────────────────────
 
-/** Floors 1–3 share one plan: three 1-beds on the south face, 2-beds in the wings and to the north. */
-const TYPICAL: Record<string, Rect> = {
-  C: [-13, 1.75, -4.1, 10.75],
-  A: [-4.1, 1.75, 4.3, 10.75],
-  B: [4.3, 1.75, 13, 10.75],
-  D: [13, -10.75, 19, 10.75],
-  E: [1.5, -10.75, 13, -1.75],
-  F: [-19, -10.75, -13, 10.75],
-  G: [-13, -10.75, -1.5, -1.75],
-};
-
-/** The ground floor gives its south face to reception and co-working. */
-const GROUND: Record<string, Rect> = {
-  A: [4.3, 1.75, 13, 10.75],
-  B: [13, 0, 19, 10.75],
-  C: [-19, -10.75, -13, 10.75],
-  D: [-13, -10.75, -1.5, -1.75],
-};
-
-const PENTHOUSE: Record<string, UnitVolume[]> = {
-  'PH-A': [{ level: 4, rect: [6, -4, 19, 9.25], y0: SLAB, y1: ROOM_TOP }],
-  'PH-B': [{ level: 4, rect: [-13, -1.75, 6, 9.25], y0: SLAB, y1: ROOM_TOP }],
-  'PH-C': [
-    { level: 4, rect: [-19, -10.75, -1.5, -1.75], y0: SLAB, y1: ROOM_TOP },
-    { level: 4, rect: [1.5, -10.75, 19, -4], y0: SLAB, y1: ROOM_TOP },
-    // The duplex's upper floor, opening onto the private roof terrace.
-    { level: ROOF, rect: [-19, -10.75, -6, -1.75], y0: SLAB, y1: FLOOR_H - 0.3 },
-  ],
-};
-
 /**
- * The volumes for a residence, or none when the maquette cannot place it.
- * `isPlacedInModel` (in @avida/types) is the shared answer to "can it?", so the
- * admin warns about exactly the residences this function cannot draw.
+ * The volumes for a residence, or none when the maquette cannot place it. The
+ * volumes are declared in @avida/types so the admin offers exactly these as
+ * choices and warns about exactly the residences this function cannot draw.
  */
-export function unitVolumes(code: string, level: number): UnitVolume[] {
-  if (!isPlacedInModel(code, level)) return [];
-  if (PENTHOUSE[code]) return PENTHOUSE[code]!;
-  const letter = code.replace(/\d+$/, '');
-  const rect = level === 0 ? GROUND[letter] : TYPICAL[letter];
-  return rect ? [{ level, rect, y0: SLAB, y1: ROOM_TOP }] : [];
+export function unitVolumes(code: string, level: number, modelSlot?: string | null): UnitVolume[] {
+  const slot = resolveModelSlot(code, level, modelSlot);
+  if (!slot) return [];
+  return slot.volumes.map((v) => ({
+    level: level + v.levelOffset,
+    rect: v.rect,
+    y0: SLAB,
+    y1: v.low ? FLOOR_H - 0.3 : ROOM_TOP,
+  }));
 }
 
 /** Where a residence's label sits: the middle of its largest volume, just above its ceiling. */
-export function unitAnchor(code: string, level: number): { x: number; z: number; y: number } | null {
-  const vols = unitVolumes(code, level).filter((v) => v.level === level);
+export function unitAnchor(code: string, level: number, modelSlot?: string | null): { x: number; z: number; y: number } | null {
+  const vols = unitVolumes(code, level, modelSlot).filter((v) => v.level === level);
   const v = vols[0];
   if (!v) return null;
   const [x0, z0, x1, z1] = v.rect;
@@ -174,11 +147,13 @@ for (let x = 8; x <= 18; x += 1.25) add(ROOF, 'walnut', [x, -1.2, x + 0.18, 6.5]
 
 export const PARTS: readonly Part[] = parts;
 
-/** One bay per residence, in two rows under the building. */
-export const PARKING_BAYS: readonly { x: number; z: number }[] = Array.from({ length: 28 }, (_, i) => ({
-  x: -16.25 + (i % 14) * 2.5,
-  z: i < 14 ? -15 : 3.5,
-}));
+/** Bays in two rows under the building, as many as the parking record holds (max 28 drawn). */
+export function parkingBays(count: number): { x: number; z: number }[] {
+  return Array.from({ length: Math.max(0, Math.min(28, count)) }, (_, i) => ({
+    x: -16.25 + (i % 14) * 2.5,
+    z: i < 14 ? -15 : 3.5,
+  }));
+}
 
 /** Deterministic planting around the site — maquette trees, not a landscape survey. */
 export const TREES: readonly { x: number; z: number; r: number }[] = (() => {

@@ -81,6 +81,9 @@ export class RoomsController {
         features: dto.features ?? [],
         planX: dto.planX ?? null,
         planY: dto.planY ?? null,
+        planW: dto.planW ?? null,
+        planH: dto.planH ?? null,
+        planOpen: dto.planOpen ?? (dto.type === 'BALCONY' || dto.type === 'TERRACE'),
         sortOrder: (max._max.sortOrder ?? -1) + 1,
       },
     });

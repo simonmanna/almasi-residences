@@ -33,6 +33,12 @@ import {
   DEVELOPMENT_STATUSES,
   ENQUIRY_STATUSES,
   MEDIA_COLLECTIONS,
+  MEDIA_PROVENANCES,
+  MEDIA_SLOTS,
+  SEO_DESCRIPTION_MAX,
+  SEO_ROUTES,
+  SEO_TITLE_MAX,
+  TOUR_LEVELS,
   MILESTONE_TRIGGERS,
   OCCUPANCY_STATUSES,
   ORIENTATIONS,
@@ -156,6 +162,8 @@ export class UpdateResidenceDto {
   @IsOptional() @IsInt() @Min(0) @Max(MAX_MINOR) reservationFeeMinor?: number | null;
   @IsOptional() @IsNumber() @Min(0) @Max(100) depositPercent?: number | null;
   @IsOptional() @IsString() paymentPlanId?: string | null;
+  /** §40.1 — the maquette volume; null derives it from the code. */
+  @IsOptional() @IsString() @MaxLength(16) modelSlot?: string | null;
 }
 
 export class CreateResidenceDto extends UpdateResidenceDto {
@@ -202,6 +210,9 @@ export class UpdateRoomDto {
   @IsOptional() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) features?: string[];
   @IsOptional() @IsNumber() planX?: number | null;
   @IsOptional() @IsNumber() planY?: number | null;
+  @IsOptional() @IsNumber() @Min(0) @Max(10000) planW?: number | null;
+  @IsOptional() @IsNumber() @Min(0) @Max(10000) planH?: number | null;
+  @IsOptional() @IsBoolean() planOpen?: boolean;
 }
 
 export class CreateRoomDto extends UpdateRoomDto {
@@ -219,6 +230,7 @@ export class UpdateTypologyDto {
   @IsOptional() @IsNumber() @Min(0) @Max(100000) areaSqmMin?: number;
   @IsOptional() @IsNumber() @Min(0) @Max(100000) areaSqmMax?: number;
   @IsOptional() @IsString() @MaxLength(20000) descriptionMd?: string | null;
+  @IsOptional() @IsString() @MaxLength(300) summary?: string | null;
   @IsOptional() @IsBoolean() isPenthouse?: boolean;
   @IsOptional() @IsBoolean() published?: boolean;
 }
@@ -350,6 +362,9 @@ export class UpdateAssetDto {
   @IsOptional() @IsString() @Length(1, 40) category?: string;
   @IsOptional() @IsBoolean() published?: boolean;
   @IsOptional() @IsBoolean() isCover?: boolean;
+  @IsOptional() @IsIn(MEDIA_PROVENANCES) provenance?: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) focusX?: number | null;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) focusY?: number | null;
   @IsOptional() @IsString() unitId?: string | null;
   @IsOptional() @IsString() floorId?: string | null;
   @IsOptional() @IsString() amenityId?: string | null;
@@ -451,4 +466,75 @@ export class UpdateUserDto {
   @IsOptional() @IsString() @Length(1, 120) name?: string;
   @IsOptional() @IsIn(ADMIN_ROLES) role?: string;
   @IsOptional() @IsBoolean() active?: boolean;
+}
+
+// ─── Website presentation (roadmap phase 1) ──────────────────────────────
+
+export class UpdateSlotDto {
+  @IsOptional() @IsString() imageId?: string | null;
+  @IsOptional() @IsString() videoId?: string | null;
+}
+export const SLOT_KEYS = MEDIA_SLOTS.map((s) => s.key);
+
+export class UpdateSpecificationDto {
+  @IsOptional() @IsString() @Length(1, 60) category?: string;
+  @IsOptional() @IsString() @Length(1, 80) label?: string;
+  @IsOptional() @IsString() @Length(1, 2000) value?: string;
+  @IsOptional() @IsString() typologyId?: string | null;
+  @IsOptional() @IsBoolean() published?: boolean;
+}
+
+export class CreateSpecificationDto extends UpdateSpecificationDto {
+  @IsString() @Length(1, 80) declare label: string;
+  @IsString() @Length(1, 2000) declare value: string;
+}
+
+export class UpdateTourDto {
+  @IsOptional() @IsString() @Length(1, 120) name?: string;
+  @IsOptional() @IsString() @MaxLength(2000) description?: string | null;
+  @IsOptional() @IsBoolean() published?: boolean;
+}
+
+export class UpdateSceneDto {
+  @IsOptional() @IsString() @Length(1, 120) label?: string;
+  @IsOptional() @IsString() @MaxLength(120) place?: string | null;
+  @IsOptional() @IsString() @MaxLength(1000) body?: string | null;
+  @IsOptional() @IsString() imageId?: string | null;
+  @IsOptional() @IsString() videoId?: string | null;
+  @IsOptional() @IsIn(TOUR_LEVELS.map((l) => l.key)) level?: string | null;
+  @IsOptional() @IsBoolean() published?: boolean;
+}
+
+export class CreateSceneDto extends UpdateSceneDto {
+  @IsString() @Length(1, 120) declare label: string;
+}
+
+export class FilmChapterDto {
+  @IsNumber() @Min(0) @Max(36000) startSec!: number;
+  @IsString() @Length(1, 120) label!: string;
+  @IsOptional() @IsString() @MaxLength(120) place?: string | null;
+}
+
+export class UpdateFilmDto {
+  @IsOptional() @IsString() @Length(1, 120) label?: string;
+  @IsOptional() @IsString() @MaxLength(2000) description?: string | null;
+  @IsOptional() @IsString() mediaId?: string | null;
+  @IsOptional() @IsString() posterMediaId?: string | null;
+  @IsOptional() @IsNumber() @Min(0) @Max(36000) durationSec?: number;
+  @IsOptional() @IsBoolean() published?: boolean;
+  @IsOptional() @IsArray() @ArrayMaxSize(60) @ValidateNested({ each: true }) @Type(() => FilmChapterDto) chapters?: FilmChapterDto[];
+}
+
+export class UpdateSiteSeoDto {
+  @IsOptional() @IsString() @Length(1, SEO_TITLE_MAX) title?: string;
+  @IsOptional() @IsString() @Length(1, SEO_DESCRIPTION_MAX * 2) description?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(60, { each: true }) keywords?: string[];
+}
+
+export class UpdateSeoPageDto {
+  @IsIn(SEO_ROUTES.map((r) => r.path)) path!: string;
+  @IsOptional() @IsString() @MaxLength(SEO_TITLE_MAX) title?: string | null;
+  @IsOptional() @IsString() @MaxLength(SEO_DESCRIPTION_MAX * 2) description?: string | null;
+  @IsOptional() @IsString() ogImageId?: string | null;
+  @IsOptional() @IsBoolean() noindex?: boolean;
 }

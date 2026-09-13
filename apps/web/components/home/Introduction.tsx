@@ -5,24 +5,23 @@ import { useInventory } from '../providers/InventoryProvider';
 import { RevealText } from '../ui/RevealText';
 import styles from './Introduction.module.css';
 
-const DEFAULT_BODY =
-  'Almasi is Swahili for diamond. Stone, walnut and glass on a quiet rise in Kimihurura, planned to feel like fewer homes than it holds: generous rooms, deep balconies, and a floor of amenities that gives a reason to leave the apartment without leaving the building.';
-
 /**
  * 02 — the statement. Every count in it is read from the live inventory; the
- * words come from the CMS (Homepage → introduction) and fall back to these.
+ * words come from the CMS (Homepage → introduction); an empty field renders nothing.
  */
 export function Introduction({
   handover,
-  title = 'One distinct address.',
-  body = DEFAULT_BODY,
-  kicker = 'Kimihurura, Kigali',
+  title,
+  body,
+  kicker,
+  developmentName,
   buildingConfig,
 }: {
-  handover: string;
-  title?: string;
-  body?: string;
-  kicker?: string;
+  handover: string | null;
+  title: string;
+  body: string;
+  kicker: string;
+  developmentName: string;
   buildingConfig?: string | null;
 }) {
   const { summary } = useInventory();
@@ -30,12 +29,13 @@ export function Introduction({
     { label: 'Private residences', value: String(summary.total) },
     ...typesPresent(summary).map((t) => ({ label: t === 'penthouse' ? 'Penthouses' : TYPE_TEXT[t], value: String(summary.byType[t].total) })),
     ...(buildingConfig ? [{ label: 'Basement, ground and upper floors', value: buildingConfig.replace(/\s+/g, '') }] : []),
-    { label: 'Planned handover', value: handover },
+    ...(handover ? [{ label: 'Planned handover', value: handover }] : []),
   ];
-  const lead = body.startsWith('Almasi ') ? (
+  const name = developmentName.split(' ')[0] ?? '';
+  const lead = name && body.startsWith(`${name} `) ? (
     <>
-      <em>Almasi</em>
-      {body.slice(6)}
+      <em>{name}</em>
+      {body.slice(name.length)}
     </>
   ) : (
     body
@@ -44,15 +44,15 @@ export function Introduction({
   return (
     <section className={`section ${styles.intro}`} aria-labelledby="intro-title">
       <div className="container">
-        <p className={`mark ${styles.kicker}`}>{kicker}</p>
+        {kicker && <p className={`mark ${styles.kicker}`}>{kicker}</p>}
         <RevealText
           as="h2"
           id="intro-title"
           className={`display ${styles.statement}`}
-          lines={[`${summary.total} private residences.`, title]}
+          lines={[`${summary.total} private residences.`, ...(title ? [title] : [])]}
         />
         <div className={styles.grid}>
-          <p className={styles.lead}>{lead}</p>
+          {body && <p className={styles.lead}>{lead}</p>}
           <dl className={styles.facts}>
             {facts.map((f) => (
               <div key={f.label} className={styles.fact}>

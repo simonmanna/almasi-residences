@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { formatQuarter } from '@avida/types';
-import { DEVELOPMENT_SLUG, getDevelopment, getInventory } from '../lib/api';
+import { fillCopyTokens, formatQuarter } from '@avida/types';
+import { DEVELOPMENT_SLUG, getDevelopment, getInventory, getMediaSlotsSafe, getSeo } from '../lib/api';
+import { copyTokenValues } from '../lib/copy-tokens';
+import { summarise, toResidences } from '../lib/residences';
+import { MediaSlotsProvider } from '../components/providers/MediaSlotsProvider';
 import { SmoothScroll } from '../components/layout/SmoothScroll';
 import { InventoryProvider } from '../components/providers/InventoryProvider';
 import { ContactProvider } from '../components/providers/ContactProvider';
@@ -47,42 +50,25 @@ const INTRO_SCRIPT = `try{var d=document.documentElement;if(location.pathname===
 const NOSCRIPT_CSS =
   '.reveal .reveal-word{transform:none!important}.reveal-media{clip-path:none!important}.reveal-media>*{transform:none!important}';
 
-const BASE_METADATA: Metadata = {
-  metadataBase: new URL(SITE),
-  title: {
-    default: 'Almasi Residences — Luxury apartments and penthouses in Kimihurura, Kigali',
-    template: '%s — Almasi Residences, Kigali',
-  },
-  description:
-    'Almasi Residences: private residences in Kimihurura, Kigali — apartments and penthouses with pool, gym, sauna, restaurant and basement parking.',
-  applicationName: 'Almasi Residences',
-  keywords: [
-    'Almasi Residences',
-    'Almasi Residence Kigali',
-    'luxury apartments Kigali',
-    'apartments for sale Kigali',
-    'apartments Kimihurura',
-    'luxury apartments Kimihurura',
-    'penthouses Kigali',
-    'property investment Kigali',
-  ],
-  openGraph: {
-    type: 'website',
-    siteName: 'Almasi Residences',
-    locale: 'en_GB',
-  },
-  twitter: { card: 'summary_large_image' },
-  robots: { index: true, follow: true },
-};
-
-/** The default description counts from the live record, so it never promises a number the admin has changed. */
+/**
+ * §5.6 — the site-wide title, description and keywords are the admin's
+ * (Website → SEO). Only the title template and technical flags live here.
+ */
 export async function generateMetadata(): Promise<Metadata> {
-  const dev = await getDevelopment().catch(() => null);
-  if (!dev) return BASE_METADATA;
-  const handover = dev.handoverDate ? ` Handover ${formatQuarter(dev.handoverDate)}.` : '';
+  const [dev, seo, inventory] = await Promise.all([getDevelopment().catch(() => null), getSeo().catch(() => null), getInventory().catch(() => null)]);
+  const name = dev?.name ?? '';
+  const values = inventory ? copyTokenValues(summarise(toResidences(inventory)), { handover: dev?.handoverDate ? formatQuarter(dev.handoverDate) : null, name }) : {};
+  const fill = (t: string | undefined) => (t ? fillCopyTokens(t, values) : undefined);
+  const title = fill(seo?.site?.title) ?? name;
   return {
-    ...BASE_METADATA,
-    description: `${dev.name}: ${dev.summary.total} private residences in Kimihurura, Kigali — apartments and penthouses with pool, gym, sauna, restaurant and basement parking.${handover}`,
+    metadataBase: new URL(SITE),
+    title: { default: title, template: name ? `%s — ${name}` : '%s' },
+    description: fill(seo?.site?.description),
+    applicationName: name || undefined,
+    keywords: seo?.site?.keywords,
+    openGraph: { type: 'website', siteName: name || undefined, locale: 'en_GB' },
+    twitter: { card: 'summary_large_image' },
+    robots: { index: true, follow: true },
   };
 }
 
@@ -110,7 +96,7 @@ async function loadShell() {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { dev, inventory } = await loadShell();
+  const [{ dev, inventory }, slots] = await Promise.all([loadShell(), getMediaSlotsSafe()]);
   const bathrooms = Object.fromEntries((dev?.typologies ?? []).map((t) => [t.slug, t.bathrooms]));
 
   return (
@@ -136,7 +122,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <InventoryProvider initial={inventory} bathrooms={bathrooms} slug={DEVELOPMENT_SLUG}>
               <EnquiryProvider>
                 <SiteNav />
-                <RouteFade>{children}</RouteFade>
+                <MediaSlotsProvider slots={slots}>
+                  <RouteFade>{children}</RouteFade>
+                </MediaSlotsProvider>
                 <StickyMobileCta />
               </EnquiryProvider>
             </InventoryProvider>

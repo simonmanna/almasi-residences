@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { formatMoney, formatPercent } from '@avida/types';
+import { formatCount, formatMoney, formatPercent } from '@avida/types';
 import type { MilestoneDto } from '../../lib/api';
 import { RESIDENCE_TYPES, TYPE_TEXT, type ResidenceType } from '../../lib/residences';
 import { useIsoLayoutEffect } from '../../lib/motion';
@@ -23,7 +23,8 @@ export function PaymentTimeline({
   id = 'payment',
 }: {
   milestones: MilestoneDto[];
-  handover: string;
+  /** "Q2 2028", or null when the property has no handover date. */
+  handover: string | null;
   id?: string;
 }) {
   const { summary, currency } = useInventory();
@@ -75,10 +76,13 @@ export function PaymentTimeline({
             <RevealText as="h2" id={`${id}-title`} className="h2" lines={['Pay as', 'it rises.']} />
           </div>
           <div className={styles.aside}>
-            <p className="lead">
-              Four payments, each tied to a stage of construction rather than a date, with the last on the
-              day you receive the keys.
-            </p>
+            {/* Counted from the plan itself: this sentence once said "four" above a plan the admin could change. */}
+            {stages.length > 0 && (
+              <p className="lead">
+                {formatCount(stages.length)} payment{stages.length === 1 ? '' : 's'}, each tied to a stage of construction rather than a
+                date{stages.at(-1)?.triggerType === 'ON_HANDOVER' ? ', with the last on the day you receive the keys' : ''}.
+              </p>
+            )}
             {priced.length > 0 && (
               <div className={styles.types} role="group" aria-label="Show example amounts for">
                 {priced.map((t) => (
@@ -111,7 +115,7 @@ export function PaymentTimeline({
         </ol>
 
         <p className={styles.foot}>
-          <span className={styles.handover}>Handover {handover}</span>
+          {handover && <span className={styles.handover}>Handover {handover}</span>}
           {price !== null && (
             <span className="caption">
               Example amounts on the lowest available {TYPE_TEXT[type].toLowerCase()} price,{' '}

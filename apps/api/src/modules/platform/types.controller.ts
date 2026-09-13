@@ -79,6 +79,7 @@ export class TypesController {
           areaSqmMin: dto.areaSqmMin ?? 0,
           areaSqmMax: dto.areaSqmMax ?? dto.areaSqmMin ?? 0,
           descriptionMd: dto.descriptionMd ?? null,
+          summary: dto.summary ?? null,
           isPenthouse: dto.isPenthouse ?? false,
           published: dto.published ?? true,
           sortOrder: (max._max.sortOrder ?? 0) + 1,
@@ -170,6 +171,7 @@ export class FeaturesController {
       .create({ data: { developmentId, name: dto.name, category: dto.category ?? 'General', iconKey: dto.iconKey ?? null } })
       .catch((e) => rethrowPrisma(e, { unique: 'That feature already exists.' }));
     await this.audit.record({ actorId: actorOf(req).id, action: 'feature.create', entity: 'feature', entityId: row.id, target: row.name, summary: `Created feature ${row.name}`, req });
+    await this.sync.changed('content');
     return row;
   }
 

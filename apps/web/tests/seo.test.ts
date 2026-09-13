@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { developmentJsonLd, typologyJsonLd } from '../lib/seo';
-import { hrefFor, NAV_SECTIONS, SECTIONS, SINGLE_PAGE_ORDER } from '../components/sections/registry';
 import type { DevelopmentDto, TypologyDto } from '../lib/api';
 
 const typology = (over: Partial<TypologyDto> = {}): TypologyDto => ({
@@ -74,23 +73,5 @@ describe('§9 task 8 — structured data', () => {
       dev,
     );
     expect('offers' in ld).toBe(false);
-  });
-});
-
-describe('§6.1 section registry', () => {
-  it('gives single-page mode anchors and multi-page mode routes', () => {
-    expect(hrefFor('availability', 'single')).toBe('#availability');
-    expect(hrefFor('availability', 'multi')).toBe('/availability');
-  });
-
-  it('keeps navigation a subset of the sections that exist', () => {
-    for (const id of NAV_SECTIONS) expect(SECTIONS[id]).toBeDefined();
-    for (const id of SINGLE_PAGE_ORDER) expect(SECTIONS[id]).toBeDefined();
-  });
-
-  it('renders every registered section in single-page mode', () => {
-    // The two modes share components; if a section exists but single-page mode
-    // never renders it, the modes have silently diverged.
-    expect(new Set(SINGLE_PAGE_ORDER)).toEqual(new Set(Object.keys(SECTIONS)));
   });
 });

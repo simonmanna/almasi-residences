@@ -75,6 +75,12 @@ export class AdminApi {
     return (await res.json().catch(() => ({}))) as T;
   }
 
+  async put<T>(path: string, data: unknown): Promise<T> {
+    const res = await this.ctx.put(url(path), { data, headers: this.headers });
+    expect(res.ok(), `PUT ${path} -> ${res.status()} ${await res.text()}`).toBeTruthy();
+    return (await res.json().catch(() => ({}))) as T;
+  }
+
   async del(path: string): Promise<void> {
     const res = await this.ctx.delete(url(path), { headers: this.headers });
     expect(res.ok(), `DELETE ${path} -> ${res.status()}`).toBeTruthy();

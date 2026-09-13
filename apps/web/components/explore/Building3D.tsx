@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import {
   FLOOR_H,
   LEVELS,
-  PARKING_BAYS,
+  parkingBays,
   PARTS,
   TREES,
   levelBase,
@@ -198,7 +198,8 @@ function LevelParts({ level, shadows }: { level: number; shadows: boolean }) {
   );
 }
 
-function ParkingCars() {
+function ParkingCars({ count }: { count: number }) {
+  const bays = useMemo(() => parkingBays(count), [count]);
   const fx = useFx();
   const ref = useRef<THREE.InstancedMesh>(null);
   const mat = useMemo(
@@ -209,16 +210,16 @@ function ParkingCars() {
     const mesh = ref.current;
     if (!mesh) return;
     const m = new THREE.Matrix4();
-    PARKING_BAYS.forEach((bay, i) => {
+    bays.forEach((bay, i) => {
       m.makeTranslation(bay.x, 0.95, bay.z);
       mesh.setMatrixAt(i, m);
     });
     mesh.instanceMatrix.needsUpdate = true;
-  }, []);
+  }, [bays]);
   useEffect(() => () => mat.dispose(), [mat]);
   useFrame(() => setOpacity(mat, fx.current[-1]?.opacity ?? 1));
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, PARKING_BAYS.length]} material={mat}>
+    <instancedMesh ref={ref} key={bays.length} args={[undefined, undefined, bays.length]} material={mat}>
       <boxGeometry args={[1.8, 1.3, 4.3]} />
     </instancedMesh>
   );
@@ -630,7 +631,7 @@ function LabelProjector({
   const { camera, size } = useThree();
   const v = useMemo(() => new THREE.Vector3(), []);
   const anchors = useMemo(
-    () => residences.map((r) => ({ r, a: unitAnchor(r.code, r.floorLevel) })),
+    () => residences.map((r) => ({ r, a: unitAnchor(r.code, r.floorLevel, r.modelSlot) })),
     [residences],
   );
 
@@ -671,7 +672,7 @@ function Scene(props: Building3DProps) {
   const byLevel = useMemo(() => {
     const out = new Map<number, { r: Residence; v: UnitVolume }[]>();
     for (const r of props.residences) {
-      for (const v of unitVolumes(r.code, r.floorLevel)) {
+      for (const v of unitVolumes(r.code, r.floorLevel, r.modelSlot)) {
         const list = out.get(v.level) ?? [];
         list.push({ r, v });
         out.set(v.level, list);
@@ -734,7 +735,7 @@ function Scene(props: Building3DProps) {
               />
             );
           })}
-          {level === -1 && <ParkingCars />}
+          {level === -1 && <ParkingCars count={props.residences.length} />}
         </LevelGroup>
       ))}
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   FOOTPRINT,
-  PARKING_BAYS,
+  parkingBays,
   PARTS,
   unitAnchor,
   unitVolumes,
@@ -65,7 +65,13 @@ describe('3D massing model', () => {
   it('has one basement bay for each residence', () => {
     const total = Object.values(SCHEDULE).flat().length;
     expect(total).toBe(28);
-    expect(PARKING_BAYS).toHaveLength(total);
+    expect(parkingBays(total)).toHaveLength(total);
+  });
+
+  it('places a residence whose code the model does not know once the admin chooses its volume', () => {
+    expect(unitVolumes('Z9', 2)).toEqual([]);
+    expect(unitVolumes('Z9', 2, 'E').length).toBe(1);
+    expect(unitVolumes('Z9', 2, 'NOPE')).toEqual([]);
   });
 
   it('knows nothing about codes that are not in the schedule', () => {

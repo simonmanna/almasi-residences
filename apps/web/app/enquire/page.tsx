@@ -1,30 +1,26 @@
 import type { Metadata } from 'next';
-import { PageHeader } from '../../components/layout/PageHero';
+import { copy, copyLines, getPagesSafe } from '../../lib/api';
+import { pageMetadata } from '../../lib/page-metadata';
+import { PageHeader, TitleLines } from '../../components/layout/PageHero';
 import { EnquireSection } from '../../components/home/EnquireSection';
 import { SiteFooter } from '../../components/layout/SiteFooter';
 
-export const metadata: Metadata = {
-  title: 'Enquire or book a viewing',
-  description:
-    'Contact the Almasi Residences sales team in Kigali: ask about a residence, arrange a private viewing or discuss a reservation.',
-  alternates: { canonical: '/enquire' },
-};
+export const revalidate = 3600;
 
-export default function EnquirePage() {
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('/enquire', { title: 'Enquire or book a viewing' });
+}
+
+export default async function EnquirePage() {
+  const pages = await getPagesSafe();
   return (
     <main id="main">
       <PageHeader
-        kicker="Contact"
-        title={
-          <>
-            Enquire about
-            <br />
-            <span className="italic">Almasi</span>
-          </>
-        }
-        lede="Ask about a residence, arrange a viewing or discuss a reservation. The sales team replies within one working day."
+        kicker={copy(pages, 'contact', 'heroKicker')}
+        title={<TitleLines lines={copyLines(pages, 'contact', 'heroTitle')} />}
+        lede={copy(pages, 'contact', 'heroLede')}
       />
-      <EnquireSection id="enquire-form" source="enquire-page" heading={['Arrange a', 'private viewing.']} />
+      <EnquireSection id="enquire-form" source="enquire-page" />
       <SiteFooter />
     </main>
   );

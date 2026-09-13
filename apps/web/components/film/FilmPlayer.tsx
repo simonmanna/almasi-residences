@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import film from '../../lib/film-data.json';
-import { prefersLightMedia, useReducedMotion } from '../../lib/motion';
+import type { FilmDto } from '../../lib/api';
+import { useReducedMotion } from '../../lib/motion';
 import styles from './FilmPlayer.module.css';
 
 const clock = (s: number) => {
@@ -15,8 +15,11 @@ const clock = (s: number) => {
  * The film, with chapters. It never autoplays with motion reduced; it picks the
  * smaller rendition on small screens and slow connections; every control is a
  * real button or range input, and the chapter list doubles as a transcript.
+ * The film, its poster and its chapters are managed in the admin (Website → Film).
  */
-export function FilmPlayer() {
+export function FilmPlayer({ film, caption, downloadLabel }: { film: FilmDto; caption: string; downloadLabel: string }) {
+  const duration = film.durationSec;
+  const chapters = film.chapters.map((c) => ({ t: c.startSec, title: c.label, place: c.place }));
   const reduced = useReducedMotion();
   const frameRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -26,10 +29,10 @@ export function FilmPlayer() {
   const [started, setStarted] = useState(false);
 
   useEffect(() => {
-    setSrc(window.innerWidth < 900 || prefersLightMedia() ? film.sd : film.hd);
-  }, []);
+    setSrc(film.video.url);
+  }, [film.video.url]);
 
-  const chapter = film.chapters.reduce((acc, c, i) => (time + 0.05 >= c.t ? i : acc), 0);
+  const chapter = chapters.reduce((acc, c, i) => (time + 0.05 >= c.t ? i : acc), 0);
 
   const toggle = useCallback(() => {
     const v = videoRef.current;
@@ -42,7 +45,7 @@ export function FilmPlayer() {
   const seek = useCallback((t: number) => {
     const v = videoRef.current;
     if (!v) return;
-    v.currentTime = Math.max(0, Math.min(film.duration, t));
+    v.currentTime = Math.max(0, Math.min(duration, t));
     setTime(v.currentTime);
     setStarted(true);
   }, []);
@@ -78,7 +81,7 @@ export function FilmPlayer() {
             ref={videoRef}
             className={styles.video}
             src={src}
-            poster={film.poster}
+            poster={film.poster?.url}
             playsInline
             muted
             preload="metadata"
@@ -91,7 +94,7 @@ export function FilmPlayer() {
             onEnded={() => setPlaying(false)}
             onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
             onClick={toggle}
-            aria-label="Almasi Residences, an architectural film"
+            aria-label={film.label}
           />
         )}
         {!playing && (
@@ -104,22 +107,22 @@ export function FilmPlayer() {
             {playing ? 'Pause' : 'Play'}
           </button>
           <span className={`${styles.time} tabular`}>
-            {clock(time)} / {clock(film.duration)}
+            {clock(time)} / {clock(duration)}
           </span>
           <div className={styles.scrub}>
             <input
               type="range"
               min={0}
-              max={film.duration}
+              max={duration}
               step={0.1}
               value={time}
               onChange={(e) => seek(Number(e.target.value))}
               aria-label="Position in the film"
-              aria-valuetext={`${clock(time)}, ${film.chapters[chapter]?.title ?? ''}`}
-              style={{ '--pos': `${(time / film.duration) * 100}%` } as React.CSSProperties}
+              aria-valuetext={`${clock(time)}, ${chapters[chapter]?.title ?? ''}`}
+              style={{ '--pos': `${(time / Math.max(1, duration)) * 100}%` } as React.CSSProperties}
             />
-            {film.chapters.map((c) => (
-              <span key={c.t} className={styles.tick} style={{ left: `${(c.t / film.duration) * 100}%` }} aria-hidden="true" />
+            {chapters.map((c) => (
+              <span key={c.t} className={styles.tick} style={{ left: `${(c.t / Math.max(1, duration)) * 100}%` }} aria-hidden="true" />
             ))}
           </div>
           <button type="button" className={styles.control} onClick={fullscreen}>
@@ -130,7 +133,7 @@ export function FilmPlayer() {
 
       <div className={`container ${styles.below}`}>
         <ol className={styles.chapters} aria-label="Chapters">
-          {film.chapters.map((c, i) => (
+          {chapters.map((c, i) => (
             <li key={c.t}>
               <button
                 type="button"
@@ -146,10 +149,12 @@ export function FilmPlayer() {
           ))}
         </ol>
         <p className="caption">
-          A silent film of artist’s impressions and concept visuals, {clock(film.duration)} long.{' '}
-          <a className="link-line" href={film.hd} download="Almasi-Residences-film.mp4">
-            Download the film (MP4)
-          </a>
+          {caption} {clock(duration)} long.{' '}
+          {downloadLabel && (
+            <a className="link-line" href={film.video.url} download>
+              {downloadLabel}
+            </a>
+          )}
         </p>
       </div>
     </div>

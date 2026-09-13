@@ -35,6 +35,7 @@ import { Donut } from '../components/Charts';
 import { InlinePrice } from '../components/InlinePrice';
 import { StatusSelect } from '../components/StatusSelect';
 import { UnitQuickView } from '../components/UnitQuickView';
+import { WebsiteSync } from '../components/WebsiteSync';
 import { Badge, Card, CardHead, Empty, ErrorBox, LoadingPage, MediaImg, Select, Stat } from '../components/ui';
 
 const TONE_COLOR: Record<string, string> = { green: 'var(--green)', blue: 'var(--blue)', orange: 'var(--orange)', red: 'var(--red)', purple: 'var(--purple)', grey: 'var(--grey)' };
@@ -233,6 +234,7 @@ export default function Dashboard() {
 
   return (
     <>
+      <WebsiteSync />
       <section className="hero">
         {d.property.heroImage && <MediaImg m={d.property.heroImage} sizes="1400px" />}
         <div className="hero-body">

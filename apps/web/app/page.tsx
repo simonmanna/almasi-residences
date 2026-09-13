@@ -1,6 +1,19 @@
 import type { Metadata } from 'next';
 import { formatQuarter } from '@avida/types';
-import { copy, getAmenities, getDevelopment, getFeatured, getGalleries, getPagesSafe, type DevelopmentDto } from '../lib/api';
+import {
+  copy,
+  copyLines,
+  getAmenities,
+  getDevelopment,
+  getFeatured,
+  getGalleries,
+  getPagesSafe,
+  getProgress,
+  getTypologyCards,
+  getWalkthrough,
+  type DevelopmentDto,
+} from '../lib/api';
+import { pageMetadata } from '../lib/page-metadata';
 import { developmentJsonLd } from '../lib/seo';
 import { HeroExperience } from '../components/home/HeroExperience';
 import { Introduction } from '../components/home/Introduction';
@@ -12,18 +25,24 @@ import { AmenityExperience } from '../components/home/AmenityExperience';
 import { LocationExperience } from '../components/home/LocationExperience';
 import { PenthouseFeature } from '../components/home/PenthouseFeature';
 import { PaymentTimeline } from '../components/home/PaymentTimeline';
+import { ProgressPreview } from '../components/home/ProgressPreview';
 import { FilmTeaser } from '../components/home/FilmTeaser';
 import { GalleryStrip } from '../components/home/GalleryStrip';
 import { EnquireSection } from '../components/home/EnquireSection';
 import { SiteFooter } from '../components/layout/SiteFooter';
 
-/** §11 — ISR; admin saves revalidate this page at once (§37), and the inventory inside refreshes every minute. */
-export const revalidate = 300;
+/** §11 — ISR; every admin save refreshes it by cache tag (§3.1), and the inventory inside refreshes every minute. */
+export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  alternates: { canonical: '/' },
-};
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('/');
+}
 
+/**
+ * Every word, picture and chapter on this page comes from the admin: copy from
+ * Website → Homepage, pictures from placements, the story from the
+ * "experience" walkthrough, residences and amenities from their records.
+ */
 export default async function HomePage() {
   let dev: DevelopmentDto | null = null;
   try {
@@ -31,49 +50,48 @@ export default async function HomePage() {
   } catch (e) {
     if (process.env.NODE_ENV === 'production') throw e;
   }
-  const [pages, amenities, galleries, featured] = await Promise.all([
+  const [pages, amenities, galleries, featured, cards, story, progress] = await Promise.all([
     getPagesSafe(),
     getAmenities().catch(() => []),
     getGalleries().catch(() => []),
     getFeatured().catch(() => []),
+    getTypologyCards().catch(() => []),
+    getWalkthrough('experience').catch(() => null),
+    getProgress().catch(() => []),
   ]);
-  const handover = dev?.handoverDate ? formatQuarter(dev.handoverDate) : 'Q2 2028';
-  const home = (key: string, fallback: string) => copy(pages, 'home', key, fallback);
+  const handover = dev?.handoverDate ? formatQuarter(dev.handoverDate) : null;
+  const home = (key: string) => copy(pages, 'home', key);
   const strip = [...new Map(galleries.flatMap((g) => g.items).filter((m) => m.kind === 'IMAGE').map((m) => [m.id, m])).values()].slice(0, 12);
+  const galleryTitle = copyLines(pages, 'gallery', 'heroTitle');
 
   return (
     <main id="main">
-      {dev && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(developmentJsonLd(dev)) }}
-        />
-      )}
+      {dev && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(developmentJsonLd(dev)) }} />}
       <HeroExperience
-        kicker={home('heroKicker', 'Kimihurura · Kigali')}
-        title={home('heroTitle', 'Almasi Residences')}
-        subtitle={home('heroSubtitle', 'Contemporary residences in the heart of Kimihurura.')}
-        primary={{ label: home('ctaPrimaryLabel', 'Explore residences'), href: home('ctaPrimaryHref', '/residences') }}
-        secondary={{ label: home('ctaSecondaryLabel', 'Take the 3D tour'), href: home('ctaSecondaryHref', '/tour') }}
+        kicker={home('heroKicker')}
+        title={home('heroTitle') || dev?.name || ''}
+        subtitle={home('heroSubtitle')}
+        place={dev ? `${dev.city}, ${dev.country === 'RW' ? 'Rwanda' : dev.country}` : ''}
+        primary={{ label: home('ctaPrimaryLabel'), href: home('ctaPrimaryHref') }}
+        secondary={{ label: home('ctaSecondaryLabel'), href: home('ctaSecondaryHref') }}
       />
-      <Introduction
-        handover={handover}
-        title={home('introTitle', 'One distinct address.')}
-        body={home('introBody', '') || undefined}
-        buildingConfig={dev?.buildingConfig}
-      />
+      <Introduction handover={handover} title={home('introTitle')} body={home('introBody')} kicker={home('heroKicker')} developmentName={dev?.name ?? ''} buildingConfig={dev?.buildingConfig} />
       <ExploreAlmasi />
-      <ResidencesPreview />
+      <ResidencesPreview cards={cards} kicker={home('residencesKicker')} title={home('residencesTitle')} />
       <FeaturedResidences items={featured} />
-      <ExperienceStory />
-      <AmenityExperience amenities={amenities.length ? amenities : (dev?.amenities ?? [])} />
-      {dev && (
-        <LocationExperience landmarks={dev.landmarks} latitude={dev.latitude} longitude={dev.longitude} />
-      )}
-      <PenthouseFeature />
+      <ExperienceStory stations={story?.stations ?? []} title={home('storyTitle')} />
+      <AmenityExperience
+        amenities={amenities.length ? amenities : (dev?.amenities ?? [])}
+        kicker={home('amenitiesKicker')}
+        lines={copyLines(pages, 'home', 'amenitiesTitle')}
+        lead={home('amenitiesLede')}
+      />
+      {dev && <LocationExperience landmarks={dev.landmarks} latitude={dev.latitude} longitude={dev.longitude} />}
+      <PenthouseFeature kicker={home('penthouseKicker')} title={home('penthouseTitle')} lede={home('penthouseLede')} />
       <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} />
-      <FilmTeaser />
-      <GalleryStrip items={strip} />
+      <ProgressPreview updates={progress} kicker={home('progressKicker')} title={copyLines(pages, 'home', 'progressTitle')} />
+      <FilmTeaser kicker={home('filmKicker')} title={home('filmTitle')} cta={home('filmCta')} />
+      <GalleryStrip items={strip} kicker={copy(pages, 'gallery', 'heroKicker')} title={galleryTitle} />
       <EnquireSection />
       <SiteFooter />
     </main>

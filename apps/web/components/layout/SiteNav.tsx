@@ -12,10 +12,11 @@ import styles from './SiteNav.module.css';
 
 export const NAV_LINKS = [
   { href: '/residences', label: 'Residences' },
-  { href: '/tour', label: 'The experience' },
+  { href: '/tour', label: '3D tour' },
   { href: '/amenities', label: 'Amenities' },
   { href: '/location', label: 'Location' },
   { href: '/gallery', label: 'Gallery' },
+  { href: '/progress', label: 'Progress' },
   { href: '/buying', label: 'Buying' },
 ] as const;
 

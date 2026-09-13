@@ -6,9 +6,9 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 /** Every public page, and one entry per residence the API reports — never a hardcoded list. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const residences = await getInventory()
-    .then((inv) => toResidences(inv))
-    .catch(() => []);
+  // Audit §21.4 — a failed read throws, so revalidation keeps the last good sitemap
+  // rather than publishing one with every residence missing.
+  const residences = toResidences(await getInventory());
   const now = new Date();
 
   const pages: MetadataRoute.Sitemap = [
@@ -21,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/gallery`, lastModified: now, priority: 0.6 },
     { url: `${SITE}/film`, lastModified: now, priority: 0.6 },
     { url: `${SITE}/buying`, lastModified: now, priority: 0.7 },
+    { url: `${SITE}/progress`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE}/enquire`, lastModified: now, priority: 0.6 },
   ];
 

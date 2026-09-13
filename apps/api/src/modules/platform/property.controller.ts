@@ -78,6 +78,7 @@ export class PropertyController {
     }) as Prisma.DevelopmentUncheckedUpdateInput;
 
     const after = await this.prisma.client.development.update({ where: { id }, data });
+    this.dev.invalidate();
     const changes = diff(before as unknown as Record<string, unknown>, after as unknown as Record<string, unknown>);
     changes.keys = changes.keys.filter((k) => k !== 'updatedAt');
     if (changes.keys.length) {

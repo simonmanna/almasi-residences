@@ -45,9 +45,8 @@ export class EnquiriesController {
   ) {}
 
   private async scope(): Promise<Prisma.EnquiryWhereInput> {
-    // An enquiry with no residence attached still belongs to the one property.
-    const developmentId = await this.dev.id();
-    return { OR: [{ units: { some: { unit: { developmentId } } } }, { units: { none: {} } }] };
+    // §40.5 — every lead carries its property; no subquery through its residences.
+    return { developmentId: await this.dev.id() };
   }
 
   @Get()
@@ -103,6 +102,8 @@ export class EnquiriesController {
       where: await this.scope(),
       orderBy: { createdAt: 'desc' },
       include: { units: { include: { unit: { select: { code: true } } } } },
+      // The same cap as the residences export: a CSV is a report, not a backup.
+      take: 5000,
     });
     await this.audit.record({ actorId: actorOf(req).id, action: 'enquiry.export', entity: 'enquiry', target: 'all', summary: `Exported ${rows.length} enquiries`, rowCount: rows.length, req });
     const header = ['id', 'created', 'name', 'email', 'phone', 'country', 'intent', 'status', 'units', 'source', 'utm_source', 'unverified'];

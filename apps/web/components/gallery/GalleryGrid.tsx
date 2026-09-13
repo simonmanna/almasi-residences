@@ -2,19 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PublicGalleryDto } from '../../lib/api';
-import { PROVENANCE_NOTE, scene, type SceneId } from '../../lib/media-manifest';
 import { ApiImage } from '../ui/ApiImage';
-import { SceneImage } from '../ui/SceneImage';
 import styles from './GalleryGrid.module.css';
-
-/** Used only until the admin has published a gallery. */
-const FALLBACK_GROUPS: { id: string; label: string; scenes: SceneId[] }[] = [
-  { id: 'building', label: 'The building', scenes: ['street', 'arrival', 'aerial', 'pool'] },
-  { id: 'residences', label: 'Residences', scenes: ['living-2br', 'two-kitchen', 'one-living', 'one-bedroom', 'one-kitchen'] },
-  { id: 'penthouses', label: 'Penthouses', scenes: ['ph-living', 'ph-kitchen', 'ph-bedroom', 'ph-bath', 'ph-terrace', 'view'] },
-  { id: 'amenities', label: 'Amenities', scenes: ['lobby', 'restaurant', 'gym', 'wellness', 'cowork', 'parking'] },
-  { id: 'plans', label: 'Plans', scenes: ['plan-1br', 'plan-2br', 'plan-ph'] },
-];
 
 interface Item {
   key: string;
@@ -39,21 +28,10 @@ function fromGalleries(galleries: PublicGalleryDto[]): Group[] {
       .map((m) => ({
         key: `${g.slug}:${m.id}`,
         title: m.title ?? g.title,
-        note: m.caption ?? '',
+        note: m.note || (m.caption ?? ''),
         aspect: m.width && m.height ? `${m.width} / ${m.height}` : '16 / 10',
-        render: (sizes: string) => <ApiImage m={m} sizes={sizes} />,
+        render: (sizes: string) => <ApiImage m={m} sizes={sizes} focus={m.focus ?? undefined} />,
       })),
-  }));
-}
-
-function fromScenes(): Group[] {
-  return FALLBACK_GROUPS.map((g) => ({
-    id: g.id,
-    label: g.label,
-    items: g.scenes.map((id) => {
-      const s = scene(id);
-      return { key: id, title: s.title, note: PROVENANCE_NOTE[s.provenance], aspect: `${s.width} / ${s.height}`, render: (sizes: string) => <SceneImage id={id} sizes={sizes} /> };
-    }),
   }));
 }
 
@@ -62,7 +40,7 @@ function fromScenes(): Group[] {
  * published in the admin (§16), in their order. The lightbox is a native <dialog>.
  */
 export function GalleryGrid({ galleries = [] }: { galleries?: PublicGalleryDto[] }) {
-  const groups = galleries.length ? fromGalleries(galleries) : fromScenes();
+  const groups = fromGalleries(galleries);
   const [group, setGroup] = useState<string>('all');
   const [open, setOpen] = useState<number | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -89,6 +67,14 @@ export function GalleryGrid({ galleries = [] }: { galleries?: PublicGalleryDto[]
   }, [open]);
 
   const step = (delta: number) => setOpen((i) => (i === null ? i : (i + delta + list.length) % list.length));
+
+  if (!groups.some((g) => g.items.length)) {
+    return (
+      <p className="container lead" style={{ marginBottom: 64 }}>
+        Photography is being prepared and will appear here.
+      </p>
+    );
+  }
 
   return (
     <>

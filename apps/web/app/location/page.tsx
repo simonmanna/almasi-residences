@@ -1,43 +1,29 @@
 import type { Metadata } from 'next';
-import { getDevelopment } from '../../lib/api';
-import { PageHero } from '../../components/layout/PageHero';
+import { copy, copyLines, getDevelopment, getMediaSlotsSafe, getPagesSafe } from '../../lib/api';
+import { pageMetadata } from '../../lib/page-metadata';
+import { PageHero, TitleLines } from '../../components/layout/PageHero';
 import { LocationExperience } from '../../components/home/LocationExperience';
 import { EnquireSection } from '../../components/home/EnquireSection';
 import { SiteFooter } from '../../components/layout/SiteFooter';
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: 'Location — Kimihurura, Kigali',
-  description:
-    'Almasi Residences stands in Kimihurura, Kigali, minutes from the Kigali Convention Centre, King Faisal Hospital, the city centre and the airport road.',
-  alternates: { canonical: '/location' },
-};
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('/location', { title: 'Location' });
+}
 
 export default async function LocationPage() {
-  const dev = await getDevelopment().catch(() => null);
+  const [dev, pages, slots] = await Promise.all([getDevelopment().catch(() => null), getPagesSafe(), getMediaSlotsSafe()]);
   return (
     <main id="main">
       <PageHero
-        sceneId="aerial"
-        kicker="Location"
-        title={
-          <>
-            Kimihurura,
-            <br />
-            <span className="italic">Kigali</span>
-          </>
-        }
-        lede="A green ridge east of the city centre: embassies and restaurants on one side, the golf course and the airport road on the other."
+        media={slots['page-location']?.image ?? null}
+        mediaLabel="Location page header"
+        kicker={copy(pages, 'location', 'heroKicker')}
+        title={<TitleLines lines={copyLines(pages, 'location', 'heroTitle')} />}
+        lede={copy(pages, 'location', 'heroLede')}
       />
-      {dev && (
-        <LocationExperience
-          id="neighbourhood"
-          landmarks={dev.landmarks}
-          latitude={dev.latitude}
-          longitude={dev.longitude}
-        />
-      )}
+      {dev && <LocationExperience id="neighbourhood" landmarks={dev.landmarks} latitude={dev.latitude} longitude={dev.longitude} />}
       <EnquireSection source="location" heading={['Come and', 'see the site.']} />
       <SiteFooter />
     </main>

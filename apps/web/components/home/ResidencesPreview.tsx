@@ -1,38 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { formatCount, formatMoney } from '@avida/types';
-import { TYPE_MEDIA } from '../../lib/media-manifest';
-import { typesPresent, type ResidenceType } from '../../lib/residences';
+import { formatMoney } from '@avida/types';
+import type { TypologyCardDto } from '../../lib/api';
+import { fillCopy } from '../../lib/copy-tokens';
+import { residenceType, TYPE_TEXT, typesPresent, type ResidenceType } from '../../lib/residences';
 import { useInventory } from '../providers/InventoryProvider';
 import { Reveal } from '../ui/Reveal';
 import { RevealText } from '../ui/RevealText';
 import { SceneImage } from '../ui/SceneImage';
 import styles from './ResidencesPreview.module.css';
 
-const COPY: Record<ResidenceType, { title: string; line: string }> = {
-  'one-bedroom': {
-    title: 'One bedroom',
-    line: 'An open living and dining room, a bedroom behind a full-height door, and a balcony of its own.',
-  },
-  'two-bedroom': {
-    title: 'Two bedroom',
-    line: 'Two bedrooms and two bathrooms, the main suite with a walk-in wardrobe, the living room onto the balcony.',
-  },
-  'three-bedroom': {
-    title: 'Three bedroom',
-    line: 'Three bedrooms for a family, with room to entertain and a balcony onto the hills.',
-  },
-  penthouse: {
-    title: 'Penthouse',
-    line: 'The top floor, from wrap-around glass to a duplex with its own roof terrace and pool.',
-  },
-};
-
 /** 04 — the residence groups that exist, each with its live count and lowest available price. */
-export function ResidencesPreview() {
+export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCardDto[]; kicker: string; title: string }) {
   const { summary, currency } = useInventory();
   const types = typesPresent(summary);
+  // A group's words and picture: the first residence type of that kind the admin published.
+  const cardFor = (t: ResidenceType) => cards.find((c) => residenceType(c.isPenthouse, c.bedrooms) === t && (c.cover || c.summary)) ?? cards.find((c) => residenceType(c.isPenthouse, c.bedrooms) === t);
+  const lines = fillCopy(title, summary).split('|').map((l) => l.trim()).filter(Boolean);
   const areas = types.map((t) => summary.byType[t]);
   const min = areas.length ? Math.min(...areas.map((t) => t.areaMin)) : 0;
   const max = areas.length ? Math.max(...areas.map((t) => t.areaMax)) : 0;
@@ -42,8 +27,8 @@ export function ResidencesPreview() {
       <div className="container">
         <header className={styles.head}>
           <div>
-            <p className={`mark ${styles.kicker}`}>Residences</p>
-            <RevealText as="h2" id="residences-title" className="h2" lines={[`${formatCount(types.length || 3)} ways`, 'to live here.']} />
+            {kicker && <p className={`mark ${styles.kicker}`}>{kicker}</p>}
+            {lines.length > 0 && <RevealText as="h2" id="residences-title" className="h2" lines={lines} />}
           </div>
           <div className={styles.aside}>
             <p className="lead">
@@ -58,18 +43,19 @@ export function ResidencesPreview() {
         <ul className={styles.grid}>
           {types.map((t) => {
             const s = summary.byType[t];
+            const card = cardFor(t);
             return (
               <li key={t} className={styles.item}>
                 <Link href={`/residences?type=${t}`} className={styles.card} data-cursor="Explore">
                   <Reveal className={styles.media}>
-                    <SceneImage id={TYPE_MEDIA[t].hero} sizes="(max-width: 900px) 100vw, 33vw" />
+                    <SceneImage media={card?.cover} sizes="(max-width: 900px) 100vw, 33vw" label={TYPE_TEXT[t]} />
                   </Reveal>
                   <div className={styles.text}>
-                    <h3 className="h3">{COPY[t].title}</h3>
+                    <h3 className="h3">{TYPE_TEXT[t]}</h3>
                     <p className={styles.size}>
                       {s.areaMin === s.areaMax ? s.areaMin : `${s.areaMin}–${s.areaMax}`} m²
                     </p>
-                    <p className={styles.line}>{COPY[t].line}</p>
+                    {card?.summary && <p className={styles.line}>{card.summary}</p>}
                     <dl className={styles.meta}>
                       <div>
                         <dt>Residences</dt>

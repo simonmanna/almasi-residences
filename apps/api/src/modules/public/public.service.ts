@@ -2,9 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@avida/db';
 import {
   CONTENT_PAGES,
+  MEDIA_SLOTS,
   effectivePriceMinor,
   pricePerSqmMinor,
   PUBLIC_UNIT_STATUS,
+  provenanceNote,
   type PublicUnitStatus,
   type UnitStatus,
 } from '@avida/types';
@@ -114,6 +116,11 @@ export class PublicService {
       srcSet: v.srcSet,
       blurDataUrl: v.blurDataUrl,
       mimeType: v.mimeType,
+      /** §49 — what the file is, and the note the site prints beside it. */
+      provenance: v.provenance,
+      note: provenanceNote(v.provenance),
+      /** CSS object-position from the admin's focal point. */
+      focus: v.focusX !== null && v.focusY !== null ? `${v.focusX}% ${v.focusY}%` : null,
     };
   }
 
@@ -306,14 +313,14 @@ export class PublicService {
         features: { select: { feature: { select: { name: true, category: true, iconKey: true } } }, orderBy: { feature: { sortOrder: 'asc' } } },
         rooms: {
           orderBy: { sortOrder: 'asc' },
-          select: { id: true, name: true, type: true, areaSqm: true, description: true, features: true, media: { where: { published: true }, orderBy: { sortOrder: 'asc' } } },
+          select: { id: true, name: true, type: true, areaSqm: true, description: true, features: true, planX: true, planY: true, planW: true, planH: true, planOpen: true, media: { where: { published: true }, orderBy: { sortOrder: 'asc' } } },
         },
         paymentPlan: { select: { name: true, description: true, depositPercent: true, published: true, milestones: { orderBy: { sortOrder: 'asc' }, select: { label: true, percent: true, triggerType: true, triggerDate: true, triggerNote: true } } } },
       },
     });
     if (!u) throw new NotFoundException('No such residence');
 
-    const [media, plan] = await Promise.all([
+    const [media, plan, specifications] = await Promise.all([
       this.prisma.client.media.findMany({
         where: {
           developmentId,
@@ -323,6 +330,7 @@ export class PublicService {
         orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }],
       }),
       u.paymentPlan?.published ? Promise.resolve(u.paymentPlan) : this.defaultPlan(developmentId),
+      this.specifications(developmentId, u.typologyId),
     ]);
 
     // A residence's own photographs win; until it has any, its type's stand in.
@@ -355,6 +363,7 @@ export class PublicService {
         ...media.filter((m) => m.collection === 'FLOOR_PLAN' && m.floorId === u.floorId),
       ].map((m) => this.publicMedia(m)),
       paymentPlan: plan ? { name: plan.name, description: plan.description, milestones: plan.milestones } : null,
+      specifications,
     };
   }
 
@@ -414,11 +423,16 @@ export class PublicService {
       }));
   }
 
+  /** One gallery by its slug, without loading every other gallery (roadmap item 58). */
   async gallery(slug: string) {
-    const all = await this.galleries();
-    const g = all.find((x) => x.slug === slug);
-    if (!g) throw new NotFoundException('No such gallery');
-    return g;
+    const developmentId = await this.dev.id();
+    const g = await this.prisma.client.gallery.findFirst({
+      where: { developmentId, slug, published: true },
+      select: { slug: true, title: true, description: true, coverMedia: true, items: { where: { media: { published: true } }, orderBy: { sortOrder: 'asc' }, select: { media: true } } },
+    });
+    if (!g || g.items.length === 0) throw new NotFoundException('No such gallery');
+    const { coverMedia, items, ...rest } = g;
+    return { ...rest, cover: coverMedia?.published ? this.publicMedia(coverMedia) : this.publicMedia(items[0]!.media), items: items.map((i) => this.publicMedia(i.media)) };
   }
 
   async media(category?: string, collection?: string) {
@@ -472,9 +486,16 @@ export class PublicService {
 
   // ─── Content ───────────────────────────────────────────────────────────
 
+  /** Every page in two queries, not one per page and per media field (roadmap item 58). */
   async pages() {
+    const developmentId = await this.dev.id();
+    const rows = await this.prisma.client.contentPage.findMany({ where: { developmentId } });
+    const contents = new Map(rows.map((r) => [r.key, r.published === false ? {} : ((r.content ?? {}) as Record<string, unknown>)]));
+    const ids = CONTENT_PAGES.flatMap((def) => def.fields.filter((f) => f.type === 'media').map((f) => contents.get(def.key)?.[f.key])).filter((v): v is string => typeof v === 'string');
+    const media = ids.length ? await this.prisma.client.media.findMany({ where: { id: { in: ids }, developmentId, published: true } }) : [];
+    const byId = new Map(media.map((m) => [m.id, m]));
     const out: Record<string, Record<string, unknown>> = {};
-    for (const def of CONTENT_PAGES) out[def.key] = (await this.page(def.key)).content;
+    for (const def of CONTENT_PAGES) out[def.key] = this.resolvePage(def.key, contents.get(def.key) ?? {}, byId);
     return out;
   }
 
@@ -484,16 +505,23 @@ export class PublicService {
     const developmentId = await this.dev.id();
     const row = await this.prisma.client.contentPage.findUnique({ where: { developmentId_key: { developmentId, key } } });
     const content = row?.published === false ? {} : ((row?.content ?? {}) as Record<string, unknown>);
-    // Media fields resolve to the file itself, so the site needs no second request.
+    const ids = def.fields.filter((f) => f.type === 'media').map((f) => content[f.key]).filter((v): v is string => typeof v === 'string');
+    const media = ids.length ? await this.prisma.client.media.findMany({ where: { id: { in: ids }, developmentId, published: true } }) : [];
+    return { key, title: def.title, content: this.resolvePage(key, content, new Map(media.map((m) => [m.id, m]))), updatedAt: row?.updatedAt ?? null };
+  }
+
+  /** Media fields resolve to the file itself, so the site needs no second request. */
+  private resolvePage(key: string, content: Record<string, unknown>, media: Map<string, Parameters<StorageService['present']>[0]>) {
+    const def = CONTENT_PAGES.find((p) => p.key === key)!;
     const resolved: Record<string, unknown> = { ...content };
     for (const f of def.fields.filter((x) => x.type === 'media')) {
       const id = content[f.key];
       if (typeof id === 'string') {
-        const m = await this.prisma.client.media.findFirst({ where: { id, developmentId, published: true } });
+        const m = media.get(id);
         resolved[f.key.replace(/Id$/, '')] = m ? this.publicMedia(m) : null;
       }
     }
-    return { key, title: def.title, content: resolved, updatedAt: row?.updatedAt ?? null };
+    return resolved;
   }
 
   async faqs() {
@@ -504,4 +532,126 @@ export class PublicService {
       select: { id: true, question: true, answerMd: true, category: true },
     });
   }
+
+  // ─── Presentation: placements, walkthroughs, film, SEO (phase 1) ───────
+
+  /** §52 — every media placement the site renders. An empty one is null, never a substitute. */
+  async slots() {
+    const developmentId = await this.dev.id();
+    const rows = await this.prisma.client.mediaSlot.findMany({ where: { developmentId }, select: { key: true, image: true, video: true } });
+    const out: Record<string, { image: PublicMedia | null; video: PublicMedia | null }> = {};
+    for (const key of MEDIA_SLOTS.map((d) => d.key)) {
+      const row = rows.find((r) => r.key === key);
+      out[key] = {
+        image: row?.image?.published ? this.publicMedia(row.image) : null,
+        video: row?.video?.published && row.video.kind === 'VIDEO' ? this.publicMedia(row.video) : null,
+      };
+    }
+    return out;
+  }
+
+  /** The specification a residence of this type shows: type rows replace same-label development rows. */
+  async specifications(developmentId: string, typologyId: string | null) {
+    const rows = await this.prisma.client.specification.findMany({
+      where: { developmentId, published: true, OR: [{ typologyId: null }, ...(typologyId ? [{ typologyId }] : [])] },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      select: { category: true, label: true, value: true, typologyId: true },
+    });
+    const typed = new Set(rows.filter((r) => r.typologyId).map((r) => r.label.toLowerCase()));
+    return rows.filter((r) => r.typologyId || !typed.has(r.label.toLowerCase())).map(({ category, label, value }) => ({ category, label, value }));
+  }
+
+  async tour(slug: string) {
+    const developmentId = await this.dev.id();
+    const t = await this.prisma.client.tour.findFirst({
+      where: { developmentId, slug, published: true },
+      select: {
+        slug: true,
+        name: true,
+        description: true,
+        scenes: {
+          where: { published: true },
+          orderBy: { sortOrder: 'asc' },
+          select: { key: true, label: true, place: true, body: true, level: true, image: true, video: true },
+        },
+      },
+    });
+    if (!t) throw new NotFoundException('No such tour');
+    return {
+      slug: t.slug,
+      name: t.name,
+      description: t.description,
+      stations: t.scenes.map((sc) => ({
+        key: sc.key,
+        title: sc.label,
+        place: sc.place,
+        body: sc.body,
+        level: sc.level,
+        image: sc.image?.published ? this.publicMedia(sc.image) : null,
+        video: sc.video?.published && sc.video.kind === 'VIDEO' ? this.publicMedia(sc.video) : null,
+      })),
+    };
+  }
+
+  async film() {
+    const developmentId = await this.dev.id();
+    const f = await this.prisma.client.videoAsset.findFirst({
+      where: { developmentId, published: true },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        key: true,
+        label: true,
+        description: true,
+        durationSec: true,
+        media: true,
+        posterMedia: true,
+        chapters: { orderBy: [{ sortOrder: 'asc' }, { startSec: 'asc' }], select: { startSec: true, label: true, place: true } },
+      },
+    });
+    if (!f || !f.media?.published) throw new NotFoundException('No film is published');
+    return {
+      key: f.key,
+      label: f.label,
+      description: f.description,
+      durationSec: f.durationSec,
+      video: this.publicMedia(f.media),
+      poster: f.posterMedia?.published ? this.publicMedia(f.posterMedia) : null,
+      chapters: f.chapters,
+    };
+  }
+
+  /** §5.6 — the site-wide metadata and every route the admin has written metadata for. */
+  async seo() {
+    const developmentId = await this.dev.id();
+    const [site, pages] = await Promise.all([
+      this.prisma.client.seoMeta.findUnique({ where: { developmentId }, select: { title: true, description: true, keywords: true } }),
+      this.prisma.client.seoPage.findMany({ where: { developmentId }, select: { path: true, title: true, description: true, noindex: true, ogImage: true } }),
+    ]);
+    return {
+      site: site ?? null,
+      pages: Object.fromEntries(
+        pages.map((pg) => [pg.path, { title: pg.title, description: pg.description, noindex: pg.noindex, ogImage: pg.ogImage?.published ? this.publicMedia(pg.ogImage) : null }]),
+      ),
+    };
+  }
+
+  /** The residence-type cards on the homepage: words and cover from the admin. */
+  async typologyCards() {
+    const developmentId = await this.dev.id();
+    const rows = await this.prisma.client.typology.findMany({
+      where: { developmentId, published: true },
+      orderBy: { sortOrder: 'asc' },
+      select: {
+        slug: true,
+        name: true,
+        bedrooms: true,
+        isPenthouse: true,
+        summary: true,
+        media: { where: { published: true, kind: 'IMAGE', collection: 'LIBRARY', unitId: null }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }], take: 1 },
+      },
+    });
+    return rows.map(({ media, ...t }) => ({ ...t, cover: media[0] ? this.publicMedia(media[0]) : null }));
+  }
 }
+
+export type PublicMedia = ReturnType<PublicService['publicMedia']>;

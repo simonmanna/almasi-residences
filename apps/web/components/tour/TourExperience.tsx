@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PROVENANCE_NOTE, scene } from '../../lib/media-manifest';
-import type { Station } from '../../lib/tour';
+import type { TourStationDto } from '../../lib/api';
 import { useReducedMotion } from '../../lib/motion';
 import { MotionMedia } from '../ui/MotionMedia';
 import { SceneImage } from '../ui/SceneImage';
@@ -17,13 +16,16 @@ const pad = (n: number) => String(n).padStart(2, '0');
  * the room you leave grows past you as the next one settles into place. A
  * mouse looks around a little; a finger swipes between spaces; the arrow keys,
  * the buttons and the strip of spaces along the bottom all do the same.
+ *
+ * The stations — words, order, photographs and films — are a walkthrough
+ * edited in the admin (Website → Tours); none of it lives in this repository.
  */
 export function TourExperience({
   stations,
   title,
   otherTour,
 }: {
-  stations: Station[];
+  stations: TourStationDto[];
   title: string;
   otherTour: { href: string; label: string };
 }) {
@@ -35,7 +37,7 @@ export function TourExperience({
   const stageRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLOListElement>(null);
   const n = stations.length;
-  const station = stations[index]!;
+  const station = stations[Math.min(index, Math.max(0, n - 1))];
 
   const go = useCallback(
     (next: number) => {
@@ -116,6 +118,17 @@ export function TourExperience({
     };
   }, [go, index, reduced]);
 
+  if (!station) {
+    return (
+      <div className={styles.tour} data-ground="night" data-nav-over>
+        <h1 className="visually-hidden">{title}</h1>
+        <p className="container lead" style={{ paddingTop: 160 }}>
+          This tour is being prepared.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.tour} data-ground="night" data-nav-over>
       <h1 className="visually-hidden">{title}</h1>
@@ -125,11 +138,13 @@ export function TourExperience({
           const state = i === index ? 'active' : i === leaving ? 'leaving' : 'idle';
           const near = Math.abs(i - index) <= 1 || i === leaving;
           return (
-            <div key={s.id} className={styles.frame} data-state={state} aria-hidden={i !== index}>
+            <div key={s.key} className={styles.frame} data-state={state} aria-hidden={i !== index}>
               <div className={styles.look}>
                 {near && (
                   <MotionMedia
-                    id={s.scene}
+                    image={s.image}
+                    video={s.video}
+                    label={s.title}
                     active={i === index}
                     load={i === index || Math.abs(i - index) === 1}
                     restartOnActive
@@ -159,12 +174,12 @@ export function TourExperience({
       </div>
 
       <div className={styles.caption} aria-live="polite" aria-atomic="true">
-        <p className={`mark ${styles.place}`}>{station.place}</p>
-        <h2 key={station.id} className={styles.title}>
+        {station.place && <p className={`mark ${styles.place}`}>{station.place}</p>}
+        <h2 key={station.key} className={styles.title}>
           {station.title}
         </h2>
-        <p className={styles.text}>{station.text}</p>
-        <p className="cgi-note">{PROVENANCE_NOTE[scene(station.scene).provenance]}</p>
+        {station.body && <p className={styles.text}>{station.body}</p>}
+        {station.image?.note && <p className="cgi-note">{station.image.note}</p>}
       </div>
 
       <div className={styles.arrows}>
@@ -183,7 +198,7 @@ export function TourExperience({
       <nav className={styles.stripWrap} aria-label="Spaces in this tour">
         <ol ref={stripRef} className={styles.strip}>
           {stations.map((s, i) => (
-            <li key={s.id}>
+            <li key={s.key}>
               <button
                 type="button"
                 className={styles.stop}
@@ -191,7 +206,7 @@ export function TourExperience({
                 onClick={() => go(i)}
               >
                 <span className={styles.thumb}>
-                  <SceneImage id={s.scene} sizes="160px" quality={60} />
+                  <SceneImage media={s.image} sizes="160px" />
                 </span>
                 <span className={styles.stopTitle}>{s.title}</span>
               </button>

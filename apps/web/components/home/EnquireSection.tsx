@@ -5,10 +5,6 @@ import { EnquiryForm } from '../enquiry/EnquiryForm';
 import { RevealText } from '../ui/RevealText';
 import styles from './EnquireSection.module.css';
 
-const DEFAULT_TITLE = 'Arrange a private viewing.';
-const DEFAULT_BODY =
-  'Viewings are by appointment with the sales team. Tell us which residences interest you and when suits you, and we will reply within one working day.';
-
 /**
  * 11 — the enquiry, in the page rather than behind a button. The heading and
  * text come from the CMS (Contact information), the channels from the property.
@@ -27,7 +23,8 @@ export async function EnquireSection({
   const wa = whatsappHref(contact);
   const tel = telHref(contact);
   const mail = mailtoHref(contact);
-  const lines = heading ?? twoLines(copy(pages, 'contact', 'enquireTitle', DEFAULT_TITLE));
+  const lines = heading ?? twoLines(copy(pages, 'contact', 'enquireTitle'));
+  const body = copy(pages, 'contact', 'enquireBody');
 
   return (
     <section id={id} className={`section ${styles.section}`} data-hide-sticky-cta aria-labelledby={`${id}-title`}>
@@ -35,7 +32,7 @@ export async function EnquireSection({
         <div className={styles.text}>
           <p className={`mark ${styles.kicker}`}>Enquire</p>
           <RevealText as="h2" id={`${id}-title`} className="h2" lines={lines} />
-          <p className="lead">{copy(pages, 'contact', 'enquireBody', DEFAULT_BODY)}</p>
+          {body && <p className="lead">{body}</p>}
           <ul className={styles.channels}>
             {wa && (
               <li>

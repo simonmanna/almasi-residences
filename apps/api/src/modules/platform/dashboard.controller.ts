@@ -62,8 +62,8 @@ export class DashboardController {
       this.prisma.client.resident.groupBy({ by: ['occupancyStatus'], where: { developmentId, archivedAt: null }, _count: true }),
       this.prisma.client.parkingSpace.groupBy({ by: ['status'], where: { developmentId }, _count: true }),
       this.prisma.client.amenity.count({ where: { developmentId, published: true } }),
-      this.prisma.client.enquiry.groupBy({ by: ['status'], _count: true }),
-      this.prisma.client.enquiry.count({ where: { createdAt: { gte: weekAgo } } }),
+      this.prisma.client.enquiry.groupBy({ by: ['status'], where: { developmentId }, _count: true }),
+      this.prisma.client.enquiry.count({ where: { developmentId, createdAt: { gte: weekAgo } } }),
       // Recent activity is one-line summaries, but a summary about a person
       // names them ("Archived client Jane Doe"), so rows about people are
       // filtered below by the same permissions that gate their records.
@@ -265,7 +265,7 @@ export class DashboardController {
         ? this.prisma.client.buyer.findMany({ where: { developmentId, OR: [{ fullName: like }, { email: like }, { phone: { contains: q } }] }, take: 5 })
         : Promise.resolve([]),
       can(role, 'enquiry.view')
-        ? this.prisma.client.enquiry.findMany({ where: { OR: [{ name: like }, { email: like }, { phone: { contains: q } }] }, take: 5, orderBy: { createdAt: 'desc' } })
+        ? this.prisma.client.enquiry.findMany({ where: { developmentId, OR: [{ name: like }, { email: like }, { phone: { contains: q } }] }, take: 5, orderBy: { createdAt: 'desc' } })
         : Promise.resolve([]),
     ]);
 

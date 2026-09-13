@@ -22,6 +22,10 @@ export interface MediaView {
   published: boolean;
   isCover: boolean;
   sortOrder: number;
+  /** §49 — PHOTOGRAPH, SUPPLIED_RENDER, CONCEPT_RENDER or DRAWING. */
+  provenance?: string;
+  focusX?: number | null;
+  focusY?: number | null;
   url: string;
   originalUrl: string;
   thumbUrl: string;
@@ -85,6 +89,10 @@ export interface ResidenceRow {
   cover: MediaView | null;
   /** False when the 3D building on the website has no volume for this code. */
   placedInModel: boolean;
+  /** The maquette volume chosen in the admin; null derives it from the code. */
+  modelSlot?: string | null;
+  /** Detail only: the volumes the residence's level offers. */
+  modelSlotOptions?: { key: string; label: string }[];
   enquiryCount: number;
   interestCount: number;
   residentCount: number;
@@ -125,6 +133,12 @@ export interface Room {
   areaSqm: number | null;
   description: string | null;
   features: string[];
+  /** Position and size on the plan drawing; null when not drawn. */
+  planX?: number | null;
+  planY?: number | null;
+  planW?: number | null;
+  planH?: number | null;
+  planOpen?: boolean;
   sortOrder: number;
   media?: MediaView[];
 }
@@ -276,6 +290,7 @@ export interface Typology {
   areaSqmMin: number;
   areaSqmMax: number;
   descriptionMd: string | null;
+  summary?: string | null;
   isPenthouse: boolean;
   published: boolean;
   sortOrder: number;

@@ -86,6 +86,11 @@ model Development {
   media         Media[]        @relation("DevelopmentMedia")
   galleries     Gallery[]
   pages         ContentPage[]
+  mediaSlots    MediaSlot[]
+  specifications Specification[]
+  seoPages      SeoPage[]
+  videos        VideoAsset[]
+  enquiries     Enquiry[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -193,6 +198,10 @@ model Unit {
   widthRatio    Float   @default(1) // relative width in the stack drawing
   // maps this unit to a mesh name inside the building GLB
   meshName      String?
+  /// Which volume of the 3D maquette this residence occupies ("A", "PH-B").
+  /// Null derives it from the code; an unresolvable value is a visible admin
+  /// warning, never a silent disappearance (§40.1).
+  modelSlot     String?
 
   paymentPlanId String?
   paymentPlan   PaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: SetNull)
@@ -290,6 +299,11 @@ model Room {
   /// Position on the residence plan, in plan coordinates.
   planX       Float?
   planY       Float?
+  /// Width and depth on the residence plan, in the same units as planX/planY.
+  planW       Float?
+  planH       Float?
+  /// A balcony or terrace: drawn hatched, as outside space.
+  planOpen    Boolean  @default(false)
   sortOrder   Int      @default(0)
   media       Media[]
 
@@ -353,6 +367,8 @@ model Typology {
   areaSqmMin    Float
   areaSqmMax    Float
   descriptionMd String? @db.Text
+  /// One line for the homepage card: what living in this type is like.
+  summary       String?
   isPenthouse   Boolean @default(false)
   sortOrder     Int     @default(0)
   published     Boolean @default(true)
@@ -366,6 +382,7 @@ model Typology {
   tours         Tour[]
   mediaSets     MediaSet[]
   media         Media[]
+  specifications Specification[]
 
   @@unique([developmentId, slug])
 }
@@ -404,6 +421,11 @@ model Media {
   published     Boolean  @default(true)
   isCover       Boolean  @default(false)
   sortOrder     Int      @default(0)
+  /// §49 — what this file is. A CG render must never read as a photograph.
+  provenance    MediaProvenance @default(PHOTOGRAPH)
+  /// Focal point, 0–100 on each axis: what a cover crop keeps in frame.
+  focusX        Float?
+  focusY        Float?
 
   unitId        String?
   unit          Unit?     @relation(fields: [unitId], references: [id], onDelete: Cascade)
@@ -425,6 +447,13 @@ model Media {
   heroFor       Development[] @relation("DevelopmentHero")
   mainFor       Development[] @relation("DevelopmentMain")
   videoFor      Development[] @relation("DevelopmentVideo")
+  slotImages    MediaSlot[]   @relation("SlotImage")
+  slotVideos    MediaSlot[]   @relation("SlotVideo")
+  sceneImages   Scene[]       @relation("SceneImage")
+  sceneVideos   Scene[]       @relation("SceneVideo")
+  filmVideos    VideoAsset[]  @relation("FilmVideo")
+  filmPosters   VideoAsset[]  @relation("FilmPoster")
+  seoImages     SeoPage[]     @relation("SeoImage")
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -442,6 +471,33 @@ enum MediaKind {
   VIDEO
   DOCUMENT
   MODEL
+}
+
+enum MediaProvenance {
+  PHOTOGRAPH
+  SUPPLIED_RENDER
+  CONCEPT_RENDER
+  DRAWING
+}
+
+/// §52 — a named place on the public site that shows media: the homepage hero,
+/// the film teaser, a page header. The site asks for a slot by key; the admin
+/// decides which library file fills it. An empty slot renders a neutral frame,
+/// never a substitute image.
+model MediaSlot {
+  id            String   @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  key           String
+  imageId       String?
+  image         Media?   @relation("SlotImage", fields: [imageId], references: [id], onDelete: SetNull)
+  videoId       String?
+  video         Media?   @relation("SlotVideo", fields: [videoId], references: [id], onDelete: SetNull)
+  updatedById   String?
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+
+  @@unique([developmentId, key])
 }
 
 enum MediaCollection {
@@ -559,6 +615,16 @@ model VideoAsset {
   label        String
   kind         VideoKind
   typologyId   String?
+  developmentId String?
+  development  Development? @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  description  String?  @db.Text
+  /// The film itself, from the media library (§5.7). The keys below are the
+  /// encode pipeline's outputs, kept for the HLS path.
+  mediaId      String?
+  media        Media?   @relation("FilmVideo", fields: [mediaId], references: [id], onDelete: SetNull)
+  posterMediaId String?
+  posterMedia  Media?   @relation("FilmPoster", fields: [posterMediaId], references: [id], onDelete: SetNull)
+  published    Boolean  @default(true)
 
   posterKey    String
   hlsKey       String?                 // .m3u8 master
@@ -586,6 +652,9 @@ model VideoChapter {
   label        String
   startSec     Float
   thumbKey     String?
+  /// Where in the building the film is at this point.
+  place        String?
+  sortOrder    Int     @default(0)
   /// optional: jump into the panorama tour at this point
   linkedSceneId String?
 
@@ -627,8 +696,12 @@ model Tour {
 
   slug          String
   name          String
+  description   String?  @db.Text
   startSceneId  String?
+  published     Boolean  @default(true)
+  sortOrder     Int      @default(0)
   scenes        Scene[]
+  updatedAt     DateTime @default(now()) @updatedAt
 
   @@unique([developmentId, slug])
 }
@@ -640,6 +713,16 @@ model Scene {
   key       String            // "living", "kitchen", "master-bed"
   label     String
   sortOrder Int    @default(0)
+  /// The walkthrough station's words: where it is, and what to notice.
+  place     String?
+  body      String?  @db.Text
+  /// The homepage story gauge: where in the building this station is (TOUR_LEVELS).
+  level     String?
+  imageId   String?
+  image     Media?   @relation("SceneImage", fields: [imageId], references: [id], onDelete: SetNull)
+  videoId   String?
+  video     Media?   @relation("SceneVideo", fields: [videoId], references: [id], onDelete: SetNull)
+  published Boolean  @default(true)
 
   /// Panoramas per time state — the tour respects the global time selector
   panoramas PanoramaAsset[]
@@ -956,6 +1039,9 @@ model BuyerInterest {
 
 model Enquiry {
   id         String @id @default(cuid())
+  /// §40.5 — every lead belongs to a property. Backfilled from its residences.
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   name       String
   email      String
   phone      String
@@ -995,6 +1081,7 @@ model Enquiry {
   @@index([createdAt])
   @@index([purgeAfter])
   @@index([buyerId])
+  @@index([developmentId, createdAt])
 }
 
 enum EnquiryIntent {
@@ -1080,6 +1167,70 @@ model SeoMeta {
   description   String
   ogImageKey    String?
   keywords      String[]
+}
+
+/// §5.6 — what search engines and link previews read for one public route.
+/// `path` is the route ("/", "/amenities"). A missing field falls back to the
+/// site-wide SeoMeta.
+model SeoPage {
+  id            String   @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  path          String
+  title         String?
+  description   String?
+  ogImageId     String?
+  ogImage       Media?   @relation("SeoImage", fields: [ogImageId], references: [id], onDelete: SetNull)
+  noindex       Boolean  @default(false)
+  updatedById   String?
+  updatedAt     DateTime @updatedAt
+
+  @@unique([developmentId, path])
+}
+
+/// §5.4 — the specification a buyer reads ("Floors — tiled throughout"). A row
+/// with a typology applies to that type only and replaces a development-wide
+/// row with the same label.
+model Specification {
+  id            String   @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  typologyId    String?
+  typology      Typology? @relation(fields: [typologyId], references: [id], onDelete: Cascade)
+  category      String   @default("General")
+  label         String
+  value         String   @db.Text
+  sortOrder     Int      @default(0)
+  published     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([developmentId, typologyId])
+}
+
+/// §3.4 — one attempt to tell the website that something changed. A row that
+/// cannot be delivered is retried with backoff and then shown on the dashboard:
+/// a publish never silently fails to propagate.
+model SyncEvent {
+  id              String     @id @default(cuid())
+  developmentSlug String
+  scope           String
+  tags            String[]
+  status          SyncStatus @default(PENDING)
+  attempts        Int        @default(0)
+  lastError       String?
+  nextAttemptAt   DateTime   @default(now())
+  deliveredAt     DateTime?
+  createdAt       DateTime   @default(now())
+
+  @@index([status, nextAttemptAt])
+  @@index([createdAt])
+}
+
+enum SyncStatus {
+  PENDING
+  DELIVERED
+  FAILED
 }
 
 // ─────────────────────────── Ops ────────────────────────────────────

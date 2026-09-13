@@ -89,3 +89,15 @@
     grid-template-columns: 1fr;
   }
 }
+
+.people {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--gutter);
+  margin: 32px 0;
+  padding: 32px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.people div { display: grid; gap: 8px; }
+.people dd { margin: 0; }

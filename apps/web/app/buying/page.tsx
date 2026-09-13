@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { formatPercent, formatQuarter } from '@avida/types';
-import { copy, getDevelopment, getPagesSafe } from '../../lib/api';
-import { twoLines } from '../../lib/text';
-import { PageHeader } from '../../components/layout/PageHero';
+import { formatQuarter } from '@avida/types';
+import { copy, copyLines, getDevelopment, getPagesSafe } from '../../lib/api';
+import { pageMetadata } from '../../lib/page-metadata';
+import { PageHeader, TitleLines } from '../../components/layout/PageHero';
 import { PaymentTimeline } from '../../components/home/PaymentTimeline';
 import { EnquireSection } from '../../components/home/EnquireSection';
 import { SiteFooter } from '../../components/layout/SiteFooter';
@@ -10,56 +10,42 @@ import styles from './buying.module.css';
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: 'Buying — payment plan and process',
-  description:
-    'How to buy at Almasi Residences, Kigali: choose a residence, reserve it with the sales team, and pay in stages tied to construction.',
-  alternates: { canonical: '/buying' },
-};
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('/buying', { title: 'Buying' });
+}
 
 type Step = { title: string; body: string };
 
 /**
- * The purchase process is CMS copy (Buying guide, §21); the milestones are the
- * default payment plan's (§10) and the questions the published FAQs.
+ * The purchase process is CMS copy (Buying guide, §21) with no fallback in
+ * code; the milestones are the default payment plan's (§10), the questions the
+ * published FAQs, and the people behind the project the property record's.
  */
 export default async function BuyingPage() {
   const [dev, pages] = await Promise.all([getDevelopment().catch(() => null), getPagesSafe()]);
-  const milestones = [...(dev?.milestones ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
-  const handover = dev?.handoverDate ? formatQuarter(dev.handoverDate) : 'Q2 2028';
-  const first = milestones[0];
-
-  const fallbackSteps: Step[] = [
-    { title: 'Choose', body: 'Find a residence in the explorer or with the sales team, who confirm that it is available.' },
-    { title: 'Reserve', body: 'The sales team holds the residence for you while the agreement is prepared.' },
-    { title: 'Sign', body: first ? `Sign the agreement and pay ${formatPercent(first.percent)} ${first.label.toLowerCase()}.` : 'Sign the agreement and pay the first stage.' },
-    { title: 'Build', body: 'The balance falls due as construction reaches each stage, not on fixed dates.' },
-    { title: 'Move in', body: `The final payment on handover, planned for ${handover}.` },
-  ];
+  const milestones = [...(dev?.milestones ?? [])].sort((x, y) => x.sortOrder - y.sortOrder);
+  const handover = dev?.handoverDate ? formatQuarter(dev.handoverDate) : null;
   const cms = pages.buying?.processSteps;
-  const steps = Array.isArray(cms) && cms.length ? (cms as Step[]) : fallbackSteps;
-  const [a, b] = twoLines(copy(pages, 'buying', 'heroTitle', 'Buying at Almasi'));
-  const reservation = copy(pages, 'buying', 'reservationBody', '');
-  const abroad = copy(pages, 'buying', 'foreignBuyersBody', '');
+  const steps = Array.isArray(cms) ? (cms as Step[]) : [];
+  const reservation = copy(pages, 'buying', 'reservationBody');
+  const abroad = copy(pages, 'buying', 'foreignBuyersBody');
+  const people = [
+    { role: 'Developer', name: dev?.developerName },
+    { role: 'Architect', name: dev?.architect },
+    { role: 'Contractor', name: dev?.contractor },
+  ].filter((x): x is { role: string; name: string } => Boolean(x.name));
+  const developerBody = copy(pages, 'about', 'developerBody');
+  const architectureBody = copy(pages, 'about', 'architectureBody');
 
   return (
     <main id="main">
       <PageHeader
-        kicker="Buying"
-        title={
-          <>
-            {a}
-            {b && (
-              <>
-                <br />
-                <span className="italic">{b}</span>
-              </>
-            )}
-          </>
-        }
-        lede={copy(pages, 'buying', 'heroLede', 'Priced in US dollars, open to buyers in Rwanda and abroad, and paid in stages that follow the building as it rises.')}
+        kicker={copy(pages, 'buying', 'heroKicker')}
+        title={<TitleLines lines={copyLines(pages, 'buying', 'heroTitle')} />}
+        lede={copy(pages, 'buying', 'heroLede')}
       />
 
+      {steps.length > 0 && (
       <section className={`container ${styles.steps}`} aria-labelledby="steps-title">
         <h2 id="steps-title" className="h3">
           From enquiry to keys
@@ -90,6 +76,25 @@ export default async function BuyingPage() {
           </div>
         )}
       </section>
+      )}
+
+      {people.length > 0 && (
+        <section className={`section container ${styles.faq}`} aria-labelledby="people-title">
+          <h2 id="people-title" className="h2">
+            {copy(pages, 'about', 'developerTitle') || 'Who is building it'}
+          </h2>
+          <dl className={styles.people}>
+            {people.map((x) => (
+              <div key={x.role}>
+                <dt className="mark">{x.role}</dt>
+                <dd className="h3">{x.name}</dd>
+              </div>
+            ))}
+          </dl>
+          {developerBody && <p className="lead">{developerBody}</p>}
+          {architectureBody && <p className="body muted">{architectureBody}</p>}
+        </section>
+      )}
 
       <PaymentTimeline milestones={milestones} handover={handover} />
 

@@ -9,7 +9,6 @@ import {
   findResidence,
   toResidences,
 } from '../../../lib/residences';
-import { scene, TYPE_MEDIA } from '../../../lib/media-manifest';
 import { breadcrumbJsonLd, residenceJsonLd } from '../../../lib/seo';
 import { ResidenceDetail } from '../../../components/residence/ResidenceDetail';
 import { SiteFooter } from '../../../components/layout/SiteFooter';
@@ -42,9 +41,8 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
   const title = `Residence ${r.label}: ${TYPE_TEXT[r.type].toLowerCase()}, ${r.areaSqm} m²`;
   const description =
     pub?.shortDescription ??
-    `${TYPE_TEXT[r.type]} residence ${r.label} at Almasi Residences, Kimihurura, Kigali: ${r.areaSqm} m² on ${r.floorLabel.toLowerCase()}, facing ${ORIENTATION_TEXT[r.orientation].toLowerCase()}. ${STATUS_TEXT[r.publicStatus]}.`;
+    `${TYPE_TEXT[r.type]} residence ${r.label}: ${r.areaSqm} m² on ${r.floorLabel.toLowerCase()}, facing ${ORIENTATION_TEXT[r.orientation].toLowerCase()}. ${STATUS_TEXT[r.publicStatus]}.`;
   const cover = pub?.images[0];
-  const hero = scene(TYPE_MEDIA[r.type].hero);
   return {
     title,
     description,
@@ -52,7 +50,7 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
     openGraph: {
       title,
       description,
-      images: [cover ? { url: cover.url, width: cover.width ?? undefined, height: cover.height ?? undefined, alt: cover.altText ?? title } : { url: hero.src, width: hero.width, height: hero.height, alt: hero.alt }],
+      images: cover ? [{ url: cover.url, width: cover.width ?? undefined, height: cover.height ?? undefined, alt: cover.altText ?? title }] : undefined,
     },
   };
 }
@@ -64,7 +62,7 @@ export default async function ResidencePage({ params }: { params: Promise<{ code
 
   const [detail, pub] = await Promise.all([getUnit(residence.id).catch(() => null), getPublicResidence(residence.slug).catch(() => null)]);
   const typology = dev.typologies.find((t) => t.slug === residence.typologySlug);
-  const handover = dev.handoverDate ? formatQuarter(dev.handoverDate) : 'Q2 2028';
+  const handover = dev.handoverDate ? formatQuarter(dev.handoverDate) : null;
 
   return (
     <main id="main">
@@ -74,7 +72,7 @@ export default async function ResidencePage({ params }: { params: Promise<{ code
           __html: JSON.stringify([
             residenceJsonLd(residence, dev),
             breadcrumbJsonLd([
-              { name: 'Almasi Residences', path: '/' },
+              { name: dev.name, path: '/' },
               { name: 'Residences', path: '/residences' },
               { name: residence.label, path: `/residences/${residence.slug}` },
             ]),

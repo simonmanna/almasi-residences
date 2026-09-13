@@ -1,13 +1,14 @@
 import {
   BarChart3,
-  BookOpen,
   Building,
   Building2,
   CalendarCheck,
+  ClipboardList,
   Car,
   Clapperboard,
   DoorOpen,
   FileText,
+  Film,
   Frame,
   Handshake,
   HardHat,
@@ -17,11 +18,11 @@ import {
   Image,
   Images,
   Inbox,
-  Info,
   Layers,
+  Map,
   LayoutDashboard,
   PenTool,
-  Phone,
+  Search,
   Settings,
   Shapes,
   ShieldCheck,
@@ -50,7 +51,10 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-/** §2 — the sidebar, grouped the way the developer thinks about the property. */
+/**
+ * §50 — the sidebar, grouped the way a manager thinks ("I need to manage my
+ * property"), not the way the database is shaped.
+ */
 export const NAV: NavGroup[] = [
   {
     title: 'Overview',
@@ -59,21 +63,14 @@ export const NAV: NavGroup[] = [
   {
     title: 'Property',
     items: [
-      { label: 'Property overview', to: '/property', icon: Building2, sub: 'The project, its address and who is building it' },
+      { label: 'Overview', to: '/property', icon: Building2, sub: 'The project, its address and who is building it' },
       { label: 'Floors', to: '/floors', icon: Layers, sub: 'Every level of the building and what is on it' },
       { label: 'Residences', to: '/residences', icon: DoorOpen, sub: 'Every home: status, price, specifications and media' },
       { label: 'Residence types', to: '/types', icon: Shapes, sub: 'The types buyers choose between, and the feature catalogue' },
-      { label: 'Rooms / spaces', to: '/rooms', icon: Sofa, sub: 'The rooms inside each residence' },
+      { label: 'Specification', to: '/specifications', icon: ClipboardList, needs: 'typology.view', sub: 'How the residences are built and finished' },
+      { label: 'Rooms / spaces', to: '/rooms', icon: Sofa, sub: 'The rooms inside each residence, and the plan' },
       { label: 'Parking', to: '/parking', icon: Car, sub: 'Basement and visitor bays' },
       { label: 'Amenities', to: '/amenities', icon: Sparkles, sub: 'Pool, gym, restaurant and the rest of the building' },
-    ],
-  },
-  {
-    title: 'People',
-    items: [
-      { label: 'Residents', to: '/residents', icon: Users, needs: 'resident.view', sub: 'Who lives where — private to the admin' },
-      { label: 'Buyers / clients', to: '/buyers', icon: Handshake, needs: 'buyer.view', sub: 'From prospect to owner' },
-      { label: 'Enquiries / leads', to: '/enquiries', icon: Inbox, needs: 'enquiry.view', sub: 'Every enquiry from the website' },
     ],
   },
   {
@@ -89,27 +86,33 @@ export const NAV: NavGroup[] = [
   {
     title: 'Sales',
     items: [
+      { label: 'Enquiries / leads', to: '/enquiries', icon: Inbox, needs: 'enquiry.view', sub: 'Every enquiry from the website' },
+      { label: 'Buyers / clients', to: '/buyers', icon: Handshake, needs: 'buyer.view', sub: 'From prospect to owner' },
+      { label: 'Residents', to: '/residents', icon: Users, needs: 'resident.view', sub: 'Who lives where — private to the admin' },
       { label: 'Availability', to: '/availability', icon: Building, sub: 'The building at a glance, unit by unit' },
       { label: 'Pricing', to: '/pricing', icon: Tag, sub: 'Prices, discounts and price history' },
       { label: 'Reservations', to: '/reservations', icon: CalendarCheck, sub: 'Residences reserved or on hold, and who for' },
       { label: 'Payment plans', to: '/payment-plans', icon: Wallet, sub: 'Deposit, milestones and instalments' },
-      { label: 'Sales overview', to: '/sales', icon: BarChart3, sub: 'Value sold, reserved and still to sell' },
     ],
   },
   {
-    title: 'Website content',
+    title: 'Website',
     items: [
-      { label: 'Homepage', to: '/content/home', icon: Home, needs: 'content.edit', sub: 'The opening image, headline and buttons' },
-      { label: 'About', to: '/content/about', icon: Info, needs: 'content.edit', sub: 'The developer and the architecture' },
-      { label: 'Amenities content', to: '/content/amenities', icon: FileText, needs: 'content.edit', sub: 'The amenities page heading' },
-      { label: 'Buying guide', to: '/content/buying', icon: BookOpen, needs: 'content.edit', sub: 'How to reserve, buy and pay' },
+      { label: 'Page content', to: '/content/home', icon: FileText, needs: 'content.view', sub: 'Headlines and words, page by page' },
+      { label: 'Placements', to: '/placements', icon: Home, needs: 'content.view', sub: 'Which image or film fills each place on the site' },
+      { label: 'Tours', to: '/tours', icon: Map, needs: 'content.view', sub: 'The walkthroughs and the homepage story' },
+      { label: 'Film', to: '/film', icon: Film, needs: 'content.view', sub: 'The architectural film and its chapters' },
+      { label: 'SEO', to: '/seo', icon: Search, needs: 'content.view', sub: 'Titles, descriptions and share images' },
       { label: 'FAQs', to: '/faqs', icon: HelpCircle, sub: 'Questions buyers ask' },
-      { label: 'Gallery & progress', to: '/progress', icon: HardHat, sub: 'Construction updates and the gallery page' },
-      { label: 'Contact information', to: '/content/contact', icon: Phone, needs: 'content.edit', sub: 'Enquiry copy — contact details live on Property overview' },
+      { label: 'Construction progress', to: '/progress', icon: HardHat, sub: 'Dated updates from the site' },
     ],
   },
   {
-    title: 'Management',
+    title: 'Reports',
+    items: [{ label: 'Sales overview', to: '/sales', icon: BarChart3, sub: 'Value sold, reserved and still to sell' }],
+  },
+  {
+    title: 'System',
     items: [
       { label: 'Users & roles', to: '/users', icon: ShieldCheck, needs: 'user.manage', sub: 'Who can do what' },
       { label: 'Activity / audit log', to: '/audit', icon: History, needs: 'audit.view', sub: 'Every change, who made it and when' },

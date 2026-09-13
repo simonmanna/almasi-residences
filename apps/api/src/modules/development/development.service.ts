@@ -37,6 +37,7 @@ export class DevelopmentService {
         constructionPercent: true,
         developerName: true,
         architect: true,
+        contractor: true,
         contactPhone: true,
         contactEmail: true,
         whatsappNumber: true,

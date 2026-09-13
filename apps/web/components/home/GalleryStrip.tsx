@@ -3,32 +3,15 @@
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import type { PublicMediaDto } from '../../lib/api';
-import { PROVENANCE_NOTE, scene, type SceneId } from '../../lib/media-manifest';
 import { ApiImage } from '../ui/ApiImage';
-import { SceneImage } from '../ui/SceneImage';
 import styles from './GalleryStrip.module.css';
-
-/** Used only until the admin has published a gallery. */
-export const GALLERY_ORDER: SceneId[] = [
-  'street',
-  'arrival',
-  'lobby',
-  'pool',
-  'living-2br',
-  'ph-living',
-  'ph-bedroom',
-  'ph-terrace',
-  'restaurant',
-  'wellness',
-  'one-living',
-  'aerial',
-];
 
 /**
  * A strip to swipe on a phone and drag with a mouse; the full gallery is one
- * link away. Its images are the published galleries' (§16).
+ * link away. Its images are the published galleries' (§16); with none
+ * published, the strip is not shown — never a set of stand-in renders.
  */
-export function GalleryStrip({ items = [] }: { items?: PublicMediaDto[] }) {
+export function GalleryStrip({ items = [], kicker, title }: { items?: PublicMediaDto[]; kicker: string; title: string[] }) {
   const track = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -77,22 +60,21 @@ export function GalleryStrip({ items = [] }: { items?: PublicMediaDto[] }) {
     };
   }, []);
 
-  const shots = items.length
-    ? items.map((m) => ({ key: m.id, title: m.title ?? '', note: m.caption ?? '', media: <ApiImage m={m} sizes="(max-width: 700px) 84vw, 44vw" /> }))
-    : GALLERY_ORDER.map((id) => {
-        const s = scene(id);
-        return { key: id, title: s.title, note: PROVENANCE_NOTE[s.provenance], media: <SceneImage id={id} sizes="(max-width: 700px) 84vw, 44vw" /> };
-      });
+  const shots = items.map((m) => ({ key: m.id, title: m.title ?? '', note: m.note || (m.caption ?? ''), media: <ApiImage m={m} sizes="(max-width: 700px) 84vw, 44vw" focus={m.focus ?? undefined} /> }));
+  if (shots.length === 0) return null;
 
   return (
     <section className={`section ${styles.section}`} aria-labelledby="gallery-strip-title">
       <div className={`container ${styles.head}`}>
         <div>
-          <p className={`mark ${styles.kicker}`}>Gallery</p>
+          {kicker && <p className={`mark ${styles.kicker}`}>{kicker}</p>}
           <h2 id="gallery-strip-title" className="h2">
-            Stone, walnut,
-            <br />
-            evening light.
+            {title.map((line, i) => (
+              <span key={i}>
+                {i > 0 && <br />}
+                {line}
+              </span>
+            ))}
           </h2>
         </div>
         <Link href="/gallery" className="link-line">

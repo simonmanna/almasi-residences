@@ -1,40 +1,33 @@
 'use client';
 
 import Link from 'next/link';
-import { formatCount } from '@avida/types';
-import { PROVENANCE_NOTE, scene } from '../../lib/media-manifest';
 import { STATUS_TEXT } from '../../lib/residences';
+import { fillCopy } from '../../lib/copy-tokens';
 import { useInventory } from '../providers/InventoryProvider';
+import { useSlot } from '../providers/MediaSlotsProvider';
 import { MotionMedia } from '../ui/MotionMedia';
 import { RevealText } from '../ui/RevealText';
 import styles from './PenthouseFeature.module.css';
 
 /** 08 — the top floor, with each penthouse's live status. */
-export function PenthouseFeature() {
+export function PenthouseFeature({ kicker, title, lede }: { kicker: string; title: string; lede: string }) {
   const { residences, summary } = useInventory();
+  const slot = useSlot('home-penthouse');
   const penthouses = residences.filter((r) => r.type === 'penthouse').sort((a, b) => a.positionIndex - b.positionIndex);
-  const ph = summary.byType.penthouse;
-  const largest = [...penthouses].sort((a, b) => b.areaSqm - a.areaSqm)[0];
+  if (penthouses.length === 0) return null;
+  const lines = fillCopy(title, summary).split('|').map((l) => l.trim()).filter(Boolean);
 
   return (
     <section className={styles.section} data-ground="night" aria-labelledby="penthouse-title">
       <div className={styles.media}>
-        <MotionMedia id="ph-terrace" loop sizes="(max-width: 960px) 100vw, 58vw" />
-        <p className={`cgi-note ${styles.note}`}>{PROVENANCE_NOTE[scene('ph-terrace').provenance]}</p>
+        <MotionMedia image={slot.image} video={slot.video} loop sizes="(max-width: 960px) 100vw, 58vw" label="Penthouse feature" />
+        <p className={`cgi-note ${styles.note}`}>{slot.image?.note ?? ''}</p>
       </div>
 
       <div className={styles.text}>
-        <p className={`mark ${styles.kicker}`}>The penthouses</p>
-        <RevealText
-          as="h2"
-          id="penthouse-title"
-          className="h2"
-          lines={['The top floor,', `in ${formatCount(ph.total).toLowerCase()} residences.`]}
-        />
-        <p className="lead">
-          From {ph.areaMin} to {ph.areaMax} m², glazed on three sides above the treetops.
-          {largest ? ` ${largest.label} is a duplex with its own roof terrace and pool.` : ''}
-        </p>
+        {kicker && <p className={`mark ${styles.kicker}`}>{kicker}</p>}
+        {lines.length > 0 && <RevealText as="h2" id="penthouse-title" className="h2" lines={lines} />}
+        {lede && <p className="lead">{fillCopy(lede, summary)}</p>}
 
         <ul className={styles.list}>
           {penthouses.map((r) => (

@@ -24,6 +24,14 @@ export class CurrentDevelopment {
     return dev;
   }
 
+  /**
+   * Called after any write to the Development row, so a currency or name change
+   * is read at once rather than after a restart (audit §2).
+   */
+  invalidate(): void {
+    this.cached = null;
+  }
+
   async id(): Promise<string> {
     return (await this.get()).id;
   }

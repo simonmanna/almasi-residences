@@ -43,3 +43,11 @@
 .north path {
   fill: var(--accent);
 }
+
+/* Interactive rooms (roadmap item 64): a room lights when pointed at or focused. */
+.roomGroup { cursor: default; outline: none; }
+.roomGroup rect { transition: fill 0.3s var(--ease-out, ease), stroke 0.3s; }
+.roomGroup[data-active='true'] rect { fill: color-mix(in srgb, var(--accent, #9a7b4f) 18%, transparent); stroke: var(--accent, #9a7b4f); }
+.roomGroup:focus-visible rect { stroke-width: 3; }
+.roomList { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.roomList li { display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line, rgba(0,0,0,0.12)); }

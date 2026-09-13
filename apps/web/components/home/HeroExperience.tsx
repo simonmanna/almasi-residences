@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useIsoLayoutEffect } from '../../lib/motion';
+import { useSlot } from '../providers/MediaSlotsProvider';
 import { MotionMedia } from '../ui/MotionMedia';
 import { Magnetic } from '../ui/Magnetic';
 import styles from './HeroExperience.module.css';
@@ -33,18 +34,22 @@ const chars = (text: string) =>
  * so the full-frame server render never flashes before the intro begins.
  */
 export function HeroExperience({
-  kicker = 'Kimihurura · Kigali',
-  title = 'Almasi Residences',
-  subtitle = 'Contemporary residences in the heart of Kimihurura.',
-  primary = { label: 'Explore residences', href: '/residences' },
-  secondary = { label: 'Take the 3D tour', href: '/tour' },
+  kicker,
+  title,
+  subtitle,
+  place,
+  primary,
+  secondary,
 }: {
-  kicker?: string;
-  title?: string;
-  subtitle?: string;
-  primary?: { label: string; href: string };
-  secondary?: { label: string; href: string };
-} = {}) {
+  kicker: string;
+  title: string;
+  subtitle: string;
+  /** "Kimihurura, Kigali" — from the property record. */
+  place: string;
+  primary: { label: string; href: string };
+  secondary: { label: string; href: string };
+}) {
+  const hero = useSlot('home-hero');
   const [lineA, ...rest] = title.trim().split(/\s+/);
   const lineB = rest.join(' ');
   const root = useRef<HTMLElement>(null);
@@ -152,7 +157,7 @@ export function HeroExperience({
       <div className={styles.media} data-media-scroll>
         <div className={styles.aperture} data-aperture>
           <div className={styles.mediaInner} data-media-inner>
-            <MotionMedia id="street" priority active={playing} />
+            <MotionMedia image={hero.image} video={hero.video} priority active={playing} label="Homepage hero" />
           </div>
         </div>
         <div className={styles.scrim} aria-hidden="true" />
@@ -183,26 +188,30 @@ export function HeroExperience({
             {subtitle}
           </p>
           <div className={styles.ctas} data-hero-fade>
-            <Magnetic>
-              <Link href={primary.href} className="btn btn--solid">
-                {primary.label}
-              </Link>
-            </Magnetic>
-            <Magnetic>
-              <Link href={secondary.href} className="btn btn--ghost">
-                {secondary.label}
-              </Link>
-            </Magnetic>
+            {primary.label && primary.href && (
+              <Magnetic>
+                <Link href={primary.href} className="btn btn--solid">
+                  {primary.label}
+                </Link>
+              </Magnetic>
+            )}
+            {secondary.label && secondary.href && (
+              <Magnetic>
+                <Link href={secondary.href} className="btn btn--ghost">
+                  {secondary.label}
+                </Link>
+              </Magnetic>
+            )}
           </div>
         </div>
       </div>
 
       <div className={styles.foot} data-hero-fade>
-        <span className="mark">Kimihurura, Kigali</span>
+        <span className="mark">{place}</span>
         <span className={styles.cue} aria-hidden="true">
           <span />
         </span>
-        <span className="cgi-note">Artist’s impression</span>
+        <span className="cgi-note">{hero.image?.note ?? ''}</span>
       </div>
 
       {skippable && (

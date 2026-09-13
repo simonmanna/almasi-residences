@@ -1,25 +1,29 @@
 'use client';
 
 import Link from 'next/link';
+import { useSlot } from '../providers/MediaSlotsProvider';
 import { MotionMedia } from '../ui/MotionMedia';
 import styles from './FilmTeaser.module.css';
 
-/** 10 — the way into the film: the aerial approach, looping quietly, and one action. */
-export function FilmTeaser() {
+/** 10 — the way into the film: a placement chosen in the admin, looping quietly, and one action. */
+export function FilmTeaser({ kicker, title, cta }: { kicker: string; title: string; cta: string }) {
+  const slot = useSlot('home-film-teaser');
   return (
     <section className={styles.section} data-ground="night" aria-labelledby="film-teaser-title">
       <Link href="/film" className={styles.frame} data-cursor="Play">
-        <MotionMedia id="aerial" loop sizes="100vw" />
+        <MotionMedia image={slot.image} video={slot.video} loop sizes="100vw" label="Film teaser" />
         <span className={styles.shade} aria-hidden="true" />
         <span className={styles.copy}>
-          <span className={`mark ${styles.kicker}`}>The film</span>
+          {kicker && <span className={`mark ${styles.kicker}`}>{kicker}</span>}
           <span id="film-teaser-title" className={styles.title} role="heading" aria-level={2}>
-            Almasi, <em>an architectural film</em>
+            {title}
           </span>
-          <span className={styles.play}>
-            <span className={styles.icon} aria-hidden="true" />
-            Play the film
-          </span>
+          {cta && (
+            <span className={styles.play}>
+              <span className={styles.icon} aria-hidden="true" />
+              {cta}
+            </span>
+          )}
         </span>
       </Link>
     </section>

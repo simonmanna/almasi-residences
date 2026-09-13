@@ -390,31 +390,47 @@ export interface ContentPageDef {
 
 /**
  * Every editable page and the keys it owns. The public site reads these keys
- * and falls back to its built-in copy for any key left empty, so a page never
- * renders blank because a field was cleared.
+ * and renders nothing for a key left empty (roadmap item 26): it never prints
+ * prose from its own code in place of the admin's. Images for page headers are
+ * chosen under Website → Placements, not here.
+ *
+ * Text fields may name live figures in braces — see COPY_TOKEN_HELP.
  */
 export const CONTENT_PAGES: ContentPageDef[] = [
   {
     key: 'home',
     title: 'Homepage',
-    description: 'The opening image, headline and calls to action.',
+    description: 'The headline, the calls to action and the heading of every homepage section.',
     fields: [
       { key: 'heroKicker', label: 'Hero kicker', type: 'text', help: 'Small line above the headline.' },
       { key: 'heroTitle', label: 'Hero title', type: 'text' },
       { key: 'heroSubtitle', label: 'Hero subtitle', type: 'textarea' },
-      { key: 'heroMediaId', label: 'Hero image or video', type: 'media' },
       { key: 'ctaPrimaryLabel', label: 'Primary button label', type: 'text' },
       { key: 'ctaPrimaryHref', label: 'Primary button link', type: 'url' },
       { key: 'ctaSecondaryLabel', label: 'Secondary button label', type: 'text' },
       { key: 'ctaSecondaryHref', label: 'Secondary button link', type: 'url' },
       { key: 'introTitle', label: 'Introduction title', type: 'text' },
       { key: 'introBody', label: 'Introduction text', type: 'textarea' },
+      { key: 'residencesKicker', label: 'Residences section kicker', type: 'text' },
+      { key: 'residencesTitle', label: 'Residences section title', type: 'text', help: 'A line break is written as “|”.' },
+      { key: 'storyTitle', label: 'Experience section title', type: 'text', help: 'Its chapters are edited under Website → Tours → Homepage experience.' },
+      { key: 'amenitiesKicker', label: 'Amenities section kicker', type: 'text' },
+      { key: 'amenitiesTitle', label: 'Amenities section title', type: 'text', help: 'A line break is written as “|”.' },
+      { key: 'amenitiesLede', label: 'Amenities section introduction', type: 'textarea' },
+      { key: 'penthouseKicker', label: 'Penthouse section kicker', type: 'text' },
+      { key: 'penthouseTitle', label: 'Penthouse section title', type: 'text', help: 'A line break is written as “|”.' },
+      { key: 'penthouseLede', label: 'Penthouse section introduction', type: 'textarea' },
+      { key: 'filmKicker', label: 'Film teaser kicker', type: 'text' },
+      { key: 'filmTitle', label: 'Film teaser title', type: 'text' },
+      { key: 'filmCta', label: 'Film teaser button', type: 'text' },
+      { key: 'progressKicker', label: 'Construction progress kicker', type: 'text' },
+      { key: 'progressTitle', label: 'Construction progress title', type: 'text', help: 'A line break is written as “|”.' },
     ],
   },
   {
     key: 'about',
-    title: 'About',
-    description: 'The project, the developer and the architecture. The project description itself is edited on Property overview.',
+    title: 'About the project',
+    description: 'Who is building it. The developer, architect and contractor names are edited on Property overview.',
     fields: [
       { key: 'developerTitle', label: 'Developer heading', type: 'text' },
       { key: 'developerBody', label: 'About the developer', type: 'textarea' },
@@ -423,14 +439,33 @@ export const CONTENT_PAGES: ContentPageDef[] = [
     ],
   },
   {
+    key: 'residences',
+    title: 'Residences page',
+    description: 'The heading of the residence explorer. The residences themselves come from Property → Residences.',
+    fields: [
+      { key: 'heroKicker', label: 'Kicker', type: 'text', help: 'Small line above the title.' },
+      { key: 'heroTitle', label: 'Title', type: 'text', help: 'A line break is written as “|”.' },
+      { key: 'heroLede', label: 'Introduction', type: 'textarea' },
+    ],
+  },
+  {
     key: 'amenities',
-    title: 'Amenities content',
+    title: 'Amenities page',
     description: 'The amenities page heading. The amenities themselves are managed under Property → Amenities.',
     fields: [
-      { key: 'heroKicker', label: 'Kicker', type: 'text' },
-      { key: 'heroTitle', label: 'Title', type: 'text' },
+      { key: 'heroKicker', label: 'Kicker', type: 'text', help: 'Small line above the title.' },
+      { key: 'heroTitle', label: 'Title', type: 'text', help: 'A line break is written as “|”.' },
       { key: 'heroLede', label: 'Introduction', type: 'textarea' },
-      { key: 'heroMediaId', label: 'Header image', type: 'media' },
+    ],
+  },
+  {
+    key: 'location',
+    title: 'Location page',
+    description: 'The location page heading. Landmarks and coordinates come from Property overview.',
+    fields: [
+      { key: 'heroKicker', label: 'Kicker', type: 'text', help: 'Small line above the title.' },
+      { key: 'heroTitle', label: 'Title', type: 'text', help: 'A line break is written as “|”.' },
+      { key: 'heroLede', label: 'Introduction', type: 'textarea' },
     ],
   },
   {
@@ -438,7 +473,8 @@ export const CONTENT_PAGES: ContentPageDef[] = [
     title: 'Buying guide',
     description: 'How to buy, reserve and pay. Payment milestones come from the default payment plan.',
     fields: [
-      { key: 'heroTitle', label: 'Title', type: 'text' },
+      { key: 'heroKicker', label: 'Kicker', type: 'text', help: 'Small line above the title.' },
+      { key: 'heroTitle', label: 'Title', type: 'text', help: 'A line break is written as “|”.' },
       { key: 'heroLede', label: 'Introduction', type: 'textarea' },
       { key: 'processSteps', label: 'Purchase process', type: 'list', itemLabel: 'Step' },
       { key: 'reservationBody', label: 'Reservation process', type: 'textarea' },
@@ -447,18 +483,42 @@ export const CONTENT_PAGES: ContentPageDef[] = [
   },
   {
     key: 'gallery',
-    title: 'Gallery & progress',
-    description: 'The gallery page heading. Galleries are managed under Media → Galleries, progress updates below.',
+    title: 'Gallery page',
+    description: 'The gallery page heading. Galleries are managed under Media → Galleries.',
     fields: [
-      { key: 'heroTitle', label: 'Title', type: 'text' },
+      { key: 'heroKicker', label: 'Kicker', type: 'text', help: 'Small line above the title.' },
+      { key: 'heroTitle', label: 'Title', type: 'text', help: 'A line break is written as “|”.' },
       { key: 'heroLede', label: 'Introduction', type: 'textarea' },
     ],
   },
   {
+    key: 'progress',
+    title: 'Construction progress page',
+    description: 'The progress page heading. The updates themselves are managed under Content → Progress updates.',
+    fields: [
+      { key: 'heroKicker', label: 'Kicker', type: 'text', help: 'Small line above the title.' },
+      { key: 'heroTitle', label: 'Title', type: 'text', help: 'A line break is written as “|”.' },
+      { key: 'heroLede', label: 'Introduction', type: 'textarea' },
+      { key: 'emptyText', label: 'Shown before the first update', type: 'textarea' },
+    ],
+  },
+  {
+    key: 'film',
+    title: 'Film page',
+    description: 'The words around the film. The film and its chapters are managed under Website → Film.',
+    fields: [
+      { key: 'caption', label: 'Caption under the film', type: 'textarea' },
+      { key: 'downloadLabel', label: 'Download link label', type: 'text' },
+    ],
+  },
+  {
     key: 'contact',
-    title: 'Contact information',
+    title: 'Contact and enquiry',
     description: 'Phone, email, WhatsApp and office details are edited on Property overview → Contact; this page holds the enquiry copy.',
     fields: [
+      { key: 'heroKicker', label: 'Kicker', type: 'text', help: 'Small line above the title.' },
+      { key: 'heroTitle', label: 'Title', type: 'text', help: 'A line break is written as “|”.' },
+      { key: 'heroLede', label: 'Introduction', type: 'textarea' },
       { key: 'enquireTitle', label: 'Enquiry heading', type: 'text' },
       { key: 'enquireBody', label: 'Enquiry text', type: 'textarea' },
       { key: 'responseTime', label: 'Response-time promise', type: 'text' },

@@ -12,8 +12,6 @@
  *   2. Every EXTERIOR/AERIAL media set has all four time states, every
  *      INTERIOR set has at least DAY and NIGHT (§4.3). Incomplete sets throw.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { assertPercentagesSumTo100 } from '@avida/types';
 import {
   Prisma,
@@ -23,6 +21,7 @@ import {
 } from '../generated/client/client.js';
 import { prisma } from '../src/index.js';
 import { contentDefaults } from './content-defaults.js';
+import { planGeometry, siteFilm, siteSpecifications, siteTours } from './site-seed.js';
 import {
   amenities,
   building,
@@ -44,7 +43,6 @@ import {
   roomsFor,
   seedAdmins,
   statusDistribution,
-  tourScenes,
   typologies,
   unitAreas,
   unitOrientations,
@@ -52,12 +50,6 @@ import {
   viewTagsByOrientation,
 } from './seed-data.js';
 
-/**
- * Phase 0 placeholders live in the web app's public dir — see DECISIONS D-07.
- * Resolved from the package root (pnpm sets cwd there) rather than
- * `import.meta.url`, which this package cannot use — see DECISIONS D-03.
- */
-const PLACEHOLDER_DIR = resolve(process.cwd(), '../../apps/web/public/seed-media');
 
 const TIME_STATES: TimeState[] = ['DAWN', 'DAY', 'DUSK', 'NIGHT'];
 
@@ -70,28 +62,12 @@ const PLACEHOLDER_COLOURS: Record<TimeState, { bg: string; ink: string }> = {
 };
 
 /**
- * §4.6 — "solid-colour generated PNGs with the label baked in, so missing art
- * is obvious". SVG rather than PNG: no image dependency in the db package, and
- * it is unmistakably not a render.
+ * The time-state media sets are reference data with no file behind them yet: a
+ * key the render pipeline fills later. Nothing is written into the web app
+ * (roadmap item 30 retired apps/web/public/seed-media).
  */
-function writePlaceholder(setKey: string, label: string, state: TimeState): string {
-  const { bg, ink } = PLACEHOLDER_COLOURS[state];
-  const key = `seed-media/${setKey}-${state.toLowerCase()}.svg`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Placeholder for ${label}, ${state.toLowerCase()}">
-  <rect width="1600" height="900" fill="${bg}"/>
-  <g fill="none" stroke="${ink}" stroke-opacity="0.28" stroke-width="2">
-    <path d="M0 450h1600M800 0v900"/>
-    <rect x="60" y="60" width="1480" height="780"/>
-  </g>
-  <g fill="${ink}" font-family="ui-sans-serif, system-ui, sans-serif">
-    <text x="100" y="420" font-size="64">${label}</text>
-    <text x="100" y="500" font-size="40" fill-opacity="0.7">${state.toLowerCase()}</text>
-    <text x="100" y="800" font-size="26" fill-opacity="0.6">Placeholder — no render supplied yet. TODO(content)</text>
-  </g>
-</svg>`;
-  mkdirSync(PLACEHOLDER_DIR, { recursive: true });
-  writeFileSync(resolve(PLACEHOLDER_DIR, `${setKey}-${state.toLowerCase()}.svg`), svg, 'utf8');
-  return key;
+function placeholderKey(setKey: string, state: TimeState): string {
+  return `placeholder/${setKey}-${state.toLowerCase()}`;
 }
 
 /** §4.3 — a set missing a required time state is a launch bug. Fail at seed. */
@@ -172,7 +148,7 @@ async function main() {
     create: {
       developmentId: dev.id,
       title: `${development.name} — Premium apartments in Kimihurura, Kigali`,
-      description: 'Almasi Residences: 28 premium apartments in Kimihurura, Kigali. One-, two- and three-bedroom homes with pool, gym, restaurant and basement parking. Handover Q2 2028.',
+      description: 'Almasi Residences: {total} residences in Kimihurura, Kigali. One-, two- and three-bedroom homes and penthouses with a pool, gym, restaurant and basement parking. Handover {handover}.',
       keywords: ['Kigali apartments', 'Kimihurura', 'off-plan', 'Rwanda real estate', 'Almasi Residences', 'premium apartments Kigali'],
     },
     update: {},
@@ -205,6 +181,18 @@ async function main() {
           },
         });
     typologyBySlug.set(t.slug, row);
+  }
+
+  // The homepage card line per type, once, where the admin has not written one.
+  const TYPE_SUMMARY = {
+    one: 'An open living and dining room, a bedroom behind a full-height door, and a balcony of its own.',
+    two: 'Two bedrooms and two bathrooms, the main suite with a walk-in wardrobe, the living room onto the balcony.',
+    three: 'Three bedrooms for a family, with room to entertain and a balcony onto the hills.',
+    penthouse: 'The top floor, from wrap-around glass to a duplex with its own roof terrace and pool.',
+  } as const;
+  for (const t of await prisma.typology.findMany({ where: { developmentId: dev.id, summary: null } })) {
+    const kind = t.isPenthouse ? 'penthouse' : t.bedrooms <= 1 ? 'one' : t.bedrooms === 2 ? 'two' : 'three';
+    await prisma.typology.update({ where: { id: t.id }, data: { summary: TYPE_SUMMARY[kind] } });
   }
 
   // ── Payment plan ───────────────────────────────────────────────────────
@@ -392,6 +380,30 @@ async function main() {
     }
   }
 
+  // ── Room plan geometry, for residences whose rooms have no position yet ─
+  // Assigned by room type and order; the admin edits each rectangle afterwards.
+  for (const u of await prisma.unit.findMany({
+    where: { developmentId: dev.id, rooms: { every: { planX: null } } },
+    include: { typology: true, rooms: { orderBy: { sortOrder: 'asc' } } },
+  })) {
+    const kind = u.typology.isPenthouse ? 'penthouse' : u.bedrooms <= 1 ? 'one' : u.bedrooms === 2 ? 'two' : 'three';
+    const pool = [...planGeometry[kind]];
+    for (const room of u.rooms) {
+      const outside = room.type === 'BALCONY' || room.type === 'TERRACE';
+      const at = pool.findIndex((r) => r.type === room.type || (outside && (r.type === 'BALCONY' || r.type === 'TERRACE')));
+      if (at === -1) continue;
+      const r = pool.splice(at, 1)[0]!;
+      await prisma.room.update({ where: { id: room.id }, data: { planX: r.x, planY: r.y, planW: r.w, planH: r.h, planOpen: Boolean(r.open) } });
+    }
+  }
+
+  // ── Specification ──────────────────────────────────────────────────────
+  if ((await prisma.specification.count({ where: { developmentId: dev.id } })) === 0) {
+    await prisma.specification.createMany({
+      data: siteSpecifications.map((x, i) => ({ ...x, developmentId: dev.id, sortOrder: i })),
+    });
+  }
+
   // ── Amenities ──────────────────────────────────────────────────────────
   // Pre-platform amenities had no slug. If that is all there is, replace them
   // with the brief's ten; once any amenity has a slug the admin owns the list.
@@ -507,7 +519,7 @@ async function main() {
       update: { label: set.label, kind: set.kind, cameraNote: set.cameraNote },
     });
     for (const state of TIME_STATES) {
-      const key = writePlaceholder(set.key, set.label, state);
+      const key = placeholderKey(set.key, state);
       await prisma.mediaAsset.upsert({
         where: { mediaSetId_timeState_role: { mediaSetId: row.id, timeState: state, role: 'PRIMARY' } },
         create: {
@@ -534,56 +546,39 @@ async function main() {
     }
   }
 
-  // ── Tours: two tours, five scenes each, hotspots forming a connected graph ─
-  for (const typoSlug of ['two-bed-corner', 'penthouse-three']) {
-    const typologyId = typologyBySlug.get(typoSlug)!.id;
+  // ── Walkthroughs and the film: words only, media attached by the importer ─
+  // The phase-0 panorama tours were placeholder SVGs no page ever read.
+  await prisma.tour.deleteMany({ where: { developmentId: dev.id, slug: { in: ['two-bed-corner', 'penthouse-three'] } } });
+  for (const [i, t] of siteTours.entries()) {
     const tour = await prisma.tour.upsert({
-      where: { developmentId_slug: { developmentId: dev.id, slug: typoSlug } },
-      create: { developmentId: dev.id, typologyId, slug: typoSlug, name: `${typologies.find((t) => t.slug === typoSlug)!.name} tour` },
-      update: { typologyId },
+      where: { developmentId_slug: { developmentId: dev.id, slug: t.slug } },
+      create: { developmentId: dev.id, slug: t.slug, name: t.name, description: t.description, sortOrder: i },
+      update: {},
     });
-    const sceneIds: string[] = [];
-    for (const [i, s] of tourScenes.entries()) {
-      const scene = await prisma.scene.upsert({
-        where: { tourId_key: { tourId: tour.id, key: s.key } },
-        create: { tourId: tour.id, key: s.key, label: s.label, sortOrder: i, yawDeg: s.yawDeg, planX: s.planX, planY: s.planY },
-        update: { label: s.label, sortOrder: i, yawDeg: s.yawDeg },
-      });
-      sceneIds.push(scene.id);
-      for (const state of ['DAY', 'NIGHT'] as TimeState[]) {
-        await prisma.panoramaAsset.upsert({
-          where: { sceneId_timeState: { sceneId: scene.id, timeState: state } },
-          create: {
-            sceneId: scene.id,
-            timeState: state,
-            previewKey: `seed-media/pano-${typoSlug}-${s.key}-${state.toLowerCase()}-preview.svg`,
-            originalKey: `seed-media/pano-${typoSlug}-${s.key}-${state.toLowerCase()}.svg`,
-            tiles: { placeholder: true, levels: [] } as Prisma.InputJsonValue,
-            width: 8192,
-            height: 4096,
-          },
-          update: {},
+    if ((await prisma.scene.count({ where: { tourId: tour.id } })) === 0) {
+      for (const [j, st] of t.stations.entries()) {
+        await prisma.scene.create({
+          data: { tourId: tour.id, key: st.key, label: st.title, place: st.place, body: st.body, sortOrder: j, ...(st.level ? { level: st.level } : {}) },
         });
       }
     }
-    await prisma.tour.update({ where: { id: tour.id }, data: { startSceneId: sceneIds[0] } });
-    // Connected graph: each scene links forward and back, so no scene is a dead end (§6.5).
-    await prisma.hotspot.deleteMany({ where: { sceneId: { in: sceneIds } } });
-    for (const [i, sceneId] of sceneIds.entries()) {
-      const links = [sceneIds[i + 1], sceneIds[i - 1]].filter(Boolean) as string[];
-      for (const [j, targetSceneId] of links.entries()) {
-        await prisma.hotspot.create({
-          data: {
-            sceneId,
-            kind: 'NAVIGATE',
-            yawDeg: j === 0 ? 30 : 210,
-            pitchDeg: -12,
-            label: tourScenes[sceneIds.indexOf(targetSceneId)]!.label,
-            targetSceneId,
-          },
-        });
-      }
-    }
+  }
+  const film = await prisma.videoAsset.findFirst({ where: { developmentId: dev.id } });
+  if (!film) {
+    await prisma.videoAsset.create({
+      data: {
+        developmentId: dev.id,
+        key: siteFilm.key,
+        label: siteFilm.label,
+        description: siteFilm.description,
+        kind: 'WALKTHROUGH',
+        posterKey: '',
+        durationSec: siteFilm.durationSec,
+        width: 1920,
+        height: 1080,
+        chapters: { create: siteFilm.chapters.map((c, i) => ({ ...c, sortOrder: i })) },
+      },
+    });
   }
 
   // ── Buyers, for the residences already sold or held ────────────────────
@@ -612,7 +607,7 @@ async function main() {
   }
 
   // ── Enquiries: 25 across all statuses (§4.6), only into an empty inbox ──
-  if ((await prisma.enquiry.count()) === 0) {
+  if ((await prisma.enquiry.count({ where: { developmentId: dev.id } })) === 0) {
     const statuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'VIEWING', 'NEGOTIATION', 'RESERVED', 'CONVERTED', 'LOST', 'SPAM'] as const;
     const pick = rng(4242);
     const RETENTION_MONTHS = 24; // §5.9
@@ -623,6 +618,7 @@ async function main() {
       const unit = units[Math.floor(pick() * units.length)]!;
       await prisma.enquiry.create({
         data: {
+          developmentId: dev.id,
           name: `Seed enquirer ${i + 1}`,
           email: `seed-enquirer-${i + 1}@example.invalid`,
           phone: `+25078${String(1000000 + i).slice(0, 7)}`,

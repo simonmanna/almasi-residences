@@ -12,6 +12,7 @@ import {
   computeSchedule,
   effectivePriceMinor,
   isPlacedInModel,
+  modelSlotsForLevel,
   isSaleReversal,
   pricePerSqmMinor,
   STATUS_LABEL,
@@ -166,7 +167,7 @@ export class ResidencesService {
       cover: media[0] ? this.storage.present(media[0]) : null,
       buyer: can(actor.role, 'buyer.view') ? buyer : buyer ? { id: buyer.id, fullName: 'Assigned', stage: buyer.stage } : null,
       // Roadmap §40.1 — a residence the 3D maquette cannot place is flagged, not dropped.
-      placedInModel: isPlacedInModel(u.code, u.floor.level),
+      placedInModel: isPlacedInModel(u.code, u.floor.level, u.modelSlot),
       enquiryCount: _count.enquiries,
       interestCount: _count.interests,
       residentCount: _count.residents,
@@ -259,7 +260,8 @@ export class ResidencesService {
     return {
       ...unit,
       notes: canNotes ? unit.notes : null,
-      placedInModel: isPlacedInModel(unit.code, unit.floor.level),
+      placedInModel: isPlacedInModel(unit.code, unit.floor.level, unit.modelSlot),
+      modelSlotOptions: modelSlotsForLevel(unit.floor.level).map((m) => ({ key: m.key, label: m.label })),
       effectivePriceMinor: price,
       pricePerSqmMinor: pricePerSqmMinor(unit.priceMinor, unit.areaSqm),
       features: unit.features.map((f) => ({ ...f.feature, note: f.note })),
@@ -332,6 +334,7 @@ export class ResidencesService {
           positionIndex: (max._max.positionIndex ?? -1) + 1,
           widthRatio: Math.min(2.6, Math.max(0.6, Math.round((dto.areaSqm / 100) * 100) / 100)),
           meshName: `unit_${code.replace(/[^A-Za-z0-9]/g, '_')}`,
+          modelSlot: dto.modelSlot?.trim().toUpperCase() || null,
           features: dto.featureIds?.length ? { create: dto.featureIds.map((featureId) => ({ featureId })) } : undefined,
         },
       })
@@ -417,6 +420,7 @@ export class ResidencesService {
         reservationFeeMinor: dto.reservationFeeMinor,
         depositPercent: dto.depositPercent,
         paymentPlanId: dto.paymentPlanId,
+        modelSlot: dto.modelSlot === undefined ? undefined : dto.modelSlot?.trim().toUpperCase() || null,
       }),
     );
 

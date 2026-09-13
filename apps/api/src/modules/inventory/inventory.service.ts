@@ -73,6 +73,7 @@ export class InventoryService {
                 positionIndex: true,
                 widthRatio: true,
                 meshName: true,
+                modelSlot: true,
                 featured: true,
                 typology: { select: { slug: true, name: true, bedrooms: true, isPenthouse: true } },
               },

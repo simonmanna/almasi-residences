@@ -3,10 +3,8 @@
 import Link from 'next/link';
 import { formatMoney } from '@avida/types';
 import type { PublicResidenceCardDto } from '../../lib/api';
-import { TYPE_MEDIA } from '../../lib/media-manifest';
 import { STATUS_TEXT, TYPE_TEXT, visiblePriceMinor } from '../../lib/residences';
 import { useInventory } from '../providers/InventoryProvider';
-import { ApiImage } from '../ui/ApiImage';
 import { Reveal } from '../ui/Reveal';
 import { RevealText } from '../ui/RevealText';
 import { SceneImage } from '../ui/SceneImage';
@@ -45,7 +43,7 @@ export function FeaturedResidences({ items }: { items: PublicResidenceCardDto[] 
               <li key={r.id} className={styles.item}>
                 <Link href={`/residences/${r.slug}`} className={styles.card} data-cursor="View">
                   <Reveal className={styles.media}>
-                    {card.cover ? <ApiImage m={card.cover} sizes="(max-width: 900px) 100vw, 33vw" /> : <SceneImage id={TYPE_MEDIA[r.type].hero} sizes="(max-width: 900px) 100vw, 33vw" />}
+                    <SceneImage media={card.cover} sizes="(max-width: 900px) 100vw, 33vw" label={`Residence ${r.label}`} />
                   </Reveal>
                   <div className={styles.text}>
                     <h3 className="h3">Residence {r.label}</h3>

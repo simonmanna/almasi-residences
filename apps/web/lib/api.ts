@@ -5,7 +5,7 @@
  * D-33 — the admin database is the source of truth. Everything a visitor reads
  * about the property arrives through these calls; nothing here is a fixture.
  */
-import type { Orientation, UnitStatus } from '@avida/types';
+import { SITE_TAGS, type Orientation, type SiteTag, type UnitStatus } from '@avida/types';
 
 // On the single VPS the server reaches the API over the private network
 // (API_INTERNAL_URL); browsers always use the public NEXT_PUBLIC_API_URL.
@@ -23,8 +23,16 @@ export class ApiError extends Error {
   }
 }
 
-async function get<T>(path: string, revalidateSeconds = 3600): Promise<T> {
-  const res = await fetch(`${API_URL}/api/v1${path}`, { next: { revalidate: revalidateSeconds } });
+/**
+ * §3.1 — every read carries cache tags: `site` plus what it depends on. An
+ * admin change names the tags it touched (SCOPE_TAGS in @avida/types) and the
+ * API delivers them to /api/revalidate, retrying until they land. The time
+ * window is the backstop, not the mechanism.
+ */
+async function get<T>(path: string, tags: SiteTag[], revalidateSeconds = 3600): Promise<T> {
+  const res = await fetch(`${API_URL}/api/v1${path}`, {
+    next: { revalidate: revalidateSeconds, tags: [SITE_TAGS.site, ...tags] },
+  });
   if (!res.ok) throw new ApiError(`GET ${path} failed with ${res.status}`, res.status);
   return (await res.json()) as T;
 }
@@ -77,6 +85,61 @@ export interface PublicMediaDto {
   srcSet: string | null;
   blurDataUrl: string | null;
   mimeType: string;
+  /** §49 — PHOTOGRAPH, SUPPLIED_RENDER, CONCEPT_RENDER or DRAWING. */
+  provenance?: string;
+  /** The note printed beside it: "Artist's impression." — empty for a photograph. */
+  note?: string;
+  /** CSS object-position from the admin's focal point. */
+  focus?: string | null;
+}
+
+/** A placement on the site: a still, and optionally a film that plays over it. */
+export interface SlotMediaDto {
+  image: PublicMediaDto | null;
+  video: PublicMediaDto | null;
+}
+
+export type MediaSlotsDto = Record<string, SlotMediaDto>;
+
+export interface TourStationDto {
+  key: string;
+  title: string;
+  place: string | null;
+  body: string | null;
+  level: string | null;
+  image: PublicMediaDto | null;
+  video: PublicMediaDto | null;
+}
+
+export interface WalkthroughDto {
+  slug: string;
+  name: string;
+  description: string | null;
+  stations: TourStationDto[];
+}
+
+export interface FilmDto {
+  key: string;
+  label: string;
+  description: string | null;
+  durationSec: number;
+  video: PublicMediaDto;
+  poster: PublicMediaDto | null;
+  chapters: { startSec: number; label: string; place: string | null }[];
+}
+
+export interface SeoDto {
+  site: { title: string; description: string; keywords: string[] } | null;
+  pages: Record<string, { title: string | null; description: string | null; noindex: boolean; ogImage: PublicMediaDto | null }>;
+}
+
+export interface TypologyCardDto {
+  slug: string;
+  name: string;
+  bedrooms: number;
+  isPenthouse: boolean;
+  summary: string | null;
+  cover: PublicMediaDto | null;
 }
 
 export interface TypologyDto {
@@ -150,6 +213,7 @@ export interface DevelopmentDto {
   buildingConfig?: string | null;
   developerName?: string | null;
   architect?: string | null;
+  contractor?: string | null;
   contact?: ContactDto;
   typologies: TypologyDto[];
   amenities: AmenitySummaryDto[];
@@ -187,6 +251,8 @@ export interface StackUnitDto {
   widthRatio: number;
   /** Maps the unit to a named volume in the building model (3D selector). */
   meshName?: string | null;
+  /** The maquette volume chosen in the admin (@avida/types resolveModelSlot). */
+  modelSlot?: string | null;
   typology: { slug: string; name: string; bedrooms: number; isPenthouse?: boolean };
 }
 
@@ -279,7 +345,21 @@ export interface PublicResidenceDto {
   videos: PublicMediaDto[];
   floorPlans: PublicMediaDto[];
   features: { name: string; category: string; iconKey: string | null }[];
-  rooms: { id: string; name: string; type: string; areaSqm: number | null; description: string | null }[];
+  rooms: {
+    id: string;
+    name: string;
+    type: string;
+    areaSqm: number | null;
+    description: string | null;
+    /** Position and size on the residence plan, in plan units; null when not drawn. */
+    planX?: number | null;
+    planY?: number | null;
+    planW?: number | null;
+    planH?: number | null;
+    planOpen?: boolean;
+  }[];
+  /** §5.4 — the specification, from the admin; type rows replace development rows. */
+  specifications?: { category: string; label: string; value: string }[];
 }
 
 export interface PublicAmenityDto {
@@ -309,22 +389,29 @@ export type PagesDto = Record<string, Record<string, unknown>>;
 // ─── Reads ───────────────────────────────────────────────────────────────
 
 export const getDevelopment = (slug: string = DEVELOPMENT_SLUG) =>
-  get<DevelopmentDto>(`/development/${slug}`);
+  get<DevelopmentDto>(`/development/${slug}`, ['development', 'content', 'inventory']);
 
 export const getInventory = (slug: string = DEVELOPMENT_SLUG) =>
-  get<InventoryDto>(`/development/${slug}/inventory`, 60);
+  get<InventoryDto>(`/development/${slug}/inventory`, ['inventory'], 60);
 
 export const getTypologies = (slug: string = DEVELOPMENT_SLUG) =>
-  get<TypologyDto[]>(`/typology/${slug}`);
+  get<TypologyDto[]>(`/typology/${slug}`, ['inventory']);
 
 export const getTypology = (typoSlug: string, slug: string = DEVELOPMENT_SLUG) =>
-  get<TypologyDto & { units: StackUnitDto[]; mediaSets: MediaSetDto[] }>(
-    `/typology/${slug}/${typoSlug}`,
-  );
+  get<TypologyDto & { units: StackUnitDto[]; mediaSets: MediaSetDto[] }>(`/typology/${slug}/${typoSlug}`, ['inventory']);
 
-export const getUnit = (id: string) => get<UnitDetailDto>(`/unit/${id}`, 60);
+export const getUnit = (id: string) => get<UnitDetailDto>(`/unit/${id}`, ['inventory'], 60);
 
-export const getPublicResidence = (code: string) => get<PublicResidenceDto>(`/residences/${encodeURIComponent(code)}`, 60);
+export const getPublicResidence = (code: string) =>
+  get<PublicResidenceDto>(`/residences/${encodeURIComponent(code)}`, ['inventory', 'media', 'content'], 60);
+
+/** §52 — the site's placements. An empty one renders a neutral frame, never a substitute. */
+export const getMediaSlots = () => get<MediaSlotsDto>('/media-slots', ['presentation', 'media']);
+export const getMediaSlotsSafe = () => getMediaSlots().catch((): MediaSlotsDto => ({}));
+export const getWalkthrough = (slug: string) => get<WalkthroughDto>(`/tours/${encodeURIComponent(slug)}`, ['presentation', 'media']);
+export const getFilm = () => get<FilmDto>('/film', ['presentation', 'media']);
+export const getSeo = () => get<SeoDto>('/seo', ['seo', 'media']);
+export const getTypologyCards = () => get<TypologyCardDto[]>('/typology-cards', ['inventory', 'media']);
 
 /** A residence card: what the featured section and residence lists need. */
 export type PublicResidenceCardDto = Pick<
@@ -333,20 +420,34 @@ export type PublicResidenceCardDto = Pick<
 > & { type: { id: string; slug: string; name: string; isPenthouse: boolean } };
 
 /** §48 — residences the admin marked as featured. Never a list in code. */
-export const getFeatured = () => get<PublicResidenceCardDto[]>('/residences/featured', 60);
-export const getAmenities = () => get<PublicAmenityDto[]>('/amenities');
-export const getGalleries = () => get<PublicGalleryDto[]>('/galleries');
-export const getPages = () => get<PagesDto>('/pages');
+export const getFeatured = () => get<PublicResidenceCardDto[]>('/residences/featured', ['inventory', 'media'], 60);
+export const getAmenities = () => get<PublicAmenityDto[]>('/amenities', ['content', 'media']);
+export const getGalleries = () => get<PublicGalleryDto[]>('/galleries', ['media']);
+export const getPages = () => get<PagesDto>('/pages', ['content']);
 
-/** CMS copy never blocks a page: the component's own text stands in for any missing key. */
+/** CMS copy never blocks a page: an unreachable CMS renders the page without its words. */
 export async function getPagesSafe(): Promise<PagesDto> {
   return getPages().catch(() => ({}));
 }
 
-/** A string field from the CMS, or the fallback when the admin left it empty. */
-export function copy(pages: PagesDto, page: string, key: string, fallback: string): string {
+/**
+ * A string field from the CMS, or '' when the admin left it empty.
+ *
+ * Roadmap item 26: there is no fallback prose in code any more. A sentence the
+ * site used to print from its own source could contradict what the admin
+ * wrote; an empty key now renders nothing, and the words live in one place.
+ */
+export function copy(pages: PagesDto, page: string, key: string): string {
   const v = pages[page]?.[key];
-  return typeof v === 'string' && v.trim() !== '' ? v : fallback;
+  return typeof v === 'string' ? v.trim() : '';
+}
+
+/** A CMS title written with "|" for its line break, as [first, second]. */
+export function copyLines(pages: PagesDto, page: string, key: string): string[] {
+  return copy(pages, page, key)
+    .split('|')
+    .map((l) => l.trim())
+    .filter(Boolean);
 }
 
 export interface ProgressUpdateDto {
@@ -359,7 +460,7 @@ export interface ProgressUpdateDto {
 }
 
 export const getProgress = (slug: string = DEVELOPMENT_SLUG) =>
-  get<ProgressUpdateDto[]>(`/development/${slug}/progress`);
+  get<ProgressUpdateDto[]>(`/development/${slug}/progress`, ['content']);
 
 export interface TourSceneDto {
   id: string;
@@ -392,4 +493,4 @@ export interface TourDto {
 }
 
 export const getTour = (tourSlug: string, slug: string = DEVELOPMENT_SLUG) =>
-  get<TourDto>(`/tour/${slug}/${tourSlug}`);
+  get<TourDto>(`/tour/${slug}/${tourSlug}`, ['presentation']);

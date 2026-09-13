@@ -66,6 +66,11 @@ jobs:
       - name: Seed
         run: pnpm db:seed
 
+      # Roadmap phase 1: the website's art, films and walkthroughs are library
+      # records now, so a fresh database needs them imported before it renders.
+      - name: Import site media into the library
+        run: pnpm --filter @avida/types build && pnpm media:import
+
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build

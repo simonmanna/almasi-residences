@@ -99,4 +99,34 @@ export class PublicController {
   faqs() {
     return this.svc.faqs();
   }
+
+  @Get('media-slots')
+  @PublicCache()
+  slots() {
+    return this.svc.slots();
+  }
+
+  @Get('tours/:slug')
+  @PublicCache()
+  tour(@Param('slug') slug: string) {
+    return this.svc.tour(slug);
+  }
+
+  @Get('film')
+  @PublicCache()
+  film() {
+    return this.svc.film();
+  }
+
+  @Get('seo')
+  @PublicCache()
+  seo() {
+    return this.svc.seo();
+  }
+
+  @Get('typology-cards')
+  @PublicCache()
+  typologyCards() {
+    return this.svc.typologyCards();
+  }
 }

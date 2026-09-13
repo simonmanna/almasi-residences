@@ -43,6 +43,7 @@ export class UnitController {
         positionIndex: true,
         widthRatio: true,
         meshName: true,
+        modelSlot: true,
         shortDescription: true,
         description: true,
         floor: { select: { level: true, label: true, heightM: true } },

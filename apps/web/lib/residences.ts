@@ -82,6 +82,8 @@ export interface Residence {
   viewTags: string[];
   positionIndex: number;
   meshName: string | null;
+  /** The 3D maquette volume the admin chose; null derives it from the code. */
+  modelSlot: string | null;
   featured: boolean;
 }
 
@@ -153,6 +155,7 @@ export function toResidences(
           viewTags: u.viewTags,
           positionIndex: u.positionIndex,
           meshName: u.meshName ?? null,
+          modelSlot: u.modelSlot ?? null,
           featured: u.featured ?? false,
         });
       }

@@ -3,98 +3,43 @@
 import { useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { formatCount } from '@avida/types';
-import { PROVENANCE_NOTE, scene, type SceneId } from '../../lib/media-manifest';
+import { TOUR_LEVELS } from '@avida/types';
+import type { TourStationDto } from '../../lib/api';
+import { fillCopy } from '../../lib/copy-tokens';
 import { useIsoLayoutEffect, useReducedMotion } from '../../lib/motion';
 import { useInventory } from '../providers/InventoryProvider';
 import { MotionMedia } from '../ui/MotionMedia';
 import { SceneImage } from '../ui/SceneImage';
 import styles from './ExperienceStory.module.css';
 
-type GaugeKey = 'sky' | 'R' | '4' | '3' | '2' | '1' | 'G' | 'street';
-
-/** Top of the building first, as the gauge is read. */
-const GAUGE: { key: GaugeKey; label: string }[] = [
-  { key: 'sky', label: 'Above' },
-  { key: 'R', label: 'Roof' },
-  { key: '4', label: 'Level 4' },
-  { key: '3', label: 'Level 3' },
-  { key: '2', label: 'Level 2' },
-  { key: '1', label: 'Level 1' },
-  { key: 'G', label: 'Ground' },
-  { key: 'street', label: 'Street' },
-];
+const GAUGE = TOUR_LEVELS;
 
 interface Chapter {
-  scene: SceneId;
-  gauge: GaugeKey;
+  key: string;
+  image: TourStationDto['image'];
+  video: TourStationDto['video'];
+  gauge: string;
   mark: string;
   title: string;
   text: string;
 }
 
-function useChapters(): Chapter[] {
+/**
+ * The chapters are the "experience" walkthrough edited in the admin (Website →
+ * Tours). Live figures in their words — "{penthouse.areaMin} m²" — are filled
+ * from the inventory, so a chapter never quotes a stale number.
+ */
+function useChapters(stations: TourStationDto[]): Chapter[] {
   const { summary } = useInventory();
-  const two = summary.byType['two-bedroom'];
-  const ph = summary.byType.penthouse;
-  return [
-    {
-      scene: 'aerial',
-      gauge: 'sky',
-      mark: 'Kimihurura, from the air',
-      title: 'A quiet rise above the city',
-      text: 'One of Kigali’s greenest ridges, minutes from the Convention Centre and the city centre.',
-    },
-    {
-      scene: 'street',
-      gauge: 'street',
-      mark: 'KG 15 Ave',
-      title: 'Arrive',
-      text: 'A stone gatehouse and a walled garden. The building stands back behind palms, lit from within.',
-    },
-    {
-      scene: 'arrival',
-      gauge: 'G',
-      mark: 'Ground floor',
-      title: 'The porte-cochère',
-      text: 'A covered drop-off under walnut, a water wall, and the lobby doors a few steps from the car.',
-    },
-    {
-      scene: 'lobby',
-      gauge: 'G',
-      mark: 'Ground floor',
-      title: 'Reception',
-      text: 'Double height, travertine and walnut, and a front desk staffed from morning until late.',
-    },
-    {
-      scene: 'pool',
-      gauge: '1',
-      mark: 'Level 1, the amenity deck',
-      title: 'The pool deck',
-      text: 'A fifteen-metre pool, a gym, a sauna and a massage room, one floor above the garden.',
-    },
-    {
-      scene: 'living-2br',
-      gauge: '2',
-      mark: 'Level 2',
-      title: 'Space to live.',
-      text: `Two bedrooms from ${two.areaMin} m², the living room opening onto a balcony and the hills.`,
-    },
-    {
-      scene: 'ph-living',
-      gauge: '4',
-      mark: 'Level 4',
-      title: 'Designed for living.',
-      text: `The top floor holds ${formatCount(ph.total).toLowerCase()} penthouses, from ${ph.areaMin} to ${ph.areaMax} m².`,
-    },
-    {
-      scene: 'ph-terrace',
-      gauge: 'R',
-      mark: 'The roof',
-      title: 'Your view of Kigali.',
-      text: 'A private terrace and pool above the city, turned to the evening light.',
-    },
-  ];
+  return stations.map((st) => ({
+    key: st.key,
+    image: st.image,
+    video: st.video,
+    gauge: st.level ?? 'G',
+    mark: fillCopy(st.place ?? '', summary),
+    title: fillCopy(st.title, summary),
+    text: fillCopy(st.body ?? '', summary),
+  }));
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -105,8 +50,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
  * space, wiping upward when the journey climbs and downward when it descends,
  * while the gauge on the right keeps the visitor oriented in the building.
  */
-export function ExperienceStory() {
-  const chapters = useChapters();
+export function ExperienceStory({ stations, title }: { stations: TourStationDto[]; title: string }) {
+  const chapters = useChapters(stations);
   const reduced = useReducedMotion();
   const root = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -178,7 +123,8 @@ export function ExperienceStory() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced, n]);
 
-  if (reduced) return <StaticStory chapters={chapters} />;
+  if (n === 0) return null;
+  if (reduced) return <StaticStory chapters={chapters} title={title} />;
 
   const current = chapters[active]!;
 
@@ -193,7 +139,7 @@ export function ExperienceStory() {
       {/* The passage, in reading order, for anyone not watching the stage. */}
       <ol className="visually-hidden">
         {chapters.map((c) => (
-          <li key={c.scene}>
+          <li key={c.key}>
             {c.mark}. {c.title} {c.text}
           </li>
         ))}
@@ -201,10 +147,12 @@ export function ExperienceStory() {
 
       <div ref={stage} className={styles.stage}>
         {chapters.map((c, i) => (
-          <div key={c.scene} className={styles.layer} data-layer style={{ zIndex: i + 1 }} aria-hidden="true">
+          <div key={c.key} className={styles.layer} data-layer style={{ zIndex: i + 1 }} aria-hidden="true">
             <div className={styles.inner} data-layer-inner>
               <MotionMedia
-                id={c.scene}
+                image={c.image}
+                video={c.video}
+                label={c.title}
                 active={i === active}
                 load={Math.abs(i - active) <= 1}
                 restartOnActive
@@ -216,7 +164,7 @@ export function ExperienceStory() {
 
         <header className={styles.head}>
           <h2 id="experience-title" className="mark">
-            The experience
+            {title}
           </h2>
           <p className={styles.counter} aria-hidden="true">
             <span>{pad(active + 1)}</span> / {pad(n)}
@@ -225,7 +173,7 @@ export function ExperienceStory() {
 
         <div className={styles.captions} aria-hidden="true">
           {chapters.map((c) => (
-            <div key={c.scene} className={styles.caption} data-caption>
+            <div key={c.key} className={styles.caption} data-caption>
               <p className="mark">{c.mark}</p>
               <p className={styles.title}>{c.title}</p>
               <p className={styles.text}>{c.text}</p>
@@ -243,7 +191,7 @@ export function ExperienceStory() {
           </ol>
         </div>
 
-        <p className={`cgi-note ${styles.note}`}>{PROVENANCE_NOTE[scene(current.scene).provenance]}</p>
+        <p className={`cgi-note ${styles.note}`}>{current.image?.note ?? ''}</p>
         <div className={styles.progress} aria-hidden="true">
           <span ref={bar} />
         </div>
@@ -252,19 +200,19 @@ export function ExperienceStory() {
   );
 }
 
-function StaticStory({ chapters }: { chapters: Chapter[] }) {
+function StaticStory({ chapters, title }: { chapters: Chapter[]; title: string }) {
   return (
     <section id="experience" className={styles.static} data-ground="night" aria-labelledby="experience-title">
       <div className="container">
         <h2 id="experience-title" className="h2">
-          The experience
+          {title}
         </h2>
       </div>
       <ol>
         {chapters.map((c) => (
-          <li key={c.scene} className={styles.staticItem}>
+          <li key={c.key} className={styles.staticItem}>
             <div className={styles.staticMedia}>
-              <SceneImage id={c.scene} sizes="100vw" />
+              <SceneImage media={c.image} sizes="100vw" label={c.title} />
             </div>
             <div className={`container ${styles.staticCaption}`}>
               <p className="mark">{c.mark}</p>
