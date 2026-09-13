@@ -18,6 +18,8 @@ export const QUEUES = {
   geoDistance: { name: 'geo-distance', specName: 'geo:distance', concurrency: 1 },
   /** §5.9 — nightly hard delete of enquiries past their 24-month retention. */
   piiPurge: { name: 'pii-purge', specName: 'pii:purge', concurrency: 1 },
+  /** Roadmap phase 3 — viewing reminders, reservation expiry, the morning digest, the notification sweep. */
+  salesScheduler: { name: 'sales-scheduler', specName: 'sales:scheduler', concurrency: 1 },
 } as const;
 
 export type QueueKey = keyof typeof QUEUES;

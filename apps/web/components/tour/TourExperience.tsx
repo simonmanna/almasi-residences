@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TourStationDto } from '../../lib/api';
 import { useReducedMotion } from '../../lib/motion';
+import { track } from '../../lib/analytics';
 import { MotionMedia } from '../ui/MotionMedia';
 import { SceneImage } from '../ui/SceneImage';
 import styles from './TourExperience.module.css';
@@ -42,11 +43,12 @@ export function TourExperience({
   const go = useCallback(
     (next: number) => {
       if (next < 0 || next >= n || next === index) return;
+      if (index === 0 && next === 1) track('tour_started', { tour: title });
       setDirection(next > index ? 'forward' : 'back');
       setLeaving(index);
       setIndex(next);
     },
-    [index, n],
+    [index, n, title],
   );
 
   // The leaving frame is only needed for the length of the transition.

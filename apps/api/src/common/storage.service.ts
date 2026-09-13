@@ -3,7 +3,7 @@ import { createReadStream, type ReadStream } from 'node:fs';
 import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
 import { IMAGE_WIDTHS, UPLOAD_MAX_BYTES, UPLOAD_MIME_TYPES, type MediaKindValue } from '@avida/types';
 
@@ -257,6 +257,20 @@ export class StorageService {
     const path = resolve(this.root, key);
     if (!path.startsWith(this.root + sep)) throw new BadRequestException('Invalid file path');
     return path;
+  }
+
+  /** The bytes of a stored object, from either driver; null when it is missing. */
+  async read(key: string): Promise<Buffer | null> {
+    try {
+      if (this.driver === 's3') {
+        const res = await this.client().send(new GetObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key }));
+        return res.Body ? Buffer.from(await res.Body.transformToByteArray()) : null;
+      }
+      const { readFile } = await import('node:fs/promises');
+      return await readFile(this.localPath(key));
+    } catch {
+      return null;
+    }
   }
 
   async openLocal(key: string): Promise<{ stream: ReadStream; size: number } | null> {

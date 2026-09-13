@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react';
 import { mailtoHref, telHref, whatsappHref, type Contact } from '../../lib/contact';
 import { useContact } from '../providers/ContactProvider';
-import { track } from '../../lib/analytics';
 import type { EnquiryResidence } from './EnquiryForm';
 import { useEnquiry, type EnquiryRequest } from './EnquiryProvider';
 
@@ -68,7 +67,6 @@ export function ContactActions({
           href={wa}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => track('whatsapp_clicked', { source })}
         >
           WhatsApp
         </a>

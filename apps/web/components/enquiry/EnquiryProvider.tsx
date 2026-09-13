@@ -50,7 +50,7 @@ export function EnquiryProvider({ children }: { children: ReactNode }) {
   const open = useCallback((next: EnquiryRequest = {}) => {
     setRequest(next);
     setSession((n) => n + 1);
-    track('enquiry_started', { source: next.source, residence: next.residence?.label });
+    track(next.intent === 'VIEWING' ? 'viewing_started' : 'enquiry_started', { source: next.source, residence: next.residence?.label });
   }, []);
 
   const close = useCallback(() => dialogRef.current?.close(), []);

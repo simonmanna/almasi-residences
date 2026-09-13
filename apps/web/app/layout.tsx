@@ -15,6 +15,7 @@ import { RouteFade } from '../components/layout/RouteFade';
 import { StickyMobileCta } from '../components/layout/StickyMobileCta';
 import { CursorLabel } from '../components/layout/CursorLabel';
 import { PreviewBanner } from '../components/layout/PreviewBanner';
+import { AnalyticsTracker } from '../components/layout/AnalyticsTracker';
 import '../styles/tokens.css';
 import '../styles/app.css';
 
@@ -133,6 +134,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </SmoothScroll>
         <CursorLabel />
         <PreviewBanner />
+        <AnalyticsTracker />
       </body>
     </html>
   );

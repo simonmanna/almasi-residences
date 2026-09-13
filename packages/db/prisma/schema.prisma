@@ -67,30 +67,34 @@ model Development {
   /// { instagram, facebook, linkedin, youtube, x, tiktok } — URLs.
   socials        Json?
 
-  buildings      Building[]
-  typologies     Typology[]
-  amenities      Amenity[]
-  milestones     PaymentMilestone[]
-  paymentPlans   PaymentPlan[]
-  landmarks      Landmark[]
-  mediaSets      MediaSet[]
-  tours          Tour[]
-  progress       ProgressUpdate[]
-  faqs           Faq[]
-  seo            SeoMeta?
-  units          Unit[]
-  features       Feature[]
-  parkingSpaces  ParkingSpace[]
-  residents      Resident[]
-  buyers         Buyer[]
-  media          Media[]            @relation("DevelopmentMedia")
-  galleries      Gallery[]
-  pages          ContentPage[]
-  mediaSlots     MediaSlot[]
-  specifications Specification[]
-  seoPages       SeoPage[]
-  videos         VideoAsset[]
-  enquiries      Enquiry[]
+  buildings       Building[]
+  typologies      Typology[]
+  amenities       Amenity[]
+  milestones      PaymentMilestone[]
+  paymentPlans    PaymentPlan[]
+  landmarks       Landmark[]
+  mediaSets       MediaSet[]
+  tours           Tour[]
+  progress        ProgressUpdate[]
+  faqs            Faq[]
+  seo             SeoMeta?
+  units           Unit[]
+  features        Feature[]
+  parkingSpaces   ParkingSpace[]
+  residents       Resident[]
+  buyers          Buyer[]
+  media           Media[]            @relation("DevelopmentMedia")
+  galleries       Gallery[]
+  pages           ContentPage[]
+  mediaSlots      MediaSlot[]
+  specifications  Specification[]
+  seoPages        SeoPage[]
+  videos          VideoAsset[]
+  enquiries       Enquiry[]
+  viewings        Viewing[]
+  reservations    Reservation[]
+  notifications   Notification[]
+  analyticsEvents AnalyticsEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -232,6 +236,8 @@ model Unit {
   residencies   Residency[]
   parkingSpaces ParkingSpace[]
   interests     BuyerInterest[]
+  viewings      ViewingUnit[]
+  reservations  Reservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1056,10 +1062,12 @@ model Buyer {
   notes         String?     @db.Text
   archivedAt    DateTime?
 
-  units     Unit[]          @relation("UnitBuyer")
-  interests BuyerInterest[]
-  enquiries Enquiry[]
-  residents Resident[]
+  units        Unit[]          @relation("UnitBuyer")
+  interests    BuyerInterest[]
+  enquiries    Enquiry[]
+  residents    Resident[]
+  viewings     Viewing[]
+  reservations Reservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1113,12 +1121,27 @@ model Enquiry {
   landingPath String?
   userAgent   String?
 
-  status       EnquiryStatus @default(NEW)
-  /// AdminUser id of the agent working the lead.
-  assignedTo   String?
-  internalNote String?       @db.Text
-  buyerId      String?
-  buyer        Buyer?        @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  status         EnquiryStatus  @default(NEW)
+  /// §40.3 — the agent working the lead (a real foreign key, audit §15.5).
+  assignedToId   String?
+  assignedTo     AdminUser?     @relation("EnquiryAgent", fields: [assignedToId], references: [id], onDelete: SetNull)
+  /// Legacy single note, kept read-only; the history lives in LeadNote.
+  internalNote   String?        @db.Text
+  /// §15.3 — when the sales team first answered, and when they must next act.
+  contactedAt    DateTime?
+  followUpAt     DateTime?
+  lastActivityAt DateTime?
+  lostReason     LostReason?
+  lostNote       String?
+  /// Set when the same person asked again within the dedup window (§15.6).
+  duplicateOfId  String?
+  repeatCount    Int            @default(0)
+  notes          LeadNote[]
+  viewings       Viewing[]
+  reservations   Reservation[]
+  notifications  Notification[]
+  buyerId        String?
+  buyer          Buyer?         @relation(fields: [buyerId], references: [id], onDelete: SetNull)
 
   // §6.7 — Turnstile unreachable: keep the lead, flag it for manual review
   // rather than dropping it. Never silently trust an unverified submission.
@@ -1136,6 +1159,9 @@ model Enquiry {
   @@index([purgeAfter])
   @@index([buyerId])
   @@index([developmentId, createdAt])
+  @@index([assignedToId])
+  @@index([followUpAt])
+  @@index([email])
 }
 
 enum EnquiryIntent {
@@ -1145,16 +1171,212 @@ enum EnquiryIntent {
   BROKER
 }
 
+/// §40.3 — the sales pipeline.
 enum EnquiryStatus {
   NEW
   CONTACTED
   QUALIFIED
-  VIEWING
-  NEGOTIATION
+  VIEWING_SCHEDULED
+  VIEWED
+  INTERESTED
   RESERVED
-  CONVERTED
+  SOLD
   LOST
   SPAM
+}
+
+enum LostReason {
+  PRICE
+  LOCATION
+  TIMING
+  CHOSE_COMPETITOR
+  FINANCING
+  NO_RESPONSE
+  OTHER
+}
+
+/// §15.4 — one entry per touch: a note, a call, a message. Never overwritten.
+model LeadNote {
+  id        String       @id @default(cuid())
+  enquiryId String
+  enquiry   Enquiry      @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    AdminUser?   @relation("LeadNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  kind      LeadNoteKind @default(NOTE)
+  body      String       @db.Text
+  createdAt DateTime     @default(now())
+
+  @@index([enquiryId, createdAt])
+}
+
+enum LeadNoteKind {
+  NOTE
+  CALL
+  EMAIL
+  WHATSAPP
+  MEETING
+  STATUS
+  SYSTEM
+}
+
+/// §15.2 — a viewing is booked, not implied by an enquiry's intent.
+model Viewing {
+  id                 String         @id @default(cuid())
+  developmentId      String
+  development        Development    @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  enquiryId          String?
+  enquiry            Enquiry?       @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+  buyerId            String?
+  buyer              Buyer?         @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  /// Copied from the enquiry so a viewing survives the lead's retention purge window on its own terms.
+  name               String
+  email              String
+  phone              String
+  /// What the visitor asked for.
+  requestedDate      DateTime?
+  requestedSlot      String?
+  /// What the sales team confirmed.
+  scheduledAt        DateTime?
+  durationMinutes    Int            @default(45)
+  agentId            String?
+  agent              AdminUser?     @relation("ViewingAgent", fields: [agentId], references: [id], onDelete: SetNull)
+  status             ViewingStatus  @default(REQUESTED)
+  location           String?
+  notes              String?        @db.Text
+  outcome            String?        @db.Text
+  confirmationSentAt DateTime?
+  reminderSentAt     DateTime?
+  units              ViewingUnit[]
+  notifications      Notification[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([developmentId, scheduledAt])
+  @@index([status])
+  @@index([agentId])
+}
+
+enum ViewingStatus {
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+}
+
+model ViewingUnit {
+  viewingId String
+  viewing   Viewing @relation(fields: [viewingId], references: [id], onDelete: Cascade)
+  unitId    String
+  unit      Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@id([viewingId, unitId])
+  @@index([unitId])
+}
+
+/// §40.3 / audit §12 — a hold on a residence, with an expiry and a deposit.
+model Reservation {
+  id                 String            @id @default(cuid())
+  developmentId      String
+  development        Development       @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  unitId             String
+  unit               Unit              @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  buyerId            String?
+  buyer              Buyer?            @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  enquiryId          String?
+  enquiry            Enquiry?          @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+  agentId            String?
+  agent              AdminUser?        @relation("ReservationAgent", fields: [agentId], references: [id], onDelete: SetNull)
+  status             ReservationStatus @default(ACTIVE)
+  heldUntil          DateTime
+  depositMinor       Int?
+  currency           String            @default("USD")
+  depositReceivedAt  DateTime?
+  /// The unit status before the hold, restored when it lapses.
+  previousStatus     UnitStatus        @default(AVAILABLE)
+  notes              String?           @db.Text
+  closedAt           DateTime?
+  closedReason       String?
+  expiryNoticeSentAt DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([developmentId, status])
+  @@index([unitId, status])
+  @@index([heldUntil])
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONVERTED
+  EXPIRED
+  CANCELLED
+}
+
+/// §15.1 — every email the platform owes someone, delivered by the worker with
+/// retries. A row that cannot be delivered is visible, never silently lost.
+model Notification {
+  id            String             @id @default(cuid())
+  developmentId String
+  development   Development        @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  kind          NotificationKind
+  recipient     String
+  subject       String
+  text          String             @db.Text
+  replyTo       String?
+  status        NotificationStatus @default(QUEUED)
+  attempts      Int                @default(0)
+  lastError     String?
+  enquiryId     String?
+  enquiry       Enquiry?           @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+  viewingId     String?
+  viewing       Viewing?           @relation(fields: [viewingId], references: [id], onDelete: SetNull)
+  sentAt        DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([status, createdAt])
+  @@index([enquiryId])
+}
+
+enum NotificationKind {
+  ENQUIRY_ALERT
+  ENQUIRY_ACKNOWLEDGEMENT
+  VIEWING_REQUESTED
+  VIEWING_CONFIRMATION
+  VIEWING_REMINDER
+  LEADS_DIGEST
+  RESERVATION_EXPIRING
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  SKIPPED
+}
+
+/// Roadmap item 40 — first-party, cookieless analytics. No IP, no personal data:
+/// a random per-tab session id, the page, and what happened.
+model AnalyticsEvent {
+  id            String      @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name          String
+  sessionId     String
+  path          String?
+  unitId        String?
+  props         Json?
+  referrer      String?
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+  device        String?
+  createdAt     DateTime    @default(now())
+
+  @@index([developmentId, name, createdAt])
+  @@index([unitId, name])
+  @@index([sessionId])
 }
 
 model EnquiryUnit {
@@ -1363,8 +1585,12 @@ model AdminUser {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @default(now()) @updatedAt
 
-  auditLogs AdminAuditLog[]
-  buyers    Buyer[]         @relation("BuyerAgent")
+  auditLogs    AdminAuditLog[]
+  buyers       Buyer[]         @relation("BuyerAgent")
+  enquiries    Enquiry[]       @relation("EnquiryAgent")
+  leadNotes    LeadNote[]      @relation("LeadNoteAuthor")
+  viewings     Viewing[]       @relation("ViewingAgent")
+  reservations Reservation[]   @relation("ReservationAgent")
 }
 
 // §5.9 — every consequential admin action writes one row: who, what, which

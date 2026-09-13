@@ -11,6 +11,7 @@ describe('§5.8 queue topology', () => {
       'media:variants',
       'notify:email',
       'pii:purge',
+      'sales:scheduler',
       'video:encode',
     ]);
   });

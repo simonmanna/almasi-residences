@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { whatsappHref } from '../../lib/contact';
+import { telHref, whatsappHref } from '../../lib/contact';
 import { useContact } from '../providers/ContactProvider';
-import { track } from '../../lib/analytics';
 import { useEnquiry } from '../enquiry/EnquiryProvider';
 import styles from './StickyMobileCta.module.css';
 
@@ -43,11 +42,14 @@ export function StickyMobileCta() {
     };
   }, []);
 
-  const wa = whatsappHref(useContact());
+  const contact = useContact();
+  const wa = whatsappHref(contact);
+  // Audit §16.4 — in this market a call is the highest-intent channel; keep it one tap away.
+  const tel = telHref(contact);
   const shown = past && !suppressed;
 
   return (
-    <div className={styles.bar} data-shown={shown ? 'true' : 'false'} data-ground="night" aria-hidden={!shown}>
+    <div className={styles.bar} data-shown={shown ? 'true' : 'false'} data-ground="night" aria-hidden={!shown} data-analytics-source="sticky-cta">
       <button
         type="button"
         className="btn btn--solid"
@@ -56,6 +58,11 @@ export function StickyMobileCta() {
       >
         Enquire
       </button>
+      {tel && (
+        <a className="btn btn--ghost" href={tel} tabIndex={shown ? 0 : -1} aria-label="Call the sales team">
+          Call
+        </a>
+      )}
       {wa ? (
         <a
           className="btn btn--ghost"
@@ -63,7 +70,6 @@ export function StickyMobileCta() {
           target="_blank"
           rel="noopener noreferrer"
           tabIndex={shown ? 0 : -1}
-          onClick={() => track('whatsapp_clicked', { source: 'sticky-cta' })}
         >
           WhatsApp
         </a>

@@ -9,6 +9,12 @@ import { prisma } from '@avida/db';
  * personal data, which is the reason this job exists.
  */
 export async function purgeExpiredEnquiries(now: Date = new Date()): Promise<number> {
+  // Viewings copy a visitor's name and contact details; they follow the same clock.
+  const cutoff = new Date(now);
+  cutoff.setMonth(cutoff.getMonth() - 24);
+  await prisma.viewing.deleteMany({ where: { updatedAt: { lt: cutoff } } });
+  await prisma.notification.deleteMany({ where: { createdAt: { lt: cutoff } } });
+
   const expired = await prisma.enquiry.findMany({
     where: { purgeAfter: { lt: now } },
     select: { id: true },

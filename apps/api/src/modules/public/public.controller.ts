@@ -1,8 +1,10 @@
-import { Controller, Get, Headers, Param, Query, UseInterceptors, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Query, Res, UseInterceptors, UnauthorizedException } from '@nestjs/common';
 import { PreviewInterceptor, verifyPreviewToken } from '../../common/preview.js';
 import { NoStore } from '../../common/cache-control.decorator.js';
 import { PublicCache } from '../../common/cache-control.decorator.js';
+import { BrochureService } from './brochure.service.js';
 import { PublicService, type PublicResidenceFilter } from './public.service.js';
+import type { FastifyReply } from 'fastify';
 
 /**
  * §22 — the public read API the website renders. Read-only, no auth, and
@@ -12,7 +14,10 @@ import { PublicService, type PublicResidenceFilter } from './public.service.js';
 @UseInterceptors(PreviewInterceptor)
 @Controller()
 export class PublicController {
-  constructor(private readonly svc: PublicService) {}
+  constructor(
+    private readonly svc: PublicService,
+    private readonly brochures: BrochureService,
+  ) {}
 
   @Get('property')
   @PublicCache()
@@ -42,6 +47,18 @@ export class PublicController {
   @PublicCache()
   featured() {
     return this.svc.residences({ featured: 'true' });
+  }
+
+  /** Roadmap item 49 — the brochure, generated from live data at the moment of download. */
+  @Get('residences/:code/brochure.pdf')
+  async brochure(@Param('code') code: string, @Res() reply: FastifyReply) {
+    const { filename, pdf } = await this.brochures.residence(code);
+    return reply
+      .header('Content-Type', 'application/pdf')
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      // Short: a brochure must not outlive a price change by more than a minute.
+      .header('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=60')
+      .send(pdf);
   }
 
   @Get('residences/:code')

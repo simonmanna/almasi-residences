@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PublicGalleryDto } from '../../lib/api';
+import { track } from '../../lib/analytics';
 import { ApiImage } from '../ui/ApiImage';
 import styles from './GalleryGrid.module.css';
 
@@ -92,7 +93,10 @@ export function GalleryGrid({ galleries = [] }: { galleries?: PublicGalleryDto[]
       <ul className={`container ${styles.grid}`}>
         {list.map((it, i) => (
           <li key={it.key} className={styles.item}>
-            <button type="button" className={styles.open} onClick={() => setOpen(i)} data-cursor="View">
+            <button type="button" className={styles.open} onClick={() => {
+                setOpen(i);
+                track('gallery_opened', { gallery: group, item: it.title });
+              }} data-cursor="View">
               <span className={styles.frame} style={{ aspectRatio: it.aspect, position: 'relative' }}>
                 {it.render('(max-width: 700px) 100vw, (max-width: 1200px) 50vw, 33vw')}
               </span>

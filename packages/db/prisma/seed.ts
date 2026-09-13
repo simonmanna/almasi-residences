@@ -608,7 +608,7 @@ async function main() {
 
   // ── Enquiries: 25 across all statuses (§4.6), only into an empty inbox ──
   if ((await prisma.enquiry.count({ where: { developmentId: dev.id } })) === 0) {
-    const statuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'VIEWING', 'NEGOTIATION', 'RESERVED', 'CONVERTED', 'LOST', 'SPAM'] as const;
+    const statuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'VIEWING_SCHEDULED', 'VIEWED', 'INTERESTED', 'RESERVED', 'SOLD', 'LOST', 'SPAM'] as const;
     const pick = rng(4242);
     const RETENTION_MONTHS = 24; // §5.9
     for (let i = 0; i < 25; i++) {

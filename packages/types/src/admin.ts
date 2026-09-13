@@ -75,6 +75,8 @@ export const PERMISSIONS = [
   'user.manage',
   'audit.view',
   'settings.edit',
+  'reservation.edit',
+  'reports.view',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -116,6 +118,8 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
   'user.manage': 'Manage users and roles',
   'audit.view': 'Read the audit log',
   'settings.edit': 'Change settings',
+  'reservation.edit': 'Hold, extend and release reservations',
+  'reports.view': 'See sales, demand and website reports',
 };
 
 const ALL: readonly Permission[] = PERMISSIONS;
@@ -148,6 +152,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'media.edit',
     'content.publish',
     'audit.view',
+    'reports.view',
   ],
   SALES_MANAGER: [
     'property.view',
@@ -171,6 +176,8 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'enquiry.edit',
     'enquiry.export',
     'resident.view',
+    'reservation.edit',
+    'reports.view',
   ],
   CONTENT_MANAGER: [
     'property.view',
@@ -211,17 +218,8 @@ export function can(role: string | null | undefined, permission: Permission): bo
 
 // ─── Enumerations ────────────────────────────────────────────────────────
 
-export const ENQUIRY_STATUSES = [
-  'NEW',
-  'CONTACTED',
-  'QUALIFIED',
-  'VIEWING',
-  'NEGOTIATION',
-  'RESERVED',
-  'CONVERTED',
-  'LOST',
-  'SPAM',
-] as const;
+/** §40.3 — the pipeline, then the two exits. */
+export const ENQUIRY_STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'VIEWING_SCHEDULED', 'VIEWED', 'INTERESTED', 'RESERVED', 'SOLD', 'LOST', 'SPAM'] as const;
 export type EnquiryStatusValue = (typeof ENQUIRY_STATUSES)[number];
 
 export const BUYER_STAGES = [

@@ -148,7 +148,7 @@ export class DashboardController {
           total: enquiries.reduce((a, e) => a + e._count, 0),
           new: enquiryCounts.NEW ?? 0,
           thisWeek: newThisWeek,
-          open: enquiries.filter((e) => !['CONVERTED', 'LOST', 'SPAM'].includes(e.status)).reduce((a, e) => a + e._count, 0),
+          open: enquiries.filter((e) => !['SOLD', 'LOST', 'SPAM'].includes(e.status)).reduce((a, e) => a + e._count, 0),
           byStatus: enquiryCounts,
         },
       },

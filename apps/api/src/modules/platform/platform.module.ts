@@ -14,6 +14,9 @@ import { PaymentPlansController } from './payment-plans.controller.js';
 import { PresentationController } from './presentation.controller.js';
 import { PropertyController } from './property.controller.js';
 import { PublishingController } from './publishing.controller.js';
+import { ReservationsController } from './reservations.controller.js';
+import { ViewingsController } from './viewings.controller.js';
+import { SalesDeskController } from './sales-desk.controller.js';
 import { ResidencesController } from './residences.controller.js';
 import { ResidencesService } from './residences.service.js';
 import { ResidentsController } from './residents.controller.js';
@@ -44,6 +47,9 @@ import { UsersController } from './users.controller.js';
     AuditController,
     PresentationController,
     PublishingController,
+    ViewingsController,
+    ReservationsController,
+    SalesDeskController,
   ],
   providers: [ResidencesService],
 })

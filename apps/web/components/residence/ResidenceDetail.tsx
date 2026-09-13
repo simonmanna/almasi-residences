@@ -22,6 +22,8 @@ import { Reveal } from '../ui/Reveal';
 import { ApiImage } from '../ui/ApiImage';
 import { SceneImage } from '../ui/SceneImage';
 import { PlanDrawing } from './PlanDrawing';
+import { track } from '../../lib/analytics';
+import { useTrackInView } from '../../lib/use-track-in-view';
 import styles from './ResidenceDetail.module.css';
 
 export function ResidenceDetail({
@@ -76,6 +78,8 @@ export function ResidenceDetail({
     .sort((a, b) => Math.abs(a.areaSqm - r.areaSqm) - Math.abs(b.areaSqm - r.areaSqm) || a.floorLevel - b.floorLevel)
     .slice(0, 3);
   const tourHref = r.type === 'penthouse' ? '/tour/penthouse' : '/tour';
+  const planRef = useTrackInView<HTMLElement>('floor_plan_viewed', { residence: r.code, view: 'plan' });
+  const paymentRef = useTrackInView<HTMLElement>('payment_plan_viewed', { residence: r.code });
 
   const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
@@ -206,7 +210,7 @@ export function ResidenceDetail({
       </section>
 
       {/* ─── Plan and position ───────────────────────────────────────── */}
-      <section className={`section ${styles.plans}`} aria-labelledby="plan-title">
+      <section ref={planRef} className={`section ${styles.plans}`} aria-labelledby="plan-title">
         <div className="container">
           <header className={styles.head}>
             <div>
@@ -234,7 +238,10 @@ export function ResidenceDetail({
                 aria-selected={tab === 'furnished'}
                 aria-controls="panel-furnished"
                 tabIndex={tab === 'furnished' ? 0 : -1}
-                onClick={() => setTab('furnished')}
+                onClick={() => {
+                  setTab('furnished');
+                  track('floor_plan_viewed', { residence: r.code, view: 'furnished' });
+                }}
               >
                 Furnished, in 3D
               </button>
@@ -258,7 +265,10 @@ export function ResidenceDetail({
                         Download the plan
                       </a>
                     </>
-                  )}
+                  )}{' '}
+                  <a className="link-line" href={`/api/v1/residences/${encodeURIComponent(r.slug)}/brochure.pdf`} download>
+                    Download the brochure (PDF)
+                  </a>
                 </p>
               </div>
             </div>
@@ -308,7 +318,7 @@ export function ResidenceDetail({
       )}
 
       {/* ─── Payment ─────────────────────────────────────────────────── */}
-      <section className={`section ${styles.payment}`} aria-labelledby="payment-title">
+      <section ref={paymentRef} className={`section ${styles.payment}`} aria-labelledby="payment-title">
         <div className="container">
           <header className={styles.head}>
             <div>

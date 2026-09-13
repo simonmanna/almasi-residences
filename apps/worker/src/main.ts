@@ -11,6 +11,8 @@ import { tilePanorama } from './processors/tile.js';
 import { buildVariants } from './processors/variants.js';
 import { encodeVideo } from './processors/video.js';
 import { purgeExpiredEnquiries } from './processors/pii-purge.js';
+import { deliverNotification, resendMailer } from './processors/notify.js';
+import { processReservations, sendLeadsDigest, sendViewingReminders, sweepQueuedNotifications } from './processors/sales.js';
 
 const log = pino({ name: 'worker' });
 
@@ -175,6 +177,44 @@ async function main() {
         // §5.9 — log the count, never the rows.
         log.info({ deleted }, 'purged enquiries past their retention window');
         return { deleted };
+      },
+      { connection, concurrency: 1 },
+    ) as unknown as Worker<MediaJobData>,
+  );
+
+  // §15.1 — email delivery. A RETRY outcome throws so BullMQ backs off and tries again;
+  // every other outcome is final and already written to the Notification row.
+  const mailer = await resendMailer();
+  if (!mailer) log.warn('RESEND_API_KEY is not set: notifications will be recorded as undelivered');
+  const notifyQueue = queues.find((q) => q.name === QUEUES.notifyEmail.name)!;
+  const queueNotification = async (notificationId: string) => {
+    await notifyQueue.add('send', { notificationId }, { jobId: `notification:${notificationId}:${Date.now()}`, attempts: 6, backoff: { type: 'exponential', delay: 30_000 } });
+  };
+  workers.push(
+    new Worker(
+      QUEUES.notifyEmail.name,
+      async (job: Job<{ notificationId: string }>) => {
+        const outcome = await deliverNotification(job.data.notificationId, mailer);
+        if (outcome === 'RETRY') throw new Error('delivery failed; retrying with backoff');
+        return { outcome };
+      },
+      { connection, concurrency: QUEUES.notifyEmail.concurrency },
+    ) as unknown as Worker<MediaJobData>,
+  );
+
+  // Roadmap phase 3 — the sales scheduler: reminders and holds every quarter hour,
+  // the digest each weekday morning (Kigali time).
+  const salesQueue = queues.find((q) => q.name === QUEUES.salesScheduler.name)!;
+  await salesQueue.upsertJobScheduler('quarter-hour', { pattern: '*/15 * * * *' }, { name: 'tick', data: { task: 'tick' } });
+  await salesQueue.upsertJobScheduler('morning-digest', { pattern: '0 7 * * 1-6', tz: process.env.SALES_TIMEZONE || 'Africa/Kigali' }, { name: 'digest', data: { task: 'digest' } });
+  workers.push(
+    new Worker(
+      QUEUES.salesScheduler.name,
+      async (job: Job<{ task: 'tick' | 'digest' }>) => {
+        if (job.data.task === 'digest') return { digests: await sendLeadsDigest(queueNotification) };
+        const [reminders, reservations, swept] = await Promise.all([sendViewingReminders(queueNotification), processReservations(queueNotification), sweepQueuedNotifications(queueNotification)]);
+        if (reminders || reservations.expired || reservations.warned || swept) log.info({ reminders, ...reservations, swept }, 'sales scheduler tick');
+        return { reminders, ...reservations, swept };
       },
       { connection, concurrency: 1 },
     ) as unknown as Worker<MediaJobData>,

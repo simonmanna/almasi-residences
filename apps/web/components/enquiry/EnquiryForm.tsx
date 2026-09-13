@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { INTENT_LABEL, isProbablyEmail, type EnquiryIntent } from '@avida/types';
+import { INTENT_LABEL, isProbablyEmail, VIEWING_SLOTS, type EnquiryIntent } from '@avida/types';
 import { track } from '../../lib/analytics';
 import styles from './EnquiryForm.module.css';
 
@@ -58,6 +58,9 @@ export function EnquiryForm({
   const [serverError, setServerError] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [firstName, setFirstName] = useState('');
+  const [chosen, setChosen] = useState<EnquiryIntent>(intent);
+  const [viewingDay, setViewingDay] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -88,6 +91,8 @@ export function EnquiryForm({
           phone: String(fd.get('phone')).trim(),
           message: [note, `Preferred contact: ${CHANNEL_TEXT[preferred]}.`].filter(Boolean).join('\n\n'),
           intent: chosenIntent,
+          ...(chosenIntent === 'VIEWING' && fd.get('viewingDate') ? { viewingDate: String(fd.get('viewingDate')) } : {}),
+          ...(chosenIntent === 'VIEWING' && fd.get('viewingSlot') ? { viewingSlot: String(fd.get('viewingSlot')) } : {}),
           unitIds: residence ? [residence.id] : [],
           source,
           company: String(fd.get('company') ?? ''), // §5.7 honeypot
@@ -109,7 +114,7 @@ export function EnquiryForm({
       setFirstName(name.split(/\s+/)[0] ?? name);
       setWhatsappUrl(json.whatsappUrl ?? null);
       setState('sent');
-      track('enquiry_submitted', { source, residence: residence?.label, intent: chosenIntent });
+      track(chosenIntent === 'VIEWING' ? 'viewing_requested' : 'enquiry_submitted', { source, residence: residence?.label, intent: chosenIntent });
     } catch {
       setState('error');
       setServerError('We could not reach the sales team just now. Please try again in a moment.');
@@ -121,8 +126,9 @@ export function EnquiryForm({
       <div className={styles.sent} role="status">
         <p className="h3">Thank you, {firstName}.</p>
         <p className="body muted">
-          The Almasi sales team has your enquiry{residence ? ` about ${residence.label}` : ''} and will
-          be in touch within one working day.
+          {chosen === 'VIEWING'
+            ? `We have your viewing request${residence ? ` for ${residence.label}` : ''}${viewingDay ? ` for ${new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${viewingDay}T12:00:00Z`))}` : ''}. The sales team will confirm a time within one working day, and a confirmation email follows.`
+            : `The sales team has your enquiry${residence ? ` about ${residence.label}` : ''} and will be in touch within one working day. A copy is on its way to your inbox.`}
         </p>
         <div className={styles.actions}>
           {whatsappUrl && (
@@ -155,7 +161,7 @@ export function EnquiryForm({
 
   const submitLabel = residence
     ? `Enquire about ${residence.label}`
-    : intent === 'VIEWING'
+    : chosen === 'VIEWING'
       ? 'Request a viewing'
       : 'Send enquiry';
 
@@ -166,12 +172,33 @@ export function EnquiryForm({
         <div className={styles.segments}>
           {INTENTS.map((i) => (
             <label key={i} className={styles.segment}>
-              <input type="radio" name="intent" value={i} defaultChecked={i === intent} />
+              <input type="radio" name="intent" value={i} defaultChecked={i === intent} onChange={() => setChosen(i)} />
               <span>{INTENT_LABEL[i]}</span>
             </label>
           ))}
         </div>
       </fieldset>
+
+      {chosen === 'VIEWING' && (
+        <div className={styles.row}>
+          <div className="field">
+            <label htmlFor={`${uid}-day`}>Preferred day</label>
+            <input id={`${uid}-day`} name="viewingDate" type="date" min={today} value={viewingDay} onChange={(e) => setViewingDay(e.target.value)} />
+            <p className="field-hint">The sales team confirms an exact time.</p>
+          </div>
+          <fieldset className={styles.group}>
+            <legend className="field-label">Time of day</legend>
+            <div className={styles.segments}>
+              {VIEWING_SLOTS.map((s, n) => (
+                <label key={s.key} className={styles.segment}>
+                  <input type="radio" name="viewingSlot" value={s.key} defaultChecked={n === 0} />
+                  <span>{s.label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+      )}
 
       <div className="field">
         <label htmlFor={`${uid}-name`}>Full name</label>

@@ -69,7 +69,7 @@ export function ResidenceExplorer({
 
   const flip = <K extends ListKey>(key: K, value: ResidenceFilter[K][number]) => {
     setFilter((f) => ({ ...f, [key]: toggle(f[key] as ResidenceFilter[K][number][], value) }));
-    track('unit_filtered', { key, value: String(value) });
+    track('filter_applied', { key, value: String(value) });
   };
 
   const bedroomOptions = [...new Set(residences.map((r) => r.bedrooms))].sort();

@@ -32,6 +32,9 @@ import {
   CONSTRUCTION_STATUSES,
   DEVELOPMENT_STATUSES,
   ENQUIRY_STATUSES,
+  LEAD_NOTE_KINDS,
+  LOST_REASONS,
+  VIEWING_STATUSES,
   MEDIA_COLLECTIONS,
   MEDIA_PROVENANCES,
   MEDIA_SLOTS,
@@ -321,9 +324,73 @@ export class BuyerUnitDto {
 
 export class UpdateEnquiryDto {
   @IsOptional() @IsIn(ENQUIRY_STATUSES) status?: string;
-  @IsOptional() @IsString() @MaxLength(120) assignedTo?: string | null;
-  @IsOptional() @IsString() @MaxLength(5000) internalNote?: string | null;
+  @IsOptional() @IsString() @MaxLength(40) assignedToId?: string | null;
+  @IsOptional() @IsDateString() followUpAt?: string | null;
+  @IsOptional() @IsIn(LOST_REASONS) lostReason?: string | null;
+  @IsOptional() @IsString() @MaxLength(1000) lostNote?: string | null;
   @IsOptional() @IsString() buyerId?: string | null;
+}
+
+export class LeadNoteDto {
+  @IsIn(LEAD_NOTE_KINDS) kind!: string;
+  @IsString() @Length(1, 5000) body!: string;
+  @IsOptional() @IsDateString() followUpAt?: string | null;
+}
+
+export class BulkEnquiryDto extends IdsDto {
+  @IsIn(['assign', 'status', 'spam']) action!: 'assign' | 'status' | 'spam';
+  @IsOptional() @IsString() assignedToId?: string | null;
+  @IsOptional() @IsIn(ENQUIRY_STATUSES) status?: string;
+  @IsOptional() @IsIn(LOST_REASONS) lostReason?: string;
+}
+
+// ─── Viewings ────────────────────────────────────────────────────────────
+
+export class UpdateViewingDto {
+  @IsOptional() @IsDateString() scheduledAt?: string | null;
+  @IsOptional() @IsInt() @Min(15) @Max(480) durationMinutes?: number;
+  @IsOptional() @IsString() agentId?: string | null;
+  @IsOptional() @IsIn(VIEWING_STATUSES) status?: string;
+  @IsOptional() @IsString() @MaxLength(300) location?: string | null;
+  @IsOptional() @IsString() @MaxLength(5000) notes?: string | null;
+  @IsOptional() @IsString() @MaxLength(5000) outcome?: string | null;
+  @IsOptional() @IsArray() @ArrayMaxSize(10) @IsString({ each: true }) unitIds?: string[];
+  /** Send the confirmation email now (on confirming, or after a reschedule). */
+  @IsOptional() @IsBoolean() notify?: boolean;
+}
+
+export class CreateViewingDto extends UpdateViewingDto {
+  @IsOptional() @IsString() enquiryId?: string;
+  @IsOptional() @IsString() buyerId?: string;
+  @IsOptional() @IsString() @Length(2, 120) name?: string;
+  @IsOptional() @IsEmail() email?: string;
+  @IsOptional() @IsString() @MaxLength(40) phone?: string;
+}
+
+// ─── Reservations ────────────────────────────────────────────────────────
+
+export class CreateReservationDto {
+  @IsString() unitId!: string;
+  @IsOptional() @IsString() buyerId?: string | null;
+  @IsOptional() @IsString() enquiryId?: string | null;
+  @IsOptional() @IsString() agentId?: string | null;
+  @IsOptional() @IsDateString() heldUntil?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(MAX_MINOR) depositMinor?: number | null;
+  @IsOptional() @IsString() @MaxLength(5000) notes?: string | null;
+}
+
+export class UpdateReservationDto {
+  @IsOptional() @IsDateString() heldUntil?: string;
+  @IsOptional() @IsString() agentId?: string | null;
+  @IsOptional() @IsString() buyerId?: string | null;
+  @IsOptional() @IsInt() @Min(0) @Max(MAX_MINOR) depositMinor?: number | null;
+  @IsOptional() @IsDateString() depositReceivedAt?: string | null;
+  @IsOptional() @IsString() @MaxLength(5000) notes?: string | null;
+}
+
+export class CloseReservationDto {
+  @IsIn(['convert', 'cancel']) action!: 'convert' | 'cancel';
+  @IsOptional() @IsString() @MaxLength(500) reason?: string;
 }
 
 // ─── Payment plans ───────────────────────────────────────────────────────

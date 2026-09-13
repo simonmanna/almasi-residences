@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FilmDto } from '../../lib/api';
+import { track } from '../../lib/analytics';
 import { useReducedMotion } from '../../lib/motion';
 import styles from './FilmPlayer.module.css';
 
@@ -87,6 +88,7 @@ export function FilmPlayer({ film, caption, downloadLabel }: { film: FilmDto; ca
             preload="metadata"
             autoPlay={!reduced}
             onPlay={() => {
+              if (!started) track('film_played');
               setPlaying(true);
               setStarted(true);
             }}
