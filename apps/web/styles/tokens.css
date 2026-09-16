@@ -31,6 +31,20 @@
   --status-reserved:    #AD7526;
   --status-sold:        #3F6A75;
   --status-unavailable: #8E8478;
+  /* Map — one colour per landmark category, so the pin, the legend chip and
+     the list row always agree. Seven categories cannot hold the status
+     palette's ΔE 22, so the floor here is 18 — and no pin is ever colour
+     alone: each carries its name, its category and its distance. */
+  --cat-business:       #7A5B39;
+  --cat-shopping:       #A4571F;
+  --cat-health:         #2F6C77;
+  --cat-school:         #4B5A43;
+  --cat-airport:        #7A4A62;
+  --cat-leisure:        #6E6A1F;
+  --cat-embassy:        #94412F;
+  /* The map's own paper — one step below the page so the frame reads as a
+     surface you look into rather than a panel sitting on top. */
+  --map-ground:         #E9E3D7;
 }
 
 [data-ground="night"] {
@@ -49,6 +63,14 @@
   --status-reserved:    #CE8B36;
   --status-sold:        #79A2AE;
   --status-unavailable: #757063;
+  --cat-business:       #C9A27A;
+  --cat-shopping:       #D98C46;
+  --cat-health:         #6FA9B4;
+  --cat-school:         #92A882;
+  --cat-airport:        #C08BA6;
+  --cat-leisure:        #B5AE5E;
+  --cat-embassy:        #D98671;
+  --map-ground:         #191B17;
 }
 
 :root {

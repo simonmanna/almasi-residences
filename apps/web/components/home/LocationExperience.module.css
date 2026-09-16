@@ -37,6 +37,65 @@
   gap: 24px;
 }
 
+/* ─── Category filter ──────────────────────────────────────── */
+
+/* Doubles as the map's legend: the swatch here is the pin's colour there. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: -8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    border-color var(--dur-1) var(--ease-standard),
+    background var(--dur-1) var(--ease-standard),
+    color var(--dur-1) var(--ease-standard);
+}
+
+.chip:hover {
+  border-color: var(--ink-muted);
+  color: var(--ink);
+}
+
+.chip[data-on='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.chipCount {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+.swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cat-business);
+}
+
+.chip[data-category='SHOPPING'] .swatch { background: var(--cat-shopping); }
+.chip[data-category='HOSPITAL'] .swatch { background: var(--cat-health); }
+.chip[data-category='SCHOOL'] .swatch { background: var(--cat-school); }
+.chip[data-category='AIRPORT'] .swatch { background: var(--cat-airport); }
+.chip[data-category='LEISURE'] .swatch { background: var(--cat-leisure); }
+.chip[data-category='EMBASSY'] .swatch { background: var(--cat-embassy); }
+
+/* ─── The list ─────────────────────────────────────────────── */
+
 .list {
   display: grid;
   margin-top: 16px;
@@ -45,20 +104,48 @@
 
 .row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
   grid-template-areas:
-    'name dist'
-    'cat time';
-  column-gap: 16px;
+    'dot name dist'
+    '.   cat  time';
+  align-items: baseline;
+  column-gap: 12px;
   width: 100%;
-  padding: 14px 0;
+  padding: 14px 8px 14px 6px;
   border-bottom: 1px solid var(--line);
   text-align: left;
-  transition: color var(--dur-2) var(--ease-standard);
+  transition:
+    color var(--dur-2) var(--ease-standard),
+    background var(--dur-2) var(--ease-standard),
+    padding-left var(--dur-2) var(--ease-out);
 }
 
+/* A row and its pin light up together, so the eye can follow one to the other. */
 .row[data-active='true'] {
   color: var(--accent);
+  background: var(--surface-raised);
+  padding-left: 12px;
+}
+
+.dot {
+  grid-area: dot;
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cat-business);
+  transition: transform var(--dur-2) var(--ease-out);
+}
+
+.row[data-category='SHOPPING'] .dot { background: var(--cat-shopping); }
+.row[data-category='HOSPITAL'] .dot { background: var(--cat-health); }
+.row[data-category='SCHOOL'] .dot { background: var(--cat-school); }
+.row[data-category='AIRPORT'] .dot { background: var(--cat-airport); }
+.row[data-category='LEISURE'] .dot { background: var(--cat-leisure); }
+.row[data-category='EMBASSY'] .dot { background: var(--cat-embassy); }
+
+.row[data-active='true'] .dot {
+  transform: scale(1.4);
 }
 
 .name { grid-area: name; }
@@ -83,4 +170,9 @@
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
   .mapCol { position: static; order: -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .dot { transition: none; }
 }

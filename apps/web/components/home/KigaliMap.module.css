@@ -1,103 +1,412 @@
+/**
+ * The map reads as a surface you look *into*: its paper is one step darker
+ * than the page, the frame is inset rather than raised, and everything a
+ * visitor operates — pins, controls, the card — sits above it on plates.
+ */
 .map {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
-  border: 1px solid var(--line);
-  background:
-    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 7%, transparent) 0%, transparent 55%),
-    var(--surface-raised);
+  margin: 0;
 }
 
-.map svg {
+.frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background:
+    radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 58%),
+    var(--map-ground);
+  box-shadow: inset 0 1px 3px color-mix(in srgb, var(--ink) 8%, transparent);
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.frame[data-dragging='true'] {
+  cursor: grabbing;
+}
+
+.frame svg {
+  display: block;
   width: 100%;
   height: 100%;
 }
 
+/* ─── The land ─────────────────────────────────────────────── */
+
 .contours path {
   fill: none;
   stroke: var(--foliage);
-  stroke-width: 1;
-  opacity: 0.22;
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
 }
 
 .rings circle {
   fill: none;
   stroke: var(--ink-muted);
   stroke-width: 1;
-  stroke-dasharray: 2 6;
-  opacity: 0.55;
+  stroke-dasharray: 2 7;
+  opacity: 0.45;
 }
 
 .rings text {
   fill: var(--ink-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-family: var(--font-ui);
+  letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: var(--map-ground);
+  stroke-width: 3px;
+  opacity: 0.85;
 }
 
 .ray {
   stroke: var(--accent);
   stroke-width: 1.5;
-  stroke-dasharray: 4 4;
+  stroke-dasharray: 5 5;
+  opacity: 0.8;
 }
 
-.pin circle {
-  fill: var(--surface-raised);
-  stroke: var(--ink);
-  stroke-width: 1.5;
-  transition: r 0.3s var(--ease-out), fill 0.3s var(--ease-out);
+/* ─── Pins ─────────────────────────────────────────────────── */
+
+.pin {
+  cursor: pointer;
 }
 
-.pin text {
+.pin:focus {
+  outline: none;
+}
+
+.hit {
+  fill: transparent;
+}
+
+.pinShadow {
   fill: var(--ink);
-  font-size: 13px;
-  font-family: var(--font-ui);
-  opacity: 0;
-  transition: opacity 0.3s var(--ease-out);
-  paint-order: stroke;
-  stroke: var(--surface-raised);
-  stroke-width: 4px;
+  opacity: 0.18;
 }
 
-.pin[data-active='true'] circle {
+.pinBody {
+  fill: var(--cat-business);
+  stroke: var(--map-ground);
+  stroke-width: 1.5;
+  transition: filter var(--dur-2) var(--ease-out);
+}
+
+.pinGlyph {
+  fill: none;
+  stroke: var(--map-ground);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* One colour per category — the same token the list row and the chip use. */
+.pin[data-category='BUSINESS'] .pinBody { fill: var(--cat-business); }
+.pin[data-category='SHOPPING'] .pinBody { fill: var(--cat-shopping); }
+.pin[data-category='HOSPITAL'] .pinBody { fill: var(--cat-health); }
+.pin[data-category='SCHOOL'] .pinBody { fill: var(--cat-school); }
+.pin[data-category='AIRPORT'] .pinBody { fill: var(--cat-airport); }
+.pin[data-category='LEISURE'] .pinBody { fill: var(--cat-leisure); }
+.pin[data-category='EMBASSY'] .pinBody { fill: var(--cat-embassy); }
+
+/* A pin lifts when it is the one being read — the shadow under it stays put,
+   so it reads as rising off the paper rather than simply growing. */
+.pin:hover .pinBody,
+.pin[data-active='true'] .pinBody {
+  filter: drop-shadow(0 4px 6px color-mix(in srgb, var(--ink) 30%, transparent));
+}
+
+.pin[data-active='true'] .pinBody,
+.pin:focus-visible .pinBody {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.pin:focus-visible .pinBody {
+  stroke-dasharray: 3 2;
+}
+
+/* Filtered out: still on the map as context, but no longer an offer. */
+.pin[data-dim='true'] {
+  cursor: default;
+  opacity: 0.22;
+}
+
+.pin[data-dim='true'] .pinBody {
+  fill: var(--ink-muted);
+  filter: none;
+}
+
+/* ─── The site ─────────────────────────────────────────────── */
+
+.homeDot {
   fill: var(--accent);
-  stroke: var(--accent);
-  r: 7;
 }
 
-.pin[data-active='true'] text {
-  opacity: 1;
-}
-
-.home circle {
-  fill: var(--accent);
-}
-
-.home .pulse {
+.homeRing {
   fill: none;
   stroke: var(--accent);
   stroke-width: 1.5;
-  transform-origin: 0 0;
-  animation: pulse 2.8s var(--ease-out) infinite;
+  opacity: 0.55;
 }
 
-.home text {
-  fill: var(--ink);
+.pulse {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  transform-origin: center;
+  animation: pulse 3s var(--ease-out) infinite;
+}
+
+.homeLabel {
+  position: absolute;
+  transform: translate(-50%, 18px);
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--radius-2);
+  background: var(--surface-raised);
+  color: var(--ink);
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 0.9375rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--elev);
 }
 
-.north path {
-  fill: var(--ink);
+/* ─── The card ─────────────────────────────────────────────── */
+
+.card {
+  position: absolute;
+  z-index: 3;
+  width: min(230px, 62%);
+  transform: translate(14px, calc(-100% - 26px));
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background: var(--surface-raised);
+  box-shadow: var(--elev);
+  animation: card-in var(--dur-2) var(--ease-out) both;
 }
 
-.north text {
-  fill: var(--ink-muted);
-  font-size: 12px;
+/* Near an edge the card opens the other way instead of being clipped. */
+.card[data-flip-x='true'] {
+  transform: translate(calc(-100% - 14px), calc(-100% - 26px));
+}
+
+.card[data-flip-y='true'] {
+  transform: translate(14px, 14px);
+}
+
+.card[data-flip-x='true'][data-flip-y='true'] {
+  transform: translate(calc(-100% - 14px), 14px);
+}
+
+.cardCat {
+  margin: 0 0 4px;
   font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cat-business);
+}
+
+.cardCat[data-category='SHOPPING'] { color: var(--cat-shopping); }
+.cardCat[data-category='HOSPITAL'] { color: var(--cat-health); }
+.cardCat[data-category='SCHOOL'] { color: var(--cat-school); }
+.cardCat[data-category='AIRPORT'] { color: var(--cat-airport); }
+.cardCat[data-category='LEISURE'] { color: var(--cat-leisure); }
+.cardCat[data-category='EMBASSY'] { color: var(--cat-embassy); }
+
+.cardName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 8px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cardLink {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: var(--fs-xs);
+  color: var(--accent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  transition: border-color var(--dur-1) var(--ease-standard);
+}
+
+.cardLink:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* ─── Furniture ────────────────────────────────────────────── */
+
+.controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+}
+
+.controls button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 1.125rem;
+  line-height: 1;
+  box-shadow: var(--elev);
+  transition:
+    background var(--dur-1) var(--ease-standard),
+    color var(--dur-1) var(--ease-standard);
+}
+
+.controls button:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--surface-raised);
+}
+
+.controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.recentre svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.compass {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 22px;
+  pointer-events: none;
+}
+
+.compass svg {
+  width: 100%;
+  overflow: visible;
+}
+
+.compass path {
+  fill: var(--ink);
+  opacity: 0.75;
+}
+
+.compass text {
+  fill: var(--ink-muted);
+  font-size: 11px;
+  font-family: var(--font-ui);
+  letter-spacing: 0.08em;
+}
+
+.scaleBar {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.scaleRule {
+  height: 6px;
+  border: 1px solid var(--ink-muted);
+  border-top: 0;
+  opacity: 0.7;
+  transition: width var(--dur-2) var(--ease-out);
+}
+
+.scaleBar span {
+  white-space: nowrap;
+}
+
+.scaleText {
+  font-size: var(--fs-micro);
+  font-family: var(--font-ui);
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.hint {
+  margin-top: 10px;
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
 }
 
 @keyframes pulse {
-  0% { transform: scale(0.6); opacity: 0.9; }
+  0% { transform: scale(0.55); opacity: 0.85; }
   100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* Only opacity: the card's transform is what places it, and four flip
+   variants cannot share one from-transform. */
+@keyframes card-in {
+  from { opacity: 0; }
+}
+
+/* Touch has no hover and a smaller frame: give the furniture room. */
+@media (max-width: 640px) {
+  /* A card floated beside a pin has nowhere to go on a 360px map, so it
+     becomes a sheet across the foot of the frame — where a phone map puts
+     it anyway. The !important is the price of the position being inline. */
+  .card {
+    left: 8px !important;
+    right: 8px;
+    top: auto !important;
+    bottom: 8px;
+    width: auto;
+    transform: none !important;
+  }
+
+  .controls {
+    bottom: auto;
+    top: 12px;
+  }
+
+  /* The controls now hold that corner, and a map that cannot be rotated
+     does not need to say which way is up twice. */
+  .compass { display: none; }
+
+  .controls button { width: 40px; height: 40px; }
+
+  .scaleBar { bottom: auto; top: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; opacity: 0; }
+  .card { animation: none; }
+  .scaleRule { transition: none; }
 }

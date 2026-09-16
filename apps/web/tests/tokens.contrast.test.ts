@@ -17,6 +17,19 @@ const STATUS_TOKENS = [
   '--status-sold',
   '--status-unavailable',
 ];
+// The map's landmark categories. Seven colours cannot hold the status
+// palette's DE 22 and stay inside a warm stone palette, so the floor here is
+// 18 -- which is affordable because a pin never carries meaning by colour
+// alone: it is named on hover, in its card and in the list beside the map.
+const CATEGORY_TOKENS = [
+  '--cat-business',
+  '--cat-shopping',
+  '--cat-health',
+  '--cat-school',
+  '--cat-airport',
+  '--cat-leisure',
+  '--cat-embassy',
+];
 
 describe('colour tokens', () => {
   it('authors both grounds', () => {
@@ -70,6 +83,24 @@ describe('contrast floor — 3:1 for interface furniture', () => {
       for (let j = i + 1; j < STATUS_TOKENS.length; j++) {
         const [a, b] = [STATUS_TOKENS[i]!, STATUS_TOKENS[j]!];
         expect(deltaE(t[a]!, t[b]!), `${a} and ${b} read as the same colour`).toBeGreaterThanOrEqual(22);
+      }
+    }
+  });
+
+  // A pin is a control on the map's own paper, not on the page's surface.
+  it.each(GROUNDS)('%s: every landmark category against the map ground', (ground) => {
+    const t = grounds[ground]!;
+    for (const token of CATEGORY_TOKENS) {
+      expect(contrastRatio(t[token]!, t['--map-ground']!), `${token} on the map`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it.each(GROUNDS)('%s: every landmark category is distinguishable from the others', (ground) => {
+    const t = grounds[ground]!;
+    for (let i = 0; i < CATEGORY_TOKENS.length; i++) {
+      for (let j = i + 1; j < CATEGORY_TOKENS.length; j++) {
+        const [a, b] = [CATEGORY_TOKENS[i]!, CATEGORY_TOKENS[j]!];
+        expect(deltaE(t[a]!, t[b]!), `${a} and ${b} read as the same colour`).toBeGreaterThanOrEqual(18);
       }
     }
   });
