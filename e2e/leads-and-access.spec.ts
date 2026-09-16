@@ -40,6 +40,9 @@ test.describe('the lead loop and who may see what', () => {
           source: 'e2e',
           unitIds: [unit!.id],
           company: '',
+          // The API rejects a tokenless enquiry once a secret is configured;
+          // 6c is the test that proves the rendered form supplies a real one.
+          turnstileToken: 'e2e',
         },
       });
       expect(submitted.ok(), `enquiry POST returned ${submitted.status()} ${await submitted.text()}`).toBeTruthy();
@@ -60,6 +63,48 @@ test.describe('the lead loop and who may see what', () => {
     }
   });
 
+  /**
+   * The regression guard for the bug this suite could not see: every test above
+   * posts straight to the API, so a form that never sends a Turnstile token
+   * passed CI and failed for every real visitor. This one drives the rendered
+   * form and asserts the token reaches the request body.
+   *
+   * The widget is stubbed rather than loaded, so the test proves our contract
+   * instead of Cloudflare's uptime, and runs the same offline.
+   */
+  test('6c. the rendered enquiry form sends a Turnstile token', async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as unknown as { turnstile: unknown }).turnstile = {
+        render: (_el: HTMLElement, opts: { callback: (t: string) => void }) => {
+          setTimeout(() => opts.callback('e2e-dummy-token'), 0);
+          return 'e2e-widget';
+        },
+        reset: () => {},
+        remove: () => {},
+      };
+    });
+
+    let posted: Record<string, unknown> | null = null;
+    await page.route('**/api/v1/enquiry', async (route) => {
+      posted = route.request().postDataJSON() as Record<string, unknown>;
+      await route.continue();
+    });
+
+    const stamp = Date.now();
+    await page.goto('/enquire');
+    // Addressed by name: "Email" and "Phone" also label the contact-preference
+    // radios, so the accessible-name lookup is ambiguous here.
+    const form = page.locator('form').filter({ has: page.locator('input[name="name"]') }).first();
+    await form.locator('input[name="name"]').fill(`E2E Form ${stamp}`);
+    await form.locator('input[name="email"]').fill(`e2e-form-${stamp}@example.invalid`);
+    await form.locator('input[name="phone"]').fill('+250788123456');
+    await form.getByRole('button', { name: /request a viewing|send enquiry|enquire about/i }).click();
+
+    await expect(page.getByText(/thank you/i)).toBeVisible();
+    expect(posted, 'the form never posted to the API').not.toBeNull();
+    expect(posted!.turnstileToken, 'the form posted no Turnstile token').toBe('e2e-dummy-token');
+  });
+
   test('6b. the honeypot swallows a bot without persisting anything', async () => {
     const anon = await publicContext();
     try {
@@ -71,6 +116,7 @@ test.describe('the lead loop and who may see what', () => {
           intent: 'INFORMATION',
           unitIds: [],
           company: 'filled in by a bot',
+          turnstileToken: 'e2e',
         },
       });
       expect(res.ok()).toBeTruthy();

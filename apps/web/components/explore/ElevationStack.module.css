@@ -38,6 +38,9 @@ button.mark[aria-pressed='true'] {
   display: grid;
   align-content: center;
   justify-items: start;
+  /* A floor of ten residences overflowed this column and clipped the last two.
+     The units share the row instead; the code truncates rather than escapes. */
+  flex: 1 1 0;
   min-width: 0;
   min-height: 56px;
   padding: 6px 10px;
@@ -93,6 +96,9 @@ button.mark[aria-pressed='true'] {
 }
 
 .code {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--font-display);
   font-size: 1.0625rem;
   line-height: 1.1;
@@ -101,7 +107,9 @@ button.mark[aria-pressed='true'] {
 
 .area {
   font-size: 0.6875rem;
-  opacity: 0.85;
+  /* At 11px the old 0.85 dropped muted ink to 4.4:1 — just under the floor.
+     Size carries the hierarchy here; the fade is not worth the failure. */
+  opacity: 1;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

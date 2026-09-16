@@ -385,3 +385,25 @@
     display: none;
   }
 }
+
+/* The plan is a document, not decoration: one tap opens it full screen. */
+.furnishedOpen {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: zoom-in;
+}
+
+.furnishedOpen .furnished {
+  display: block;
+  position: relative;
+}
+
+.furnishedHint {
+  display: inline-block;
+  margin-top: var(--space-3);
+  font-size: var(--fs-xs);
+  color: var(--accent);
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 2px;
+}

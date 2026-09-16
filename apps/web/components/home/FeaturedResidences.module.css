@@ -1,0 +1,104 @@
+/**
+ * The selected residences read as an editorial spread, not as a second copy of
+ * the residence-type grid above them. Wide frames, alternating sides, one
+ * residence at a time — a curated choice should not look like a catalogue.
+ */
+.section {
+  background: var(--surface-sunk);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 32px;
+  margin-bottom: clamp(32px, 4vw, 64px);
+}
+
+.kicker {
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+
+.aside {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+}
+
+.grid {
+  display: grid;
+  gap: clamp(48px, 7vw, 112px);
+}
+
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 64px);
+}
+
+/* Every second residence turns around, so the eye travels down the page. */
+.item:nth-child(even) .card > :first-child {
+  order: 2;
+}
+
+.media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--surface-sunk);
+}
+
+@media (hover: hover) {
+  .card:hover .media img {
+    transform: scale(1.04);
+  }
+}
+
+.text {
+  display: grid;
+  gap: 12px;
+}
+
+.size {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 1.1rem + 1vw, 2.125rem);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.line {
+  max-width: 44ch;
+  color: var(--ink-muted);
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.meta div {
+  display: grid;
+  gap: 2px;
+  padding-top: 14px;
+}
+
+.meta dt {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+
+.meta dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .head { grid-template-columns: 1fr; }
+  .card { grid-template-columns: 1fr; gap: 24px; }
+  .item:nth-child(even) .card > :first-child { order: 0; }
+  .media { aspect-ratio: 4 / 3; }
+}

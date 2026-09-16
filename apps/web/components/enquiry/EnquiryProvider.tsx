@@ -12,6 +12,7 @@ import {
 } from 'react';
 import type { EnquiryIntent } from '@avida/types';
 import { track } from '../../lib/analytics';
+import { useContact } from '../providers/ContactProvider';
 import { useLenis } from '../layout/SmoothScroll';
 import { EnquiryForm, type ContactChannel, type EnquiryResidence } from './EnquiryForm';
 import styles from './EnquiryDialog.module.css';
@@ -46,6 +47,7 @@ export function EnquiryProvider({ children }: { children: ReactNode }) {
   const [request, setRequest] = useState<EnquiryRequest | null>(null);
   const [session, setSession] = useState(0);
   const lenis = useLenis();
+  const contact = useContact();
 
   const open = useCallback((next: EnquiryRequest = {}) => {
     setRequest(next);
@@ -90,7 +92,7 @@ export function EnquiryProvider({ children }: { children: ReactNode }) {
         {request && (
           <div className={styles.sheet} data-lenis-prevent>
             <header className={styles.head}>
-              <p className="mark muted">Almasi Residences</p>
+              {contact.developmentName && <p className="mark muted">{contact.developmentName}</p>}
               <h2 id="enquiry-title" className="h3">
                 {title}
               </h2>
@@ -105,6 +107,8 @@ export function EnquiryProvider({ children }: { children: ReactNode }) {
               intent={request.intent}
               channel={request.channel}
               source={request.source ?? 'dialog'}
+              // Opening the sheet already reported the start.
+              reportStart={false}
               onDone={close}
             />
           </div>

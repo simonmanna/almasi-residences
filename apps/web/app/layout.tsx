@@ -120,7 +120,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Skip to content
         </a>
         <SmoothScroll>
-          <ContactProvider contact={contactFrom(dev?.contact)}>
+          <ContactProvider contact={contactFrom(dev?.contact, dev?.name)}>
             <InventoryProvider initial={inventory} bathrooms={bathrooms} slug={DEVELOPMENT_SLUG}>
               <EnquiryProvider>
                 <SiteNav />

@@ -19,7 +19,7 @@ export async function EnquireSection({
   source?: string;
 }) {
   const [dev, pages] = await Promise.all([getDevelopment().catch(() => null), getPagesSafe()]);
-  const contact = contactFrom(dev?.contact);
+  const contact = contactFrom(dev?.contact, dev?.name);
   const wa = whatsappHref(contact);
   const tel = telHref(contact);
   const mail = mailtoHref(contact);

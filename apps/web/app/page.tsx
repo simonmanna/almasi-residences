@@ -29,6 +29,7 @@ import { ProgressPreview } from '../components/home/ProgressPreview';
 import { FilmTeaser } from '../components/home/FilmTeaser';
 import { GalleryStrip } from '../components/home/GalleryStrip';
 import { EnquireSection } from '../components/home/EnquireSection';
+import { SectionIndex } from '../components/home/SectionIndex';
 import { SiteFooter } from '../components/layout/SiteFooter';
 
 /** §11 — ISR; every admin save refreshes it by cache tag (§3.1), and the inventory inside refreshes every minute. */
@@ -63,6 +64,15 @@ export default async function HomePage() {
   const home = (key: string) => copy(pages, 'home', key);
   const strip = [...new Map(galleries.flatMap((g) => g.items).filter((m) => m.kind === 'IMAGE').map((m) => [m.id, m])).values()].slice(0, 12);
   const galleryTitle = copyLines(pages, 'gallery', 'heroTitle');
+  // An unfilled CMS field must never ship a hero with no way in.
+  const primaryCta = {
+    label: home('ctaPrimaryLabel') || 'Explore residences',
+    href: home('ctaPrimaryHref') || '/residences',
+  };
+  const secondaryCta = {
+    label: home('ctaSecondaryLabel') || 'Book a private viewing',
+    href: home('ctaSecondaryHref') || '/enquire#viewing',
+  };
 
   return (
     <main id="main">
@@ -72,10 +82,10 @@ export default async function HomePage() {
         title={home('heroTitle') || dev?.name || ''}
         subtitle={home('heroSubtitle')}
         place={dev ? `${dev.city}, ${dev.country === 'RW' ? 'Rwanda' : dev.country}` : ''}
-        primary={{ label: home('ctaPrimaryLabel'), href: home('ctaPrimaryHref') }}
-        secondary={{ label: home('ctaSecondaryLabel'), href: home('ctaSecondaryHref') }}
+        primary={primaryCta}
+        secondary={secondaryCta}
       />
-      <Introduction handover={handover} title={home('introTitle')} body={home('introBody')} kicker={home('heroKicker')} developmentName={dev?.name ?? ''} buildingConfig={dev?.buildingConfig} />
+      <Introduction handover={handover} title={home('introTitle')} body={home('introBody')} kicker={home('heroKicker')} developmentName={dev?.name ?? ''} buildingConfig={dev?.buildingConfig} primary={primaryCta} secondary={secondaryCta} />
       <ExploreAlmasi />
       <ResidencesPreview cards={cards} kicker={home('residencesKicker')} title={home('residencesTitle')} />
       <FeaturedResidences items={featured} />
@@ -93,6 +103,7 @@ export default async function HomePage() {
       <FilmTeaser kicker={home('filmKicker')} title={home('filmTitle')} cta={home('filmCta')} />
       <GalleryStrip items={strip} kicker={copy(pages, 'gallery', 'heroKicker')} title={galleryTitle} />
       <EnquireSection />
+      <SectionIndex />
       <SiteFooter />
     </main>
   );

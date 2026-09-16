@@ -77,8 +77,10 @@ export function ExploreAlmasi({
   useEffect(() => {
     const el = stageRef.current;
     if (!el) return;
+    // Three.js is the heaviest thing this page can fetch, so a phone gets a
+    // tighter trigger than a desktop that can afford the head start.
     const loader = new IntersectionObserver(([e]) => e?.isIntersecting && setNear(true), {
-      rootMargin: '600px 0px',
+      rootMargin: window.innerWidth < 760 ? '200px 0px' : '600px 0px',
     });
     const loop = new IntersectionObserver(([e]) => setOnScreen(e?.isIntersecting ?? false));
     loader.observe(el);

@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, parseTokenBlocks } from './contrast';
+import { contrastRatio, deltaE, parseTokenBlocks } from './contrast';
 
 const css = readFileSync(resolve(__dirname, '../styles/tokens.css'), 'utf8');
 const grounds = parseTokenBlocks(css, 'data-ground');
@@ -58,6 +58,19 @@ describe('contrast floor — 3:1 for interface furniture', () => {
     const t = grounds[ground]!;
     for (const token of STATUS_TOKENS) {
       expect(contrastRatio(t[token]!, t['--surface']!)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  // Contrast against the ground is not enough: four statuses that each clear
+  // 3:1 can still be four browns nobody can tell apart, which is what the
+  // audit found. Separation is perceptual, so it is measured perceptually.
+  it.each(GROUNDS)('%s: every status colour is distinguishable from the others', (ground) => {
+    const t = grounds[ground]!;
+    for (let i = 0; i < STATUS_TOKENS.length; i++) {
+      for (let j = i + 1; j < STATUS_TOKENS.length; j++) {
+        const [a, b] = [STATUS_TOKENS[i]!, STATUS_TOKENS[j]!];
+        expect(deltaE(t[a]!, t[b]!), `${a} and ${b} read as the same colour`).toBeGreaterThanOrEqual(22);
+      }
     }
   });
 

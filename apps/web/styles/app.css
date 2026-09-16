@@ -236,8 +236,8 @@ html.lenis, html.lenis body { height: auto; }
 .status::before {
   content: '';
   flex: none;
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   border: 1.5px solid var(--status-colour);
   background: var(--status-fill);
 }
@@ -384,9 +384,20 @@ html[data-intro] header[data-mode] { opacity: 0; pointer-events: none; }
   margin-right: -0.34em;
 }
 
-.contact-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.contact-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
 .contact-actions--stack { display: grid; grid-template-columns: 1fr 1fr; }
 .contact-actions--stack > :first-child { grid-column: 1 / -1; }
+.contact-actions__channels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+.contact-actions--stack .contact-actions__channels { grid-column: 1 / -1; }
+.contact-actions__channels button { min-height: 44px; color: inherit; }
 
 /* CG disclaimer — every rendered image carries it, next to the image (§13). */
 .cgi-note {

@@ -24,6 +24,10 @@ const MEDIA_ORIGIN = process.env.NEXT_PUBLIC_MEDIA_URL
   ? new URL(process.env.NEXT_PUBLIC_MEDIA_URL).origin
   : '';
 
+// §5.7 — Cloudflare Turnstile serves its script, its iframe and its verification
+// traffic from one origin; all three CSP directives below name it.
+const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
+
 /**
  * §5.9 — the site's Content-Security-Policy.
  *
@@ -52,8 +56,11 @@ const contentSecurityPolicy = [
   // CSS modules are files; Next still injects a little inline style.
   "style-src 'self' 'unsafe-inline'",
   // 'unsafe-eval' is React Refresh in development only.
-  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
-  `connect-src 'self'${MEDIA_ORIGIN ? ` ${MEDIA_ORIGIN}` : ''}`,
+  `script-src 'self' 'unsafe-inline' ${TURNSTILE_ORIGIN}${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+  `connect-src 'self' ${TURNSTILE_ORIGIN}${MEDIA_ORIGIN ? ` ${MEDIA_ORIGIN}` : ''}`,
+  // §5.7 — Turnstile solves the challenge inside its own iframe. This governs
+  // what this site may embed; frame-ancestors above still forbids embedding it.
+  `frame-src ${TURNSTILE_ORIGIN}`,
   "worker-src 'self' blob:",
   'upgrade-insecure-requests',
 ].join('; ');

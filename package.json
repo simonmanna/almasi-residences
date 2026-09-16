@@ -28,9 +28,11 @@
     "verify:schedules": "node scripts/verify-schedules.mjs",
     "media:import": "pnpm --filter @avida/api media:import",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "check:launch": "node scripts/check-launch.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "ioredis": "5.7.0",
     "prettier": "3.6.2",

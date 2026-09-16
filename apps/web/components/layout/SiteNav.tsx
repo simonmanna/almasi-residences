@@ -96,7 +96,7 @@ export function SiteNav() {
       data-hidden={hidden && !menuOpen ? 'true' : 'false'}
     >
       <div className={styles.inner}>
-        <Link href="/" className={styles.brand} aria-label="Almasi Residences, home">
+        <Link href="/" className={styles.brand} aria-label={contact.developmentName ? `${contact.developmentName}, home` : "Home"}>
           <Wordmark />
         </Link>
 
@@ -150,7 +150,7 @@ export function SiteNav() {
       >
         <div className={styles.menuInner} data-lenis-prevent>
           <div className={styles.menuTop}>
-            <Link href="/" className={styles.brand} aria-label="Almasi Residences, home">
+            <Link href="/" className={styles.brand} aria-label={contact.developmentName ? `${contact.developmentName}, home` : "Home"}>
               <Wordmark />
             </Link>
             <button type="button" className={styles.menuClose} onClick={() => menuRef.current?.close()}>

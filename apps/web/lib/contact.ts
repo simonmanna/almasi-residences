@@ -13,15 +13,14 @@ export interface Contact {
   officeAddress: string | null;
   officeHours: string | null;
   socials: Record<string, string>;
+  /** The property's own name, so no message this file writes hardcodes a brand. */
+  developmentName: string;
 }
 
 const clean = (v: string | null | undefined) => (v && v.trim() !== '' ? v.trim() : null);
 
-export const DEVELOPMENT_NAME = 'Almasi Residences';
-const DEFAULT_ADDRESS = ['KG 15 Ave, Kimihurura', 'Kigali, Rwanda'];
-
 /** The API's contact record, with the environment as a fallback for each empty channel. */
-export function contactFrom(api?: Partial<Contact> | null): Contact {
+export function contactFrom(api?: Partial<Contact> | null, developmentName?: string | null): Contact {
   return {
     phone: clean(api?.phone) ?? clean(process.env.NEXT_PUBLIC_SALES_PHONE),
     email: clean(api?.email) ?? clean(process.env.NEXT_PUBLIC_SALES_EMAIL),
@@ -29,12 +28,13 @@ export function contactFrom(api?: Partial<Contact> | null): Contact {
     officeAddress: clean(api?.officeAddress),
     officeHours: clean(api?.officeHours),
     socials: Object.fromEntries(Object.entries(api?.socials ?? {}).filter(([, v]) => clean(v))),
+    developmentName: clean(developmentName) ?? clean(api?.developmentName) ?? '',
   };
 }
 
 /** "KG 15 Ave, Kimihurura, Kigali, Rwanda" → two lines for an <address>. */
 export function addressLines(c: Contact): string[] {
-  if (!c.officeAddress) return DEFAULT_ADDRESS;
+  if (!c.officeAddress) return [];
   const parts = c.officeAddress.split(',').map((p) => p.trim()).filter(Boolean);
   if (parts.length < 3) return [parts.join(', ')];
   const cut = Math.ceil(parts.length / 2);
@@ -47,7 +47,9 @@ export function whatsappHref(c: Contact, subject?: { label: string; typeText: st
   const about = subject
     ? `residence ${subject.label} (${subject.typeText.toLowerCase()}, ${subject.areaSqm} m²)`
     : 'a residence';
-  const text = `Hello, I'm interested in ${about} at ${DEVELOPMENT_NAME}.`;
+  const text = c.developmentName
+    ? `Hello, I'm interested in ${about} at ${c.developmentName}.`
+    : `Hello, I'm interested in ${about}.`;
   return `https://wa.me/${c.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(text)}`;
 }
 
@@ -55,6 +57,8 @@ export function telHref(c: Contact): string | null {
   return c.phone ? `tel:${c.phone.replace(/[^\d+]/g, '')}` : null;
 }
 
-export function mailtoHref(c: Contact, subject = `Enquiry — ${DEVELOPMENT_NAME}`): string | null {
-  return c.email ? `mailto:${c.email}?subject=${encodeURIComponent(subject)}` : null;
+export function mailtoHref(c: Contact, subject?: string): string | null {
+  if (!c.email) return null;
+  const line = subject ?? (c.developmentName ? `Enquiry — ${c.developmentName}` : 'Enquiry');
+  return `mailto:${c.email}?subject=${encodeURIComponent(line)}`;
 }

@@ -23,10 +23,14 @@
   --foliage:            #4B5A43;
   --scrim:              rgba(29, 31, 27, 0.36);
   --elev:               0 1px 2px rgba(29, 31, 27, 0.06), 0 18px 48px rgba(29, 31, 27, 0.10);
-  --status-available:   #7A5B39;
-  --status-reserved:    #7E7462;
-  --status-sold:        #6E6C66;
-  --status-unavailable: #858075;
+  /* Four states a buyer must tell apart at a glance and at 14px. The old set
+     was four browns within ΔE 14 of each other; these hold ΔE ≥ 22 apart while
+     staying inside the material palette — bronze live, ochre held, patinated
+     zinc gone, warm stone not yet released. */
+  --status-available:   #6B4A22;
+  --status-reserved:    #AD7526;
+  --status-sold:        #3F6A75;
+  --status-unavailable: #8E8478;
 }
 
 [data-ground="night"] {
@@ -41,10 +45,10 @@
   --foliage:            #6B7A5E;
   --scrim:              rgba(8, 8, 7, 0.55);
   --elev:               0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 56px rgba(0, 0, 0, 0.45);
-  --status-available:   #C9A27A;
-  --status-reserved:    #A89A82;
-  --status-sold:        #7D7A72;
-  --status-unavailable: #6A675F;
+  --status-available:   #D8AE7C;
+  --status-reserved:    #CE8B36;
+  --status-sold:        #79A2AE;
+  --status-unavailable: #757063;
 }
 
 :root {
@@ -62,17 +66,24 @@
   --fs-display: clamp(3.25rem, 1.2rem + 7.5vw, 9.5rem);
   --fs-mega:    clamp(4.25rem, 0.5rem + 13vw, 16rem);
 
-  /* Legacy names still read by pre-redesign components. */
-  --text-2xs: 0.640rem; --text-xs: 0.800rem; --text-sm: 0.900rem; --text-base: 1rem;
-  --text-md: 1.250rem;  --text-lg: 1.563rem; --text-xl: 1.953rem; --text-2xl: 2.441rem;
-  --text-3xl: 3.052rem; --text-4xl: 4.768rem; --text-5xl: 7.451rem;
-
   /* Space — multiples of 4, widening at the top of the scale. */
   --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
   --space-5: 24px;  --space-6: 32px;  --space-7: 48px;  --space-8: 64px;
   --space-9: 96px;  --space-10: 128px; --space-11: 192px;
   --section-y: clamp(48px, 6vw, 96px);
 
+  /**
+   * Breakpoints. CSS cannot read a custom property inside a media query, so
+   * these are the agreed numbers rather than usable tokens — but every module
+   * is expected to pick from this list instead of inventing a neighbour.
+   *
+   *   400px   small phone
+   *   640px   phone
+   *   767px   large phone — where the sticky enquiry bar appears
+   *   900px   tablet portrait — where two columns become one
+   *   1100px  laptop — where the primary nav collapses into the menu
+   *   1400px  wide
+   */
   --page-max: 1600px;
   --page-margin: clamp(20px, 5vw, 88px);
   --gutter: clamp(16px, 2vw, 28px);

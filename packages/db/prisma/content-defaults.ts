@@ -23,7 +23,7 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
       ctaSecondaryHref: '/tour',
       introTitle: 'One distinct address.',
       introBody:
-        'Almasi is Swahili for diamond. Stone, walnut and glass on a quiet rise in Kimihurura, planned to feel like fewer homes than it holds: generous rooms, deep balconies, and a floor of amenities that gives a reason to leave the apartment without leaving the building.',
+        'Almasi is Swahili for diamond — stone, walnut and glass on a quiet rise in Kimihurura, with deep balconies and a whole floor of amenities.',
       residencesKicker: 'Residences',
       residencesTitle: '{types} ways|to live here.',
       storyTitle: 'The experience',

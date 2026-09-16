@@ -65,7 +65,9 @@ export function PlanDrawing({
 
   return (
     <figure className={styles.figure}>
-      <svg viewBox={`${minX - PAD} ${minY - PAD} ${w} ${h}`} className={styles.svg} role="img" aria-labelledby={`plan-${label}`}>
+      {/* Not role="img": each room is a focusable control, and an image may
+          not contain them. It is a group of controls with an accessible name. */}
+      <svg viewBox={`${minX - PAD} ${minY - PAD} ${w} ${h}`} className={styles.svg} role="group" aria-labelledby={`plan-${label}`}>
         <title id={`plan-${label}`}>{`Plan of residence ${label}, ${areaSqm} square metres, opening toward the ${orientation}`}</title>
         <defs>
           <pattern id="terrace-hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">

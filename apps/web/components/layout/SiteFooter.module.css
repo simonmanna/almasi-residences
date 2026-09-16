@@ -81,3 +81,34 @@
 @media (max-width: 560px) {
   .grid { grid-template-columns: 1fr; }
 }
+
+/* Who built it — a diaspora buyer looks for this before sending money. */
+.credits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-7);
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid color-mix(in srgb, var(--surface) 16%, transparent);
+}
+
+.credits dt {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  font-variant-caps: all-small-caps;
+  color: color-mix(in srgb, var(--surface) 58%, transparent);
+}
+
+.credits dd {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+.legalLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

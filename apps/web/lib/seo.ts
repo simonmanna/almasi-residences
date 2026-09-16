@@ -35,6 +35,11 @@ export function developmentJsonLd(dev: DevelopmentDto) {
     },
     numberOfAccommodationUnits: dev.summary.total,
     numberOfAvailableAccommodationUnits: dev.summary.available,
+    // Who is building it: the question a buyer abroad asks first, and the one
+    // search engines use to connect a development to its developer.
+    ...(dev.developerName
+      ? { provider: { '@type': 'Organization', name: dev.developerName } }
+      : {}),
     makesOffer: available.map((t) => ({
       '@type': 'Offer',
       name: t.name,
@@ -114,6 +119,30 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
       position: i + 1,
       name: it.name,
       item: `${SITE}${it.path}`,
+    })),
+  };
+}
+
+/**
+ * The published questions, as a FAQPage. Answers are Markdown in the admin;
+ * structured data wants text, so the light inline marks are stripped rather
+ * than rendered.
+ */
+export function faqJsonLd(faqs: { question: string; answerMd: string }[]) {
+  const plain = (md: string) =>
+    md
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/[*_`>#]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: plain(f.answerMd) },
     })),
   };
 }

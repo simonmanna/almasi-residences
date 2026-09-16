@@ -15,8 +15,12 @@ import styles from './ResidencesPreview.module.css';
 export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCardDto[]; kicker: string; title: string }) {
   const { summary, currency } = useInventory();
   const types = typesPresent(summary);
-  // A group's words and picture: the first residence type of that kind the admin published.
-  const cardFor = (t: ResidenceType) => cards.find((c) => residenceType(c.isPenthouse, c.bedrooms) === t && (c.cover || c.summary)) ?? cards.find((c) => residenceType(c.isPenthouse, c.bedrooms) === t);
+  // A group's words and picture, each from the first residence type of that kind
+  // that has one. They may come from different types: a group whose first type
+  // carries words but no photograph used to draw an empty frame.
+  const ofType = (t: ResidenceType) => cards.filter((c) => residenceType(c.isPenthouse, c.bedrooms) === t);
+  const coverFor = (t: ResidenceType) => ofType(t).find((c) => c.cover)?.cover ?? null;
+  const summaryFor = (t: ResidenceType) => ofType(t).find((c) => c.summary)?.summary ?? null;
   const lines = fillCopy(title, summary).split('|').map((l) => l.trim()).filter(Boolean);
   const areas = types.map((t) => summary.byType[t]);
   const min = areas.length ? Math.min(...areas.map((t) => t.areaMin)) : 0;
@@ -43,19 +47,19 @@ export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCar
         <ul className={styles.grid}>
           {types.map((t) => {
             const s = summary.byType[t];
-            const card = cardFor(t);
+            const words = summaryFor(t);
             return (
               <li key={t} className={styles.item}>
                 <Link href={`/residences?type=${t}`} className={styles.card} data-cursor="Explore">
                   <Reveal className={styles.media}>
-                    <SceneImage media={card?.cover} sizes="(max-width: 900px) 100vw, 33vw" label={TYPE_TEXT[t]} />
+                    <SceneImage media={coverFor(t)} sizes="(max-width: 900px) 100vw, 33vw" label={TYPE_TEXT[t]} />
                   </Reveal>
                   <div className={styles.text}>
                     <h3 className="h3">{TYPE_TEXT[t]}</h3>
                     <p className={styles.size}>
                       {s.areaMin === s.areaMax ? s.areaMin : `${s.areaMin}–${s.areaMax}`} m²
                     </p>
-                    {card?.summary && <p className={styles.line}>{card.summary}</p>}
+                    {words && <p className={styles.line}>{words}</p>}
                     <dl className={styles.meta}>
                       <div>
                         <dt>Residences</dt>

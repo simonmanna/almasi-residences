@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, Param, Query, Res, UseInterceptors, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Headers, Param, Query, Res, UseInterceptors, UnauthorizedException } from '@nestjs/common';
 import { PreviewInterceptor, verifyPreviewToken } from '../../common/preview.js';
 import { NoStore } from '../../common/cache-control.decorator.js';
 import { PublicCache } from '../../common/cache-control.decorator.js';
@@ -53,6 +53,26 @@ export class PublicController {
   @PublicCache()
   residencePage(@Param('code') code: string) {
     return this.svc.residencePage(code);
+  }
+
+  /**
+   * The shortlist, side by side. `codes` is a comma-separated list of at most
+   * three residences — the same limit the website's compare tray enforces.
+   */
+  @Get('residences/shortlist.pdf')
+  async shortlist(@Query('codes') codes: string | undefined, @Res() reply: FastifyReply) {
+    const list = (codes ?? '')
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+    if (list.length === 0) throw new BadRequestException('Name at least one residence.');
+    const { filename, pdf } = await this.brochures.shortlist(list);
+    return reply
+      .header('Content-Type', 'application/pdf')
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .header('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=60')
+      .send(pdf);
   }
 
   /** Roadmap item 49 — the brochure, generated from live data at the moment of download. */

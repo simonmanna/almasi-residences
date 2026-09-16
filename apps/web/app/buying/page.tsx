@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { formatQuarter } from '@avida/types';
 import { copy, copyLines, getDevelopment, getPagesSafe } from '../../lib/api';
 import { pageMetadata } from '../../lib/page-metadata';
+import { faqJsonLd } from '../../lib/seo';
 import { PageHeader, TitleLines } from '../../components/layout/PageHero';
 import { PaymentTimeline } from '../../components/home/PaymentTimeline';
 import { EnquireSection } from '../../components/home/EnquireSection';
@@ -39,6 +40,12 @@ export default async function BuyingPage() {
 
   return (
     <main id="main">
+      {dev && dev.faqs.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(dev.faqs)) }}
+        />
+      )}
       <PageHeader
         kicker={copy(pages, 'buying', 'heroKicker')}
         title={<TitleLines lines={copyLines(pages, 'buying', 'heroTitle')} />}

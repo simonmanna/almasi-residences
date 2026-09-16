@@ -61,37 +61,37 @@ export function ContactActions({
       >
         Book a viewing
       </button>
-      {wa ? (
-        <a
-          className="btn btn--ghost"
-          href={wa}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          WhatsApp
-        </a>
-      ) : (
-        <button
-          type="button"
-          className="btn btn--ghost"
-          onClick={() => open({ residence, channel: 'whatsapp', source })}
-        >
-          WhatsApp
-        </button>
-      )}
-      {tel ? (
-        <a className="btn btn--ghost" href={tel}>
-          Call
-        </a>
-      ) : (
-        <button
-          type="button"
-          className="btn btn--ghost"
-          onClick={() => open({ residence, channel: 'phone', source })}
-        >
-          Call
-        </button>
-      )}
+      {/* One primary, one secondary. The direct channels stay available but
+          stop competing with them for the same glance. */}
+      <p className="contact-actions__channels">
+        <span aria-hidden="true">or</span>
+        {wa ? (
+          <a className="link-line" href={wa} target="_blank" rel="noopener noreferrer">
+            WhatsApp
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="link-line"
+            onClick={() => open({ residence, channel: 'whatsapp', source })}
+          >
+            WhatsApp
+          </button>
+        )}
+        {tel ? (
+          <a className="link-line" href={tel}>
+            Call
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="link-line"
+            onClick={() => open({ residence, channel: 'phone', source })}
+          >
+            Call
+          </button>
+        )}
+      </p>
     </div>
   );
 }

@@ -182,6 +182,108 @@ export class BrochureService {
     return { filename: `${d.name.replace(/[^A-Za-z0-9]+/g, '-')}-Residence-${r.label.replace(/\s+/g, '-')}.pdf`, pdf: await done };
   }
 
+  /**
+   * A shortlist, side by side. A buyer abroad compares two or three residences
+   * with family before committing, and until now the only way to do that was a
+   * screenshot. Same rule as the single brochure: read live, and never print a
+   * price for a residence that is not on sale.
+   */
+  async shortlist(codes: string[]): Promise<{ filename: string; pdf: Buffer }> {
+    const picked = codes.slice(0, 3);
+    const residences = await Promise.all(picked.map((c) => this.publicService.residence(c)));
+    const developmentId = await this.dev.id();
+    const d = await this.prisma.client.development.findUniqueOrThrow({
+      where: { id: developmentId },
+      select: { name: true, city: true, addressLine: true, handoverDate: true, contactPhone: true, contactEmail: true, whatsappNumber: true, developerName: true },
+    });
+
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margin: 0,
+      info: { Title: `${d.name} — shortlist`, Author: d.name, Subject: 'Residence comparison' },
+    });
+    const chunks: Buffer[] = [];
+    doc.on('data', (c: Buffer) => chunks.push(c));
+    const done = new Promise<Buffer>((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
+
+    const W = A4.h;
+    const H = A4.w;
+    doc.rect(0, 0, W, H).fill(STONE);
+
+    doc.fillColor(MUTED).font('Helvetica').fontSize(8).text(d.name.toUpperCase(), M, 38, { characterSpacing: 2.5 });
+    doc.fillColor(INK).font('Times-Roman').fontSize(30).text('Your shortlist', M, 56);
+    doc
+      .font('Helvetica')
+      .fontSize(9)
+      .fillColor(MUTED)
+      .text(
+        `${residences.length} residence${residences.length === 1 ? '' : 's'} in ${d.city}, compared on ${new Date().toISOString().slice(0, 10)}.`,
+        M,
+        96,
+      );
+
+    const top = 130;
+    const gap = 18;
+    const colW = (W - M * 2 - gap * (residences.length - 1)) / residences.length;
+    const imageH = 150;
+
+    const rows: { label: string; value: (r: (typeof residences)[number]) => string }[] = [
+      { label: 'Type', value: (r) => r.type?.name ?? '—' },
+      { label: 'Floor', value: (r) => r.floor?.label ?? '—' },
+      { label: 'Interior', value: (r) => (r.areaSqm ? `${r.areaSqm} m²` : '—') },
+      { label: 'Balcony', value: (r) => (r.balconySqm ? `${r.balconySqm} m²` : '—') },
+      { label: 'Bedrooms', value: (r) => String(r.bedrooms ?? '—') },
+      { label: 'Bathrooms', value: (r) => (r.bathrooms === null || r.bathrooms === undefined ? '—' : String(r.bathrooms)) },
+      { label: 'Parking', value: (r) => (r.parkingIncluded ? String(r.parkingIncluded) : '—') },
+      { label: 'Availability', value: (r) => STATUS[r.status] ?? r.status },
+      {
+        label: 'Price',
+        value: (r) =>
+          r.status === 'available' && r.priceMinor !== null
+            ? formatMoney({ amountMinor: r.priceMinor, currency: r.currency })
+            : 'On request',
+      },
+    ];
+
+    for (const [i, r] of residences.entries()) {
+      const x = M + i * (colW + gap);
+      const image = await this.jpeg(r.images[0]?.id);
+      doc.rect(x, top, colW, imageH).fill('#e4ded3');
+      if (image) doc.image(image, x, top, { cover: [colW, imageH], align: 'center', valign: 'center' });
+
+      doc.fillColor(INK).font('Times-Roman').fontSize(22).text(r.label, x, top + imageH + 14, { width: colW });
+
+      let y = top + imageH + 48;
+      for (const row of rows) {
+        doc.moveTo(x, y - 8).lineTo(x + colW, y - 8).lineWidth(0.5).strokeColor(LINE).stroke();
+        doc.font('Helvetica').fontSize(7.5).fillColor(MUTED).text(row.label.toUpperCase(), x, y, { width: colW, characterSpacing: 1.2 });
+        doc.font('Helvetica').fontSize(10.5).fillColor(row.label === 'Price' ? ACCENT : INK).text(row.value(r), x, y + 11, { width: colW });
+        y += 30;
+      }
+    }
+
+    const panelH = 96;
+    doc.rect(0, H - panelH, W, panelH).fill(INK);
+    doc.font('Times-Roman').fontSize(18).fillColor('#ffffff').text('Arrange a private viewing.', M, H - panelH + 24);
+    const lines = [d.contactPhone && `Telephone  ${d.contactPhone}`, d.whatsappNumber && `WhatsApp  ${d.whatsappNumber}`, d.contactEmail && `Email  ${d.contactEmail}`]
+      .filter(Boolean)
+      .join('     ');
+    doc.font('Helvetica').fontSize(9).fillColor(STONE).text(lines, M, H - panelH + 52);
+    doc
+      .fontSize(7)
+      .fillColor('#a8a298')
+      .text(
+        `${d.developerName ? `Developer: ${d.developerName}   ` : ''}Generated from live availability. Images are artist's impressions. Prices and availability change; the sale contract is the authority.`,
+        M,
+        H - 24,
+        { width: W - M * 2 },
+      );
+
+    doc.end();
+    return { filename: `${d.name.replace(/[^A-Za-z0-9]+/g, '-')}-Shortlist.pdf`, pdf: await done };
+  }
+
   private heading(doc: PDFKit.PDFDocument, text: string, y: number) {
     doc.font('Helvetica').fontSize(8).fillColor(ACCENT).text(text.toUpperCase(), M, y, { characterSpacing: 2 });
     doc.moveTo(M, y + 16).lineTo(A4.w - M, y + 16).lineWidth(0.5).strokeColor(LINE).stroke();

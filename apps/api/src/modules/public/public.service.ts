@@ -40,7 +40,17 @@ const cardSelect = {
   positionIndex: true,
   modelSlot: true,
   floor: { select: { id: true, level: true, label: true, displayName: true } },
-  typology: { select: { id: true, slug: true, name: true, isPenthouse: true } },
+  typology: {
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      isPenthouse: true,
+      // A residence with no photographs of its own shows its type's, the same
+      // rule the residence page follows. Cards used to show an empty frame.
+      media: { where: { kind: 'IMAGE', collection: 'LIBRARY', published: true, archivedAt: null, unitId: null }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }], take: 1 },
+    },
+  },
   media: { where: { kind: 'IMAGE', collection: 'LIBRARY', published: true, archivedAt: null, roomId: null }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }], take: 1 },
 } satisfies Prisma.UnitSelect;
 
@@ -102,7 +112,7 @@ export class PublicService {
       positionIndex: u.positionIndex,
       modelSlot: u.modelSlot,
       shortDescription: u.shortDescription,
-      cover: u.media[0] ? this.publicMedia(u.media[0]) : null,
+      cover: u.media[0] ? this.publicMedia(u.media[0]) : u.typology.media[0] ? this.publicMedia(u.typology.media[0]) : null,
     };
   }
 
@@ -329,7 +339,7 @@ export class PublicService {
         availabilityDate: true,
         reservationFeeMinor: true,
         depositPercent: true,
-        typology: { select: { id: true, slug: true, name: true, isPenthouse: true, descriptionMd: true } },
+        typology: { select: { id: true, slug: true, name: true, isPenthouse: true, descriptionMd: true, media: { where: { kind: 'IMAGE', collection: 'LIBRARY', published: true, archivedAt: null, unitId: null }, orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }], take: 1 } } },
         features: { select: { feature: { select: { name: true, category: true, iconKey: true } } }, orderBy: { feature: { sortOrder: 'asc' } } },
         rooms: {
           orderBy: { sortOrder: 'asc' },

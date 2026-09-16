@@ -96,13 +96,15 @@ export function HeroExperience({
           .set(q('[data-aperture]'), { clipPath: 'inset(50% 50% 50% 50%)' })
           .from(q('[data-intro-char]'), { yPercent: 120, opacity: 0, duration: 1.3, stagger: 0.035 }, 0.3)
           .from(q('[data-intro-sub]'), { opacity: 0, y: 14, duration: 1.1 }, 1.2)
-          .to(q('[data-intro-copy]'), { opacity: 0, y: -18, duration: 0.7, ease: 'power2.in' }, 2.65)
-          .to(q('[data-aperture]'), { clipPath: 'inset(0% 0% 0% 0%)', duration: 2.3, ease: 'expo.inOut' }, 2.85)
-          .fromTo(q('[data-media-inner]'), { scale: 1.45 }, { scale: 1.04, duration: 3.9, ease: 'power3.out' }, 2.85)
-          .call(() => setPlaying(true), [], 2.85)
-          .set(q('[data-intro]'), { autoAlpha: 0 }, 4.9)
-          .from(q('[data-hero-line]'), { yPercent: 110, duration: 1.5, stagger: 0.1 }, 4.3)
-          .from(q('[data-hero-fade]'), { opacity: 0, y: 18, duration: 1.2, stagger: 0.08 }, 4.8);
+          // The two ways in reach the screen at ~4.0s rather than ~4.8s: the
+          // choreography is unchanged, the waiting is not.
+          .to(q('[data-intro-copy]'), { opacity: 0, y: -18, duration: 0.7, ease: 'power2.in' }, 2.2)
+          .to(q('[data-aperture]'), { clipPath: 'inset(0% 0% 0% 0%)', duration: 2.0, ease: 'expo.inOut' }, 2.4)
+          .fromTo(q('[data-media-inner]'), { scale: 1.45 }, { scale: 1.04, duration: 3.4, ease: 'power3.out' }, 2.4)
+          .call(() => setPlaying(true), [], 2.4)
+          .set(q('[data-intro]'), { autoAlpha: 0 }, 4.1)
+          .from(q('[data-hero-line]'), { yPercent: 110, duration: 1.4, stagger: 0.1 }, 3.6)
+          .from(q('[data-hero-fade]'), { opacity: 0, y: 18, duration: 1.1, stagger: 0.08 }, 4.0);
       } else {
         tl.set(q('[data-intro]'), { autoAlpha: 0 })
           .fromTo(q('[data-media-inner]'), { scale: 1.18 }, { scale: 1.04, duration: 2.6, ease: 'power3.out' }, 0)

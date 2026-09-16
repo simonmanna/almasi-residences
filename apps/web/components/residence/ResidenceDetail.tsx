@@ -20,6 +20,7 @@ import { ElevationStack } from '../explore/ElevationStack';
 import { MotionMedia } from '../ui/MotionMedia';
 import { Reveal } from '../ui/Reveal';
 import { ApiImage } from '../ui/ApiImage';
+import { Lightbox } from '../ui/Lightbox';
 import { SceneImage } from '../ui/SceneImage';
 import { PlanDrawing } from './PlanDrawing';
 import { track } from '../../lib/analytics';
@@ -50,6 +51,7 @@ export function ResidenceDetail({
   const { residences, floors } = useInventory();
   const router = useRouter();
   const [tab, setTab] = useState<'plan' | 'furnished'>('plan');
+  const [planOpen, setPlanOpen] = useState(false);
   const shortlist = useResidenceShortlist();
 
   // Photographs and plans come from the admin: the residence's own, else its type's (API).
@@ -266,9 +268,25 @@ export function ResidenceDetail({
                 <PlanDrawing rooms={publicData?.rooms ?? []} orientation={r.orientation} areaSqm={r.areaSqm} label={r.label} />
               </div>
               <div id="panel-furnished" role="tabpanel" aria-labelledby="tab-furnished" hidden={tab !== 'furnished'}>
-                <div className={styles.furnished} style={{ position: 'relative' }}>
-                  <SceneImage media={planImage} sizes="(max-width: 1100px) 100vw, 60vw" focus="50% 50%" label="Furnished plan" />
-                </div>
+                {planImage ? (
+                  <button
+                    type="button"
+                    className={styles.furnishedOpen}
+                    onClick={() => {
+                      setPlanOpen(true);
+                      track('floor_plan_viewed', { residence: r.code, view: 'fullscreen' });
+                    }}
+                  >
+                    <span className={styles.furnished}>
+                      <SceneImage media={planImage} sizes="(max-width: 1100px) 100vw, 60vw" focus="50% 50%" label="Furnished plan" />
+                    </span>
+                    <span className={styles.furnishedHint}>Open full screen to zoom</span>
+                  </button>
+                ) : (
+                  <div className={styles.furnished} style={{ position: 'relative' }}>
+                    <SceneImage media={null} label="Furnished plan" />
+                  </div>
+                )}
                 <p className="caption">
                   {planImage ? (planImage.caption ?? planImage.title ?? planImage.note ?? '') : ''}
                   {planFile && (
@@ -425,6 +443,13 @@ export function ResidenceDetail({
           </div>
         </section>
       )}
+
+      <Lightbox
+        media={planImage}
+        open={planOpen}
+        onClose={() => setPlanOpen(false)}
+        caption={planImage?.caption ?? planImage?.title ?? `Residence ${r.label} — furnished plan`}
+      />
 
       {/* ─── Enquire ─────────────────────────────────────────────────── */}
       <section className={`section ${styles.enquire}`} data-hide-sticky-cta aria-labelledby="residence-enquire-title">

@@ -8,7 +8,7 @@ import { useInventory } from '../providers/InventoryProvider';
 import { Reveal } from '../ui/Reveal';
 import { RevealText } from '../ui/RevealText';
 import { SceneImage } from '../ui/SceneImage';
-import styles from './ResidencesPreview.module.css';
+import styles from './FeaturedResidences.module.css';
 
 /**
  * §48 — the residences the developer chose to feature, marked in the admin.
@@ -43,7 +43,7 @@ export function FeaturedResidences({ items }: { items: PublicResidenceCardDto[] 
               <li key={r.id} className={styles.item}>
                 <Link href={`/residences/${r.slug}`} className={styles.card} data-cursor="View">
                   <Reveal className={styles.media}>
-                    <SceneImage media={card.cover} sizes="(max-width: 900px) 100vw, 33vw" label={`Residence ${r.label}`} />
+                    <SceneImage media={card.cover} sizes="(max-width: 900px) 100vw, 55vw" label={`Residence ${r.label}`} />
                   </Reveal>
                   <div className={styles.text}>
                     <h3 className="h3">Residence {r.label}</h3>

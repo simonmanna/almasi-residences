@@ -27,10 +27,6 @@
   gap: var(--gutter);
 }
 
-/* An editorial stagger, stepping down like the building's own terraces. */
-.item:nth-child(2) { margin-top: clamp(40px, 6vw, 96px); }
-.item:nth-child(3) { margin-top: clamp(80px, 12vw, 192px); }
-
 .card {
   display: grid;
   gap: 24px;

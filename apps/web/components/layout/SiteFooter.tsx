@@ -18,6 +18,12 @@ const EXPLORE_LINKS = [
   { href: '/tour/penthouse', label: 'The penthouse tour' },
   { href: '/film', label: 'The film' },
   { href: '/location', label: 'Location' },
+  { href: '/progress', label: 'Construction progress' },
+];
+
+const LEGAL_LINKS = [
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/terms', label: 'Terms of use' },
 ];
 
 const SOCIAL_LABEL: Record<string, string> = { instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', youtube: 'YouTube', x: 'X', tiktok: 'TikTok' };
@@ -25,11 +31,18 @@ const SOCIAL_LABEL: Record<string, string> = { instagram: 'Instagram', facebook:
 /** Contact details come from the property record the admin edits (§21), not from this file. */
 export async function SiteFooter() {
   const dev = await getDevelopment().catch(() => null);
-  const contact = contactFrom(dev?.contact);
+  const contact = contactFrom(dev?.contact, dev?.name);
   const wa = whatsappHref(contact);
   const tel = telHref(contact);
   const mail = mailtoHref(contact);
   const socials = Object.entries(contact.socials);
+  const name = dev?.name ?? '';
+  // Who is actually building this: a buyer sending money abroad looks for it.
+  const credits = [
+    { role: 'Developer', value: dev?.developerName },
+    { role: 'Architect', value: dev?.architect },
+    { role: 'Contractor', value: dev?.contractor },
+  ].filter((c): c is { role: string; value: string } => Boolean(c.value));
 
   return (
     <footer className={styles.footer} data-ground="night" data-hide-sticky-cta>
@@ -45,7 +58,7 @@ export async function SiteFooter() {
 
         <div className={styles.grid}>
           <div>
-            <Link href="/" aria-label="Almasi Residences, home">
+            <Link href="/" aria-label={name ? `${name}, home` : "Home"}>
               <Wordmark />
             </Link>
             <address className={styles.address}>
@@ -115,16 +128,42 @@ export async function SiteFooter() {
           </div>
         </div>
 
-        <p className={styles.name} aria-hidden="true">
-          Almasi Residences
-        </p>
+        {credits.length > 0 && (
+          <dl className={styles.credits}>
+            {credits.map((c) => (
+              <div key={c.role}>
+                <dt>{c.role}</dt>
+                <dd>{c.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        {name && (
+          // Incidental under WCAG 1.4.3: a ghosted watermark of the wordmark
+          // already shown above it, carrying no information of its own.
+          <p className={styles.name} aria-hidden="true" data-decorative="true">
+            {name}
+          </p>
+        )}
 
         <div className={styles.legal}>
           <p>
             Images are artist&rsquo;s impressions. Layouts, specification and prices are indicative and may
             change before contract.
           </p>
-          <p>&copy; {new Date().getFullYear()} Almasi Residences, Kimihurura, Kigali</p>
+          <ul className={styles.legalLinks}>
+            {LEGAL_LINKS.map((l) => (
+              <li key={l.href}>
+                <Link href={l.href}>{l.label}</Link>
+              </li>
+            ))}
+          </ul>
+          <p>
+            &copy; {new Date().getFullYear()}
+            {name ? ` ${name}` : ''}
+            {contact.officeAddress ? `, ${contact.officeAddress}` : ''}
+          </p>
         </div>
       </div>
     </footer>

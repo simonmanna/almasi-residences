@@ -172,12 +172,41 @@
 
 .row {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(170px, auto);
+  grid-template-columns:
+    148px 84px minmax(0, 1.1fr) minmax(0, 0.8fr)
+    minmax(0, 1.05fr) minmax(0, 0.85fr) minmax(0, 0.9fr) minmax(168px, auto);
+  grid-template-areas: 'thumb code type size aspect status price actions';
   align-items: center;
   gap: 16px;
-  padding: 18px 10px;
+  padding: 14px 10px;
   border-bottom: 1px solid var(--line);
   transition: background-color var(--dur-2) var(--ease-standard);
+}
+
+.thumb { grid-area: thumb; }
+.code { grid-area: code; }
+.cellType { grid-area: type; }
+.cellSize { grid-area: size; }
+.cellAspect { grid-area: aspect; }
+.cellStatus { grid-area: status; }
+.price { grid-area: price; }
+.rowActions { grid-area: actions; }
+
+/* The artwork belongs to the residence's type; the inventory carries none. */
+.thumb {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-1);
+  background: var(--surface-sunk);
+}
+
+.thumb img {
+  transition: transform var(--dur-3) var(--ease-out);
+}
+
+.row[data-hovered='true'] .thumb img {
+  transform: scale(1.05);
 }
 
 .row[data-hovered='true'] {
@@ -252,9 +281,11 @@
   .results {
     grid-template-columns: 1fr;
   }
+  /* Below the list, not above it: the residences are what the page is for. */
   .side {
     position: static;
-    order: -1;
+    order: 1;
+    margin-top: var(--space-7);
   }
 }
 
@@ -271,18 +302,89 @@
   .group > button {
     white-space: nowrap;
   }
+  /* Price stays on the phone: it is the field a buyer scans for, and hiding it
+     cost a page load per residence. Aspect is the one cell that gives way. */
   .row {
-    grid-template-columns: 64px minmax(0, 1fr) auto;
-    grid-template-rows: auto auto;
-    row-gap: 6px;
-    padding: 16px 4px;
+    grid-template-columns: 108px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'thumb code    status'
+      'thumb type    price'
+      'thumb size    price'
+      'thumb actions actions';
+    align-items: start;
+    gap: 4px 14px;
+    padding: 14px 4px;
   }
-  .row > :nth-child(1) { grid-row: 1 / 3; }
-  .row > :nth-child(2) { grid-column: 2; grid-row: 1; }
-  .row > :nth-child(3) { grid-column: 2; grid-row: 2; }
-  .row > :nth-child(4) { display: none; }
-  .row > :nth-child(5) { grid-column: 3; grid-row: 1; justify-self: end; }
-  .row > :nth-child(6) { display: none; }
-  .rowActions { grid-column: 2 / 4; grid-row: 3; justify-content: flex-start; }
+  .cellAspect { display: none; }
   .code { font-size: 1.75rem; }
+  .cellStatus { justify-self: end; }
+  .price {
+    align-self: center;
+    font-size: var(--fs-base);
+    font-weight: 500;
+  }
+  .rowActions {
+    justify-content: flex-start;
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  .row {
+    grid-template-columns: 84px minmax(0, 1fr) auto;
+    gap: 4px 10px;
+  }
+  .code { font-size: 1.5rem; }
+}
+
+/* Shortlist tray — follows the visitor instead of waiting at the foot of the page. */
+.tray {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--z-cta);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-4));
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--elev);
+}
+
+.trayCount {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+
+.trayActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* Above the mobile enquiry bar, never on top of it. */
+@media (max-width: 767px) {
+  .tray {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+  }
+}
+
+@media (max-width: 400px) {
+  .tray { flex-wrap: wrap; justify-content: center; text-align: center; }
+}
+
+.compareActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
 }

@@ -47,3 +47,24 @@ export function parseTokenBlocks(css: string, attribute: string): Record<string,
   }
   return states;
 }
+
+/**
+ * CIE L*a*b* of a hex colour. Contrast ratio compares lightness only, so it
+ * reports two colours of the same lightness and opposite hue as identical —
+ * which is exactly how four status colours drifted into being indistinguishable.
+ */
+export function lab(hex: string): [number, number, number] {
+  const [r, g, b] = parseHex(hex).map((v) => channel(v));
+  const f = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  const x = f((0.4124 * r! + 0.3576 * g! + 0.1805 * b!) / 0.95047);
+  const y = f(0.2126 * r! + 0.7152 * g! + 0.0722 * b!);
+  const z = f((0.0193 * r! + 0.1192 * g! + 0.9505 * b!) / 1.08883);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+
+/** Perceptual distance (ΔE*ab). Under about 22 two swatches read as one. */
+export function deltaE(a: string, b: string): number {
+  const [l1, a1, b1] = lab(a);
+  const [l2, a2, b2] = lab(b);
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
+}
