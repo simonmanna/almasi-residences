@@ -28,9 +28,11 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
       residencesTitle: '{types} ways|to live here.',
       storyTitle: 'The experience',
       amenitiesKicker: 'Amenities',
-      amenitiesTitle: 'The art|of living',
-      amenitiesLede:
-        'Everything a resident uses every day is inside the gate, from the pool deck on level one to the parking bay below.',
+      // Title and lede intentionally empty — the Amenities section on the home
+      // page renders no heading or lead copy (the component shows nothing for
+      // an empty key). The kicker "Amenities" still labels the section.
+      amenitiesTitle: '',
+      amenitiesLede: '',
       penthouseKicker: 'The penthouses',
       penthouseTitle: 'The top floor,|in {penthouse.countWords} residences.',
       penthouseLede: 'From {penthouse.areaMin} to {penthouse.areaMax} m², glazed on three sides above the treetops.',

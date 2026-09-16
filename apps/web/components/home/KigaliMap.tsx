@@ -267,9 +267,11 @@ export function KigaliMap({
         onDoubleClick={() => zoom(1.6)}
       >
         <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-labelledby="kigali-map-title">
+          {/* One interpolated string, not a mix of text and expressions: React
+              serialises a multi-child <title> differently on the server and
+              the client, which fails hydration. */}
           <title id="kigali-map-title">
-            Map of Kimihurura: {originLabel} at the centre, with distance rings and{' '}
-            {landmarks.length} nearby landmarks placed by their coordinates.
+            {`Map of Kimihurura: ${originLabel} at the centre, with distance rings and ${landmarks.length} nearby landmarks placed by their coordinates.`}
           </title>
 
           {/* Terrain and rings move and grow with the map. */}

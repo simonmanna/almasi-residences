@@ -39,6 +39,11 @@ export function AmenityExperience({
   lead: string;
 }) {
   const [active, setActive] = useState(0);
+  // The heading and the lead are CMS fields and may both be empty. When there
+  // is no heading the section is named by its kicker instead, so the label
+  // never points at an element that was not rendered.
+  const titleId = `${id}-title`;
+  const labelledBy = lines.length > 0 || kicker ? titleId : undefined;
   const items = amenities.map((a, i) => ({ ...a, key: a.slug ?? a.id ?? String(i), photo: a.images?.find((m) => m.kind === 'IMAGE') ?? null }));
   if (items.length === 0) return null;
   const current = items[Math.min(active, items.length - 1)]!;
@@ -54,11 +59,17 @@ export function AmenityExperience({
   };
 
   return (
-    <section id={id} className={`section ${styles.section}`} data-ground="night" aria-labelledby={`${id}-title`}>
+    <section
+      id={id}
+      className={`section ${styles.section}`}
+      data-ground="night"
+      aria-labelledby={labelledBy}
+      aria-label={labelledBy ? undefined : 'Amenities'}
+    >
       <div className="container">
         <header className={styles.head}>
-          {kicker && <p className={styles.kicker}>{kicker}</p>}
-          {lines.length > 0 && <RevealText as="h2" id={`${id}-title`} className={styles.title} lines={lines.length > 1 ? [lines.join(' ')] : lines} />}
+          {kicker && <p id={lines.length > 0 ? undefined : titleId} className={styles.kicker}>{kicker}</p>}
+          {lines.length > 0 && <RevealText as="h2" id={titleId} className={styles.title} lines={lines.length > 1 ? [lines.join(' ')] : lines} />}
           {lead && <p className="lead">{lead}</p>}
         </header>
 
