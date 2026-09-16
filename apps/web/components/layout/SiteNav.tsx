@@ -16,7 +16,6 @@ export const NAV_LINKS = [
   { href: '/amenities', label: 'Amenities' },
   { href: '/location', label: 'Location' },
   { href: '/gallery', label: 'Gallery' },
-  { href: '/progress', label: 'Progress' },
   { href: '/buying', label: 'Buying' },
 ] as const;
 

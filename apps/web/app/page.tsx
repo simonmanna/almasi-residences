@@ -6,7 +6,6 @@ import {
   getAmenities,
   getDevelopment,
   getFeatured,
-  getGalleries,
   getPagesSafe,
   getProgress,
   getTypologyCards,
@@ -23,13 +22,10 @@ import { FeaturedResidences } from '../components/home/FeaturedResidences';
 import { ExperienceStory } from '../components/home/ExperienceStory';
 import { AmenityExperience } from '../components/home/AmenityExperience';
 import { LocationExperience } from '../components/home/LocationExperience';
-import { PenthouseFeature } from '../components/home/PenthouseFeature';
 import { PaymentTimeline } from '../components/home/PaymentTimeline';
 import { ProgressPreview } from '../components/home/ProgressPreview';
 import { FilmTeaser } from '../components/home/FilmTeaser';
-import { GalleryStrip } from '../components/home/GalleryStrip';
 import { EnquireSection } from '../components/home/EnquireSection';
-import { SectionIndex } from '../components/home/SectionIndex';
 import { SiteFooter } from '../components/layout/SiteFooter';
 
 /** §11 — ISR; every admin save refreshes it by cache tag (§3.1), and the inventory inside refreshes every minute. */
@@ -51,10 +47,9 @@ export default async function HomePage() {
   } catch (e) {
     if (process.env.NODE_ENV === 'production') throw e;
   }
-  const [pages, amenities, galleries, featured, cards, story, progress] = await Promise.all([
+  const [pages, amenities, featured, cards, story, progress] = await Promise.all([
     getPagesSafe(),
     getAmenities().catch(() => []),
-    getGalleries().catch(() => []),
     getFeatured().catch(() => []),
     getTypologyCards().catch(() => []),
     getWalkthrough('experience').catch(() => null),
@@ -62,8 +57,6 @@ export default async function HomePage() {
   ]);
   const handover = dev?.handoverDate ? formatQuarter(dev.handoverDate) : null;
   const home = (key: string) => copy(pages, 'home', key);
-  const strip = [...new Map(galleries.flatMap((g) => g.items).filter((m) => m.kind === 'IMAGE').map((m) => [m.id, m])).values()].slice(0, 12);
-  const galleryTitle = copyLines(pages, 'gallery', 'heroTitle');
   // An unfilled CMS field must never ship a hero with no way in.
   const primaryCta = {
     label: home('ctaPrimaryLabel') || 'Explore residences',
@@ -97,13 +90,10 @@ export default async function HomePage() {
         lead={home('amenitiesLede')}
       />
       {dev && <LocationExperience landmarks={dev.landmarks} latitude={dev.latitude} longitude={dev.longitude} />}
-      <PenthouseFeature kicker={home('penthouseKicker')} title={home('penthouseTitle')} lede={home('penthouseLede')} />
       <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} />
       <ProgressPreview updates={progress} kicker={home('progressKicker')} title={copyLines(pages, 'home', 'progressTitle')} />
       <FilmTeaser kicker={home('filmKicker')} title={home('filmTitle')} cta={home('filmCta')} />
-      <GalleryStrip items={strip} kicker={copy(pages, 'gallery', 'heroKicker')} title={galleryTitle} />
       <EnquireSection />
-      <SectionIndex />
       <SiteFooter />
     </main>
   );

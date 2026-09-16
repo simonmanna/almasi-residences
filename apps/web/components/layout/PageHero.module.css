@@ -38,6 +38,16 @@
   line-height: 1.45;
 }
 
+.subtitle {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
+
 .note {
   position: absolute;
   right: var(--page-margin);

@@ -57,8 +57,8 @@ export function AmenityExperience({
     <section id={id} className={`section ${styles.section}`} data-ground="night" aria-labelledby={`${id}-title`}>
       <div className="container">
         <header className={styles.head}>
-          {kicker && <p className={`mark ${styles.kicker}`}>{kicker}</p>}
-          {lines.length > 0 && <RevealText as="h2" id={`${id}-title`} className="h2" lines={lines} />}
+          {kicker && <p className={styles.kicker}>{kicker}</p>}
+          {lines.length > 0 && <RevealText as="h2" id={`${id}-title`} className={styles.title} lines={lines.length > 1 ? [lines.join(' ')] : lines} />}
           {lead && <p className="lead">{lead}</p>}
         </header>
 

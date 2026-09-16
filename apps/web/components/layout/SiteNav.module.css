@@ -55,10 +55,10 @@
   position: relative;
   display: inline-block;
   padding-block: 10px;
-  font-size: 0.9375rem;
+  font-size: var(--fs-base);
   font-weight: 500;
   font-variant-caps: all-small-caps;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
 }
 
 .link::after {

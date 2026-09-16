@@ -80,6 +80,9 @@ async function bootstrap() {
       process.env.ADMIN_ORIGIN ?? 'http://localhost:3002',
     ],
     credentials: true,
+    // @fastify/cors only allows GET,HEAD,POST by default; the admin app also
+    // sends PATCH, PUT and DELETE, so preflight has to name them.
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   });
 
   const port = Number(process.env.API_PORT ?? 3001);

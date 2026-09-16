@@ -1,65 +1,71 @@
+/* ─── 02 — The statement ─────────────────────────────────────────────
+   A single column on the left with a display headline, a short body, and a
+   pair of CTAs.  The render sits on the right, contained within the section,
+   and keeps only a gentle left scrim so the headline always reads on flat
+   charcoal.  The padding-block mirrors the standard section rhythm (like the
+   Amenities block) for a modest line or two of breathing room. */
+
 .intro {
   position: relative;
   isolation: isolate;
   display: flex;
   align-items: center;
-  min-height: clamp(560px, 88vh, 900px);
-  padding-block: clamp(72px, 9vw, 128px);
+  min-height: clamp(640px, 92vh, 1080px);
+  padding-block: var(--section-y);
   overflow: hidden;
 }
 
-/* The render occupies the right of the frame and is feathered into the ground
-   on its left edge, so the headline always sits on flat charcoal rather than on
-   a lit window — the text side never depends on what the image happens to show. */
+/* The render fills the section on the right; generous width so the building
+   takes most of the frame, but it never bleeds beyond the section bounds. */
 .media {
   position: absolute;
   inset: 0 0 0 auto;
-  width: min(62%, 1020px);
+  width: min(82%, 1380px);
   z-index: -1;
 }
 
 .image {
   object-fit: cover;
-  object-position: 50% 52%;
+  object-position: 55% 50%;
+  opacity: 1;
 }
 
 .scrim {
   position: absolute;
   inset: 0;
   background:
+    /* left fade — keeps the headline on flat charcoal, building reads right */
     linear-gradient(to right, var(--surface) 0%, color-mix(in srgb, var(--surface) 55%, transparent) 16%, transparent 42%),
-    linear-gradient(to top, color-mix(in srgb, var(--surface) 72%, transparent) 0%, transparent 38%);
+    /* base fade — the building's foot settles onto the charcoal ground */
+    linear-gradient(to top, color-mix(in srgb, var(--surface) 60%, transparent) 0%, transparent 38%);
 }
 
 .inner {
   display: flex;
   flex-direction: column;
-  gap: clamp(48px, 7vw, 104px);
-}
-
-.copy {
-  max-width: 34rem;
-}
-
-.kicker {
-  margin-bottom: clamp(18px, 2.2vw, 28px);
-  color: var(--accent);
+  width: 100%;
 }
 
 .statement {
-  font-size: clamp(2.5rem, 1.5rem + 3.2vw, 5rem);
-  line-height: 1.04;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 2.2vw, 26px);
+  max-width: 36rem;
+}
+
+.statementHead {
+  font-size: clamp(2.4rem, 1.4rem + 3.2vw, 4.4rem);
+  line-height: 1.02;
 }
 
 /* The second line is the promise, not the count — bronze carries it. */
-.statement :global(.reveal-line:last-child) {
+.statementHead :global(.reveal-line:last-child) {
   color: var(--accent);
   font-style: italic;
 }
 
 .lead {
-  margin-top: clamp(20px, 2.4vw, 30px);
-  max-width: 38ch;
+  max-width: 40ch;
   font-size: var(--fs-lead);
   line-height: 1.55;
   color: var(--ink-muted);
@@ -69,65 +75,72 @@
   font-family: var(--font-display);
   font-size: 1.12em;
   color: var(--ink);
+  font-style: italic;
 }
 
 .ctas {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
-  margin-top: clamp(28px, 3.4vw, 44px);
+  margin-top: clamp(8px, 1vw, 14px);
 }
 
-.facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1px;
-  margin: 0;
-  max-width: 44rem;
-  background: color-mix(in srgb, var(--line) 70%, transparent);
-  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  border-radius: var(--radius-2);
+.cta {
+  position: relative;
   overflow: hidden;
-  backdrop-filter: blur(14px);
 }
 
-.fact {
-  display: flex;
-  flex-direction: column-reverse;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: clamp(18px, 2vw, 26px) clamp(20px, 2.2vw, 30px);
-  background: color-mix(in srgb, var(--surface-sunk) 72%, transparent);
+.ctaArrow {
+  display: inline-block;
+  margin-left: 8px;
+  transition: transform var(--dur-2) var(--ease-out);
 }
 
-.value {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.75rem);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
+.cta:hover .ctaArrow {
+  transform: translateX(4px);
 }
 
-.label {
-  font-size: var(--fs-xs);
-  color: var(--ink-muted);
-}
-
+/* ─── Tablet ──────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
+  .intro {
+    min-height: clamp(500px, 84vh, 800px);
+    padding-block: var(--section-y);
+  }
+
   .media {
     inset: 0;
     width: 100%;
   }
+
   .image {
-    object-position: 58% 45%;
+    object-position: 58% 50%;
+    opacity: 1;
   }
+
   .scrim {
     background:
-      linear-gradient(to top, var(--surface) 8%, color-mix(in srgb, var(--surface) 82%, transparent) 46%, color-mix(in srgb, var(--surface) 42%, transparent) 100%);
+      linear-gradient(to left, color-mix(in srgb, var(--surface) 42%, transparent) 0%, transparent 60%),
+      linear-gradient(to top, var(--surface) 6%, color-mix(in srgb, var(--surface) 70%, transparent) 46%, color-mix(in srgb, var(--surface) 42%, transparent) 100%);
   }
-  .facts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  .statementHead {
+    font-size: clamp(2.1rem, 1rem + 3vw, 3.4rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .intro {
+    min-height: clamp(440px, 80vh, 720px);
+    padding-block: var(--section-y);
+    align-items: flex-start;
+  }
+
+  .statementHead {
+    font-size: clamp(1.9rem, 1rem + 4vw, 2.8rem);
+  }
+
+  .lead {
+    max-width: 100%;
   }
 }
 

@@ -77,8 +77,13 @@ export class ContentController {
     const row = await this.prisma.client.contentPage.findUnique({ where: { developmentId_key: { developmentId, key } } });
     const published = (row?.content ?? {}) as Record<string, unknown>;
     const draft = (row?.draftContent ?? null) as Record<string, unknown> | null;
-    // The editor works on the draft over the published copy (§40.2).
-    const content = { ...published, ...(draft ?? {}) };
+    // The editor works on the draft over the published copy (§40.2). Keys a
+    // field def no longer declares are stale rows from an older shape — drop
+    // them here so the editor never sends them back and trips savePage.
+    const declared = new Set(def.fields.map((f) => f.key));
+    const content = Object.fromEntries(
+      Object.entries({ ...published, ...(draft ?? {}) }).filter(([k]) => declared.has(k)),
+    );
     const mediaIds = def.fields.filter((f) => f.type === 'media').map((f) => content[f.key]).filter((v): v is string => typeof v === 'string');
     const media = mediaIds.length ? await this.prisma.client.media.findMany({ where: { id: { in: mediaIds }, developmentId } }) : [];
     const draftFields = draft ? Object.keys(draft).filter((k) => JSON.stringify(published[k] ?? null) !== JSON.stringify(draft[k] ?? null)) : [];

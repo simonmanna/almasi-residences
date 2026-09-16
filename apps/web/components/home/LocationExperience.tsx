@@ -40,8 +40,8 @@ export function LocationExperience({
     <section id={id} className={`section ${styles.section}`} aria-labelledby={`${id}-title`}>
       <div className={`container ${styles.layout}`}>
         <div className={styles.text}>
-          <p className={`mark ${styles.kicker}`}>Location</p>
-          <RevealText as="h2" id={`${id}-title`} className="h2" lines={['In the heart', 'of Kigali']} />
+          <p className={styles.kicker}>Location</p>
+          <RevealText as="h2" id={`${id}-title`} className={styles.title} lines={['In the heart of Kigali']} />
           <p className="lead">
             Kimihurura rises just east of the city centre: embassies, restaurants and the Convention
             Centre on one side, the golf course and the airport road on the other, and quiet,

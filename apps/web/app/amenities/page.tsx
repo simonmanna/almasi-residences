@@ -21,7 +21,7 @@ export default async function AmenitiesPage() {
         media={slots['page-amenities']?.image ?? null}
         mediaLabel="Amenities page header"
         kicker={copy(pages, 'amenities', 'heroKicker')}
-        title={<TitleLines lines={copyLines(pages, 'amenities', 'heroTitle')} />}
+        title={<TitleLines lines={copyLines(pages, 'amenities', 'heroTitle')} subtitle />}
         lede={copy(pages, 'amenities', 'heroLede')}
       />
       <AmenityExperience id="amenity-list" amenities={amenities.length ? amenities : (dev?.amenities ?? [])} kicker="" lines={[]} lead="" />

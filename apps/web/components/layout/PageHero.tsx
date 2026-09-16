@@ -52,7 +52,7 @@ export function PageHeader({ kicker, title, lede }: { kicker: string; title: Rea
 }
 
 /** A CMS title written with "|" for its break, set as the site sets titles: second line italic. */
-export function TitleLines({ lines }: { lines: string[] }) {
+export function TitleLines({ lines, subtitle }: { lines: string[]; subtitle?: boolean }) {
   const [a, ...rest] = lines;
   const b = rest.join(' ');
   return (
@@ -61,7 +61,7 @@ export function TitleLines({ lines }: { lines: string[] }) {
       {b && (
         <>
           <br />
-          <span className="italic">{b}</span>
+          <span className={subtitle ? 'subtitle' : 'italic'}>{b}</span>
         </>
       )}
     </>

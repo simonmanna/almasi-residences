@@ -72,8 +72,8 @@ export function PaymentTimeline({
       <div className="container">
         <header className={styles.head}>
           <div>
-            <p className={`mark ${styles.kicker}`}>Payment plan</p>
-            <RevealText as="h2" id={`${id}-title`} className="h2" lines={['Pay as', 'it rises.']} />
+            <p className={styles.kicker}>Payment plan</p>
+            <RevealText as="h2" id={`${id}-title`} className={styles.title} lines={['Pay as it rises.']} />
           </div>
           <div className={styles.aside}>
             {/* Counted from the plan itself: this sentence once said "four" above a plan the admin could change. */}
