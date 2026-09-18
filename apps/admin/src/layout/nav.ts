@@ -18,6 +18,7 @@ import {
   Image,
   Images,
   Inbox,
+  KanbanSquare,
   Layers,
   Map,
   LayoutDashboard,
@@ -31,6 +32,7 @@ import {
   Sparkles,
   Tag,
   Users,
+  UserRoundSearch,
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -85,14 +87,22 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
-    title: 'Sales',
+    title: 'CRM',
     items: [
-      { label: 'Enquiries / leads', to: '/enquiries', icon: Inbox, needs: 'enquiry.view', sub: 'Every enquiry from the website' },
-      { label: 'Buyers / clients', to: '/buyers', icon: Handshake, needs: 'buyer.view', sub: 'From prospect to owner' },
+      { label: 'CRM dashboard', to: '/crm', icon: UserRoundSearch, needs: 'enquiry.view', sub: 'Sales priorities, follow-ups and pipeline health' },
+      { label: 'Pipeline', to: '/pipeline', icon: KanbanSquare, needs: 'enquiry.view', sub: 'Move opportunities through every sales stage' },
+      { label: 'Leads', to: '/enquiries', icon: Inbox, needs: 'enquiry.view', sub: 'Search, qualify, assign and follow up every lead' },
+      { label: 'Viewings', to: '/viewings', icon: CalendarCheck, needs: 'enquiry.view', sub: 'Schedule appointments and record outcomes' },
+      { label: 'Clients', to: '/buyers', icon: Handshake, needs: 'buyer.view', sub: 'Qualified prospects, buyers and owners' },
+      { label: 'Reservations', to: '/reservations', icon: CalendarCheck, sub: 'Holds, deposits, expiry and conversion to sale' },
+    ],
+  },
+  {
+    title: 'Sales & inventory',
+    items: [
       { label: 'Residents', to: '/residents', icon: Users, needs: 'resident.view', sub: 'Who lives where — private to the admin' },
       { label: 'Availability', to: '/availability', icon: Building, sub: 'The building at a glance, unit by unit' },
       { label: 'Pricing', to: '/pricing', icon: Tag, sub: 'Prices, discounts and price history' },
-      { label: 'Reservations', to: '/reservations', icon: CalendarCheck, sub: 'Residences reserved or on hold, and who for' },
       { label: 'Payment plans', to: '/payment-plans', icon: Wallet, sub: 'Deposit, milestones and instalments' },
     ],
   },

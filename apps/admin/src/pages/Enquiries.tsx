@@ -25,7 +25,7 @@ import { Alert, Badge, Button, Card, Checkbox, Drawer, Empty, ErrorBox, Field, I
 import { ViewingForm } from './Viewings';
 import { ReservationForm } from './Reservations';
 
-interface LeadRow {
+export interface LeadRow {
   id: string;
   createdAt: string;
   name: string;
@@ -65,7 +65,7 @@ interface LeadDetail extends LeadRow {
   otherEnquiries: { id: string; createdAt: string; status: string }[];
 }
 
-interface ListData extends Paged<LeadRow> {
+export interface ListData extends Paged<LeadRow> {
   byStatus: Record<string, number>;
   overdue: number;
   mine: number;
@@ -87,7 +87,7 @@ function LostModal({ onConfirm, onClose, count = 1 }: { onConfirm: (reason: stri
   );
 }
 
-function LeadDrawer({ id, onClose }: { id: string; onClose: () => void }) {
+export function LeadDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const { can } = useAuth();
   const toast = useToast();
   const { data: team } = useTeam();
