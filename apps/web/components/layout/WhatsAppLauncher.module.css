@@ -1,0 +1,46 @@
+.launcher {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: var(--z-cta);
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #fff 32%, transparent);
+  border-radius: 50%;
+  background: #198754;
+  color: #fff;
+  box-shadow: 0 8px 28px rgba(15, 45, 31, 0.3);
+  transition:
+    background var(--dur-1) var(--ease-standard),
+    box-shadow var(--dur-1) var(--ease-standard);
+}
+
+.launcher svg {
+  width: 25px;
+  height: 25px;
+}
+
+.launcher:hover {
+  background: #126c43;
+  box-shadow: 0 10px 32px rgba(15, 45, 31, 0.4);
+}
+
+.launcher:focus-visible {
+  outline: 3px solid var(--surface);
+  outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  .launcher {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
+@media print {
+  .launcher {
+    display: none;
+  }
+}

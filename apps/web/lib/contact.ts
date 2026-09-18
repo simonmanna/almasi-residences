@@ -10,6 +10,7 @@ export interface Contact {
   phone: string | null;
   email: string | null;
   whatsapp: string | null;
+  whatsappIconVisible: boolean;
   officeAddress: string | null;
   officeHours: string | null;
   socials: Record<string, string>;
@@ -25,6 +26,7 @@ export function contactFrom(api?: Partial<Contact> | null, developmentName?: str
     phone: clean(api?.phone) ?? clean(process.env.NEXT_PUBLIC_SALES_PHONE),
     email: clean(api?.email) ?? clean(process.env.NEXT_PUBLIC_SALES_EMAIL),
     whatsapp: clean(api?.whatsapp) ?? clean(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER),
+    whatsappIconVisible: api?.whatsappIconVisible ?? true,
     officeAddress: clean(api?.officeAddress),
     officeHours: clean(api?.officeHours),
     socials: Object.fromEntries(Object.entries(api?.socials ?? {}).filter(([, v]) => clean(v))),

@@ -186,6 +186,7 @@ export interface ContactDto {
   phone: string | null;
   email: string | null;
   whatsapp: string | null;
+  whatsappIconVisible: boolean;
   officeAddress: string | null;
   officeHours: string | null;
   socials: Record<string, string>;

@@ -42,6 +42,7 @@ export class DevelopmentService {
         contactPhone: true,
         contactEmail: true,
         whatsappNumber: true,
+        whatsappIconVisible: true,
         officeAddress: true,
         officeHours: true,
         socials: true,
@@ -71,11 +72,11 @@ export class DevelopmentService {
 
     // §4.4 — counts and ranges are computed here, never stored.
     const summary = await this.summarise(dev.id);
-    const { paymentPlans, contactPhone, contactEmail, whatsappNumber, officeAddress, officeHours, socials, ...rest } = dev;
+    const { paymentPlans, contactPhone, contactEmail, whatsappNumber, whatsappIconVisible, officeAddress, officeHours, socials, ...rest } = dev;
 
     return {
       ...rest,
-      contact: { phone: contactPhone, email: contactEmail, whatsapp: whatsappNumber, officeAddress, officeHours, socials: (socials ?? {}) as Record<string, string> },
+      contact: { phone: contactPhone, email: contactEmail, whatsapp: whatsappNumber, whatsappIconVisible, officeAddress, officeHours, socials: (socials ?? {}) as Record<string, string> },
       milestones: paymentPlans[0]?.milestones ?? [],
       typologies: dev.typologies.map(({ units, ...t }) => {
         const available = units.filter((u) => u.status === 'AVAILABLE').map((u) => effectivePriceMinor(u));

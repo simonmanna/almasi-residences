@@ -62,6 +62,8 @@ model Development {
   contactPhone   String?
   contactEmail   String?
   whatsappNumber String?
+  /// Shows the small site-wide WhatsApp launcher when a number is configured.
+  whatsappIconVisible Boolean @default(true)
   officeAddress  String?
   officeHours    String?
   /// { instagram, facebook, linkedin, youtube, x, tiktok } — URLs.

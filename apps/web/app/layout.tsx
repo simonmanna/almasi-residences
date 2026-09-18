@@ -16,6 +16,7 @@ import { StickyMobileCta } from '../components/layout/StickyMobileCta';
 import { CursorLabel } from '../components/layout/CursorLabel';
 import { PreviewBanner } from '../components/layout/PreviewBanner';
 import { AnalyticsTracker } from '../components/layout/AnalyticsTracker';
+import { WhatsAppLauncher } from '../components/layout/WhatsAppLauncher';
 import '../styles/tokens.css';
 import '../styles/app.css';
 
@@ -100,6 +101,7 @@ async function loadShell() {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [{ dev, inventory }, slots] = await Promise.all([loadShell(), getMediaSlotsSafe()]);
   const bathrooms = Object.fromEntries((dev?.typologies ?? []).map((t) => [t.slug, t.bathrooms]));
+  const contact = contactFrom(dev?.contact, dev?.name);
 
   return (
     <html lang="en-GB" className={`${display.variable} ${ui.variable}`} suppressHydrationWarning>
@@ -120,7 +122,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Skip to content
         </a>
         <SmoothScroll>
-          <ContactProvider contact={contactFrom(dev?.contact, dev?.name)}>
+          <ContactProvider contact={contact}>
             <InventoryProvider initial={inventory} bathrooms={bathrooms} slug={DEVELOPMENT_SLUG}>
               <EnquiryProvider>
                 <SiteNav />
@@ -134,6 +136,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </SmoothScroll>
         <CursorLabel />
         <PreviewBanner />
+        <WhatsAppLauncher contact={contact} />
         <AnalyticsTracker />
       </body>
     </html>

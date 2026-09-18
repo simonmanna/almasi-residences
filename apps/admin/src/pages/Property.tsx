@@ -7,7 +7,7 @@ import { invalidate, useQuery } from '../lib/query';
 import type { MediaView } from '../lib/types';
 import { MediaPicker } from '../components/Media';
 import { useToast } from '../components/Toast';
-import { Alert, Button, Card, CardHead, ErrorBox, Field, Input, KV, LoadingPage, MediaImg, NumberInput, PageHead, Select, Textarea } from '../components/ui';
+import { Alert, Button, Card, CardHead, ErrorBox, Field, Input, KV, LoadingPage, MediaImg, NumberInput, PageHead, Select, Textarea, Toggle } from '../components/ui';
 
 interface Property {
   id: string;
@@ -34,6 +34,7 @@ interface Property {
   contactPhone: string | null;
   contactEmail: string | null;
   whatsappNumber: string | null;
+  whatsappIconVisible: boolean;
   officeAddress: string | null;
   officeHours: string | null;
   socials: Record<string, string> | null;
@@ -83,7 +84,7 @@ export default function PropertyPage() {
   const save = async () => {
     setBusy(true);
     try {
-      const keys: (keyof Property)[] = ['name', 'tagline', 'descriptionMd', 'city', 'country', 'addressLine', 'latitude', 'longitude', 'handoverDate', 'currency', 'status', 'propertyType', 'buildingConfig', 'constructionStatus', 'constructionPercent', 'developerName', 'architect', 'contractor', 'yearStarted', 'contactPhone', 'contactEmail', 'whatsappNumber', 'officeAddress', 'officeHours', 'socials', 'logoMediaId', 'heroMediaId', 'mainMediaId', 'videoMediaId'];
+      const keys: (keyof Property)[] = ['name', 'tagline', 'descriptionMd', 'city', 'country', 'addressLine', 'latitude', 'longitude', 'handoverDate', 'currency', 'status', 'propertyType', 'buildingConfig', 'constructionStatus', 'constructionPercent', 'developerName', 'architect', 'contractor', 'yearStarted', 'contactPhone', 'contactEmail', 'whatsappNumber', 'whatsappIconVisible', 'officeAddress', 'officeHours', 'socials', 'logoMediaId', 'heroMediaId', 'mainMediaId', 'videoMediaId'];
       const body = Object.fromEntries(
         keys
           .filter((k) => JSON.stringify(d[k]) !== JSON.stringify(data[k]))
@@ -182,6 +183,9 @@ export default function PropertyPage() {
             <Field label="Phone"><Input value={d.contactPhone ?? ''} onChange={(e) => set('contactPhone', e.target.value)} placeholder="+250 788 000 000" /></Field>
             <Field label="Email"><Input type="email" value={d.contactEmail ?? ''} onChange={(e) => set('contactEmail', e.target.value)} placeholder="sales@…" /></Field>
             <Field label="WhatsApp"><Input value={d.whatsappNumber ?? ''} onChange={(e) => set('whatsappNumber', e.target.value)} placeholder="+250 788 000 000" /></Field>
+            <Field label="WhatsApp icon" hint="Show a floating WhatsApp shortcut across the public website.">
+              <Toggle checked={d.whatsappIconVisible} onChange={(value) => set('whatsappIconVisible', value)} label={d.whatsappIconVisible ? 'Visible' : 'Hidden'} />
+            </Field>
             <Field label="Sales office address" className="full"><Input value={d.officeAddress ?? ''} onChange={(e) => set('officeAddress', e.target.value)} /></Field>
             <Field label="Office hours" className="full"><Input value={d.officeHours ?? ''} onChange={(e) => set('officeHours', e.target.value)} placeholder="Mon–Sat, 9:00–18:00" /></Field>
             {SOCIALS.map((s) => (

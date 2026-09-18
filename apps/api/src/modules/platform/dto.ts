@@ -91,6 +91,7 @@ export class UpdatePropertyDto {
   @IsOptional() @IsString() @MaxLength(40) contactPhone?: string | null;
   @IsOptional() @IsEmail() contactEmail?: string | null;
   @IsOptional() @IsString() @MaxLength(40) whatsappNumber?: string | null;
+  @IsOptional() @IsBoolean() whatsappIconVisible?: boolean;
   @IsOptional() @IsString() @MaxLength(300) officeAddress?: string | null;
   @IsOptional() @IsString() @MaxLength(200) officeHours?: string | null;
   @IsOptional() @IsObject() socials?: Record<string, string> | null;

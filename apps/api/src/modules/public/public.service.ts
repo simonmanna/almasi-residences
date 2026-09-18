@@ -177,6 +177,7 @@ export class PublicService {
         contactPhone: true,
         contactEmail: true,
         whatsappNumber: true,
+        whatsappIconVisible: true,
         officeAddress: true,
         officeHours: true,
         socials: true,
@@ -193,11 +194,11 @@ export class PublicService {
     const byStatus: Record<PublicUnitStatus, number> = { available: 0, reserved: 0, sold: 0, unavailable: 0 };
     for (const u of units) byStatus[PUBLIC_UNIT_STATUS[u.status as UnitStatus]]++;
     const prices = units.filter((u) => u.status === 'AVAILABLE').map((u) => effectivePriceMinor(u));
-    const { logoMedia, heroMedia, mainMedia, videoMedia, contactPhone, contactEmail, whatsappNumber, officeAddress, officeHours, socials, ...rest } = d;
+    const { logoMedia, heroMedia, mainMedia, videoMedia, contactPhone, contactEmail, whatsappNumber, whatsappIconVisible, officeAddress, officeHours, socials, ...rest } = d;
     const m = (x: typeof logoMedia) => (x && x.published ? this.publicMedia(x) : null);
     return {
       ...rest,
-      contact: { phone: contactPhone, email: contactEmail, whatsapp: whatsappNumber, officeAddress, officeHours, socials: (socials ?? {}) as Record<string, string> },
+      contact: { phone: contactPhone, email: contactEmail, whatsapp: whatsappNumber, whatsappIconVisible, officeAddress, officeHours, socials: (socials ?? {}) as Record<string, string> },
       logo: m(logoMedia),
       heroImage: m(heroMedia),
       mainImage: m(mainMedia),
