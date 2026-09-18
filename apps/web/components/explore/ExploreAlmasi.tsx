@@ -226,7 +226,7 @@ export function ExploreAlmasi({
           </div>
 
           {!touched && <p className={styles.hint}>Drag to turn. Pinch to zoom.</p>}
-          <StatusLegend className={styles.legend} />
+          <StatusLegend className={styles.legend} tone="model" />
         </div>
 
         {!showModel && (

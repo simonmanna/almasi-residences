@@ -1,33 +1,175 @@
+/* The sale's own palette. Fixed rather than themed: a buyer reads green as
+   "yours to take" on limestone and on night alike. */
+.board {
+  --avail-1: #22A565;
+  --avail-2: #137A43;
+  --avail-glow: rgb(34 197 94 / 0.45);
+  --reserved-1: #F7A928;
+  --reserved-2: #D97F06;
+  --booked-1: #FBD23C;
+  --booked-2: #E3AE0A;
+  --sold-1: #D93636;
+  --sold-2: #A91D1D;
+  --unavail-1: #5E1424;
+  --unavail-2: #4A0D19;
+
+  container-type: inline-size;
+  display: grid;
+  gap: 18px;
+}
+
+/* ─── Pulse: how much is left, at a glance ─────────────────────────────── */
+
+.pulse {
+  display: grid;
+  gap: 10px;
+}
+
+.headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0;
+  font-size: var(--fs-sm, 0.875rem);
+  color: var(--ink-muted);
+}
+
+.headline b {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.now {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--avail-1), var(--avail-2));
+  box-shadow: 0 6px 20px -8px var(--avail-glow);
+  color: #fff;
+  font-weight: 500;
+}
+
+.now b { color: #fff; }
+
+.nowDot,
+.live {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.nowDot::after,
+.live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: ping 2.2s var(--ease-out) infinite;
+}
+
+@keyframes ping {
+  0% { transform: scale(1); opacity: 0.7; }
+  80%, 100% { transform: scale(2.8); opacity: 0; }
+}
+
+.bar {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.bar > span {
+  flex-basis: 0;
+  min-width: 4px;
+  border-radius: 2px;
+  transform-origin: left;
+  animation: grow var(--dur-4) var(--ease-out) both;
+}
+
+@keyframes grow {
+  from { transform: scaleX(0); }
+}
+
+/* ─── The board ───────────────────────────────────────────────────────── */
+
 .stack {
+  --label: 112px;
   display: grid;
   gap: 6px;
 }
 
+.head,
 .row {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: var(--label) repeat(var(--cols), minmax(0, 1fr));
+  gap: 6px;
   align-items: stretch;
-  gap: 10px;
+}
+
+.colHead {
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  gap: 2px;
+  padding: 0 2px 4px;
+  text-align: center;
+  min-width: 0;
+}
+
+.colHead b {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.colHead small {
+  font-size: 0.625rem;
+  color: var(--ink-muted);
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .mark {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   min-height: 56px;
+  padding-right: 10px;
   border: 1px solid transparent;
-  font-family: var(--font-display);
-  font-size: 1.25rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
   color: var(--ink-muted);
-  transition: color var(--dur-2) var(--ease-standard), border-color var(--dur-2) var(--ease-standard);
+  text-align: right;
+  line-height: 1.2;
+  transition: color var(--dur-2) var(--ease-standard), background-color var(--dur-2) var(--ease-standard);
 }
+
+.markShort { display: none; font-family: var(--font-display); font-size: 1.125rem; }
 
 button.mark:hover,
 button.mark[aria-pressed='true'] {
   color: var(--ink);
-  border-color: var(--line);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
-.units {
+.row[data-focus='true'] .unit:not([data-dim='true']) {
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--ink) 55%, transparent), 0 10px 24px -12px var(--tile-glow);
+}
+
+.span {
+  grid-column: 2 / -1;
   display: flex;
   gap: 6px;
   min-width: 0;
@@ -37,79 +179,132 @@ button.mark[aria-pressed='true'] {
   position: relative;
   display: grid;
   align-content: center;
-  justify-items: start;
-  /* A floor of ten residences overflowed this column and clipped the last two.
-     The units share the row instead; the code truncates rather than escapes. */
+  justify-items: center;
+  gap: 2px;
   flex: 1 1 0;
   min-width: 0;
   min-height: 56px;
-  padding: 6px 10px;
-  border: 1.5px solid var(--status-colour);
-  border-radius: var(--radius-1);
-  background: var(--status-fill);
-  color: var(--status-ink, var(--ink));
-  text-align: left;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: linear-gradient(160deg, var(--tile-1), var(--tile-2));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    inset 0 -1px 0 rgb(0 0 0 / 0.12),
+    0 4px 14px -10px var(--tile-glow);
+  color: var(--tile-ink);
+  text-align: center;
+  cursor: pointer;
+  animation: rise var(--dur-3) var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 14ms);
   transition:
-    transform var(--dur-2) var(--ease-out),
-    opacity var(--dur-2) var(--ease-standard),
-    box-shadow var(--dur-2) var(--ease-standard);
+    transform var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-standard),
+    filter var(--dur-2) var(--ease-standard),
+    opacity var(--dur-2) var(--ease-standard);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
 }
 
 .unit[data-status='available'] {
-  --status-colour: var(--status-available);
-  --status-fill: var(--status-available);
-  --status-ink: var(--surface);
+  --tile-1: var(--avail-1);
+  --tile-2: var(--avail-2);
+  --tile-ink: #fff;
+  --tile-glow: var(--avail-glow);
 }
 
 .unit[data-status='reserved'] {
-  --status-colour: var(--status-reserved);
-  --status-fill: repeating-linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--status-reserved) 55%, transparent) 0 2px,
-    transparent 2px 7px
-  );
+  --tile-1: var(--reserved-1);
+  --tile-2: var(--reserved-2);
+  --tile-ink: #2A1602;
+  --tile-glow: rgb(245 158 11 / 0.45);
+}
+
+.unit[data-status='booked'] {
+  --tile-1: var(--booked-1);
+  --tile-2: var(--booked-2);
+  --tile-ink: #332400;
+  --tile-glow: rgb(250 204 21 / 0.45);
 }
 
 .unit[data-status='sold'] {
-  --status-colour: var(--status-sold);
-  --status-fill: transparent;
-  --status-ink: var(--ink-muted);
+  --tile-1: var(--sold-1);
+  --tile-2: var(--sold-2);
+  --tile-ink: #fff;
+  --tile-glow: rgb(220 38 38 / 0.4);
 }
 
 .unit[data-status='unavailable'] {
-  --status-colour: var(--status-unavailable);
-  --status-fill: transparent;
-  --status-ink: var(--ink-muted);
-  border-style: dotted;
+  --tile-1: var(--unavail-1);
+  --tile-2: var(--unavail-2);
+  --tile-ink: #EBC3CC;
+  --tile-glow: rgb(74 13 25 / 0.5);
 }
 
 .unit[data-dim='true'] {
-  opacity: 0.28;
+  opacity: 0.22;
+  filter: saturate(0.3);
 }
 
 @media (hover: hover) {
-  .unit:hover { transform: translateY(-2px); }
+  .unit:hover {
+    z-index: 1;
+    transform: translateY(-2px) scale(1.04);
+    filter: brightness(1.08) saturate(1.1);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.25),
+      0 12px 28px -10px var(--tile-glow);
+  }
+  .unit[data-dim='true']:hover { opacity: 0.6; }
 }
 
+.unit:focus-visible,
 .unit[aria-pressed='true'] {
-  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+  z-index: 1;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: 0 12px 28px -10px var(--tile-glow);
+}
+
+.unit[data-status='available'][aria-pressed='true'] {
+  animation: rise var(--dur-3) var(--ease-out) backwards, beckon 1.8s var(--ease-in-out) infinite;
+}
+
+@keyframes beckon {
+  0%, 100% { box-shadow: 0 0 0 0 var(--avail-glow); }
+  50% { box-shadow: 0 0 0 6px transparent, 0 12px 28px -10px var(--avail-glow); }
+}
+
+.live {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
+  opacity: 0.9;
 }
 
 .code {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: var(--font-display);
-  font-size: 1.0625rem;
+  font-size: 0.875rem;
+  font-weight: 700;
   line-height: 1.1;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
 
-.area {
+.sub {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 0.6875rem;
-  /* At 11px the old 0.85 dropped muted ink to 4.4:1 — just under the floor.
-     Size carries the hierarchy here; the fade is not worth the failure. */
-  opacity: 1;
+  font-weight: 500;
+  line-height: 1.1;
+  opacity: 0.92;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -121,20 +316,76 @@ button.mark[aria-pressed='true'] {
   min-height: 56px;
   padding: 6px 12px;
   border: 1px dashed var(--line);
+  border-radius: 6px;
   color: var(--ink-muted);
   font-size: var(--fs-xs);
   line-height: 1.3;
 }
 
+/* ─── Key ─────────────────────────────────────────────────────────────── */
+
 .legend {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-@media (max-width: 560px) {
-  .area { display: none; }
-  .code { font-size: 0.9375rem; }
-  .unit { padding: 6px; }
-  .units { gap: 4px; }
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-xs, 0.8125rem);
+  color: var(--ink-muted);
+}
+
+.key::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(160deg, var(--k1), var(--k2));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
+}
+
+.key[data-status='available'] { --k1: #22A565; --k2: #137A43; }
+.key[data-status='reserved'] { --k1: #F7A928; --k2: #D97F06; }
+.key[data-status='booked'] { --k1: #FBD23C; --k2: #E3AE0A; }
+.key[data-status='sold'] { --k1: #D93636; --k2: #A91D1D; }
+.key[data-status='unavailable'] { --k1: #5E1424; --k2: #4A0D19; }
+
+.bar > [data-status='available'] { background: linear-gradient(90deg, var(--avail-1), var(--avail-2)); }
+.bar > [data-status='reserved'] { background: var(--reserved-1); }
+.bar > [data-status='booked'] { background: var(--booked-1); }
+.bar > [data-status='sold'] { background: var(--sold-1); }
+.bar > [data-status='unavailable'] { background: var(--unavail-2); }
+
+/* ─── Narrow: the /residences sidebar and phones ──────────────────────── */
+
+@container (max-width: 560px) {
+  .stack { --label: 30px; gap: 4px; }
+  .head { display: none; }
+  .row { gap: 4px; }
+  .span { gap: 4px; }
+  .mark { justify-content: center; padding-right: 0; min-height: 44px; }
+  .markLong { display: none; }
+  .markShort { display: inline; }
+  .unit { min-height: 44px; padding: 4px 2px; border-radius: 5px; }
+  .code { font-size: 0.8125rem; }
+  .sub { display: none; }
+  .live { top: 4px; right: 4px; }
+  .common { min-height: 44px; padding: 4px 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unit,
+  .bar > span,
+  .nowDot::after,
+  .live::after,
+  .unit[data-status='available'][aria-pressed='true'] {
+    animation: none;
+  }
+  .unit:hover { transform: none; }
 }
