@@ -1,18 +1,18 @@
 /**
- * Almasi design tokens — quiet stone, warm light.
+ * Almasi design tokens â€” quiet stone, warm light.
  *
  * Two grounds, each authored by hand rather than derived from a base:
- *   stone — honed limestone. The default: reading, data, forms.
- *   night — charcoal at blue hour. Cinematic media, the film, the tour.
+ *   stone â€” honed limestone. The default: reading, data, forms.
+ *   night â€” charcoal at blue hour. Cinematic media, the film, the tour.
  * A section opts in with data-ground="night"; components only ever read
- * var(--…) and never compute a colour. The contrast floors are asserted by
- * tests/tokens.contrast.test.ts — if that test fails, the value here is wrong.
+ * var(--â€¦) and never compute a colour. The contrast floors are asserted by
+ * tests/tokens.contrast.test.ts â€” if that test fails, the value here is wrong.
  *
- * DECISIONS D-28 records why this replaces the §2.3 time-of-day palette.
+ * DECISIONS D-28 records why this replaces the Â§2.3 time-of-day palette.
  */
 :root,
 [data-ground="stone"] {
-  --surface:            #EFEBE3;  /* honed limestone — warm, not cream */
+  --surface:            #EFEBE3;  /* honed limestone â€” warm, not cream */
   --surface-raised:     #F7F4EE;
   --surface-sunk:       #E4DED3;
   --ink:                #1D1F1B;  /* charcoal with a trace of eucalyptus */
@@ -24,17 +24,16 @@
   --scrim:              rgba(29, 31, 27, 0.36);
   --elev:               0 1px 2px rgba(29, 31, 27, 0.06), 0 18px 48px rgba(29, 31, 27, 0.10);
   /* Four states a buyer must tell apart at a glance and at 14px. The old set
-     was four browns within ?E 14 of each other; these hold ?E = 22 apart while
-     staying inside the material palette — bronze live, ochre held, patinated
+     was four browns within Î”E 14 of each other; these hold Î”E â‰¥ 22 apart while
+     staying inside the material palette â€” bronze live, ochre held, patinated
      zinc gone, warm stone not yet released. */
-  --status-available:   #10B981;
-  --status-booked:      #F59E0B;
-  --status-reserved:    #F59E0B;  /* alias for booked */
-  --status-sold:        #EF4444;
-  --status-unavailable: #4a0d19;
-  /* Map — one colour per landmark category, so the pin, the legend chip and
+  --status-available:   #6B4A22;
+  --status-reserved:    #AD7526;
+  --status-sold:        #3F6A75;
+  --status-unavailable: #8E8478;
+  /* Map â€” one colour per landmark category, so the pin, the legend chip and
      the list row always agree. Seven categories cannot hold the status
-     palette's ?E 22, so the floor here is 18 — and no pin is ever colour
+     palette's Î”E 22, so the floor here is 18 â€” and no pin is ever colour
      alone: each carries its name, its category and its distance. */
   --cat-business:       #7A5B39;
   --cat-shopping:       #A4571F;
@@ -43,7 +42,7 @@
   --cat-airport:        #7A4A62;
   --cat-leisure:        #6E6A1F;
   --cat-embassy:        #94412F;
-  /* The map's own paper — one step below the page so the frame reads as a
+  /* The map's own paper â€” one step below the page so the frame reads as a
      surface you look into rather than a panel sitting on top. */
   --map-ground:         #E9E3D7;
 }
@@ -60,11 +59,10 @@
   --foliage:            #6B7A5E;
   --scrim:              rgba(8, 8, 7, 0.55);
   --elev:               0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 56px rgba(0, 0, 0, 0.45);
-  --status-available:   #10B981;
-  --status-booked:      #F59E0B;
-  --status-reserved:    #F59E0B;  /* alias for booked */
-  --status-sold:        #EF4444;
-  --status-unavailable: #4a0d19;
+  --status-available:   #D8AE7C;
+  --status-reserved:    #CE8B36;
+  --status-sold:        #79A2AE;
+  --status-unavailable: #757063;
   --cat-business:       #C9A27A;
   --cat-shopping:       #D98C46;
   --cat-health:         #6FA9B4;
@@ -76,21 +74,21 @@
 }
 
 :root {
-  /* Type — Gambetta for display, Supreme for everything a visitor operates. */
+  /* Type â€” Gambetta for display, Supreme for everything a visitor operates. */
   --font-display: var(--font-display-face, 'Gambetta'), 'Iowan Old Style', Georgia, serif;
   --font-ui: var(--font-ui-face, 'Supreme'), ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  --fs-micro:   0.6875rem;                                   /* 11px — marks, gauges */
-  --fs-xs:      0.8125rem;                                   /* 13px — captions, data */
-  --fs-sm:      0.9375rem;                                   /* 15px — secondary body */
-  --fs-base:    1.0625rem;                                   /* 17px — body */
+  --fs-micro:   0.6875rem;                                   /* 11px â€” marks, gauges */
+  --fs-xs:      0.8125rem;                                   /* 13px â€” captions, data */
+  --fs-sm:      0.9375rem;                                   /* 15px â€” secondary body */
+  --fs-base:    1.0625rem;                                   /* 17px â€” body */
   --fs-lead:    clamp(1.1875rem, 1.05rem + 0.55vw, 1.5rem);
   --fs-h3:      clamp(1.5rem, 1.2rem + 1vw, 2.25rem);
   --fs-h2:      clamp(2.25rem, 1.4rem + 3vw, 4.5rem);
   --fs-display: clamp(3.25rem, 1.2rem + 7.5vw, 9.5rem);
   --fs-mega:    clamp(4.25rem, 0.5rem + 13vw, 16rem);
 
-  /* Space — multiples of 4, widening at the top of the scale. */
+  /* Space â€” multiples of 4, widening at the top of the scale. */
   --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
   --space-5: 24px;  --space-6: 32px;  --space-7: 48px;  --space-8: 64px;
   --space-9: 96px;  --space-10: 128px; --space-11: 192px;
@@ -98,14 +96,14 @@
 
   /**
    * Breakpoints. CSS cannot read a custom property inside a media query, so
-   * these are the agreed numbers rather than usable tokens — but every module
+   * these are the agreed numbers rather than usable tokens â€” but every module
    * is expected to pick from this list instead of inventing a neighbour.
    *
    *   400px   small phone
    *   640px   phone
-   *   767px   large phone — where the sticky enquiry bar appears
-   *   900px   tablet portrait — where two columns become one
-   *   1100px  laptop — where the primary nav collapses into the menu
+   *   767px   large phone â€” where the sticky enquiry bar appears
+   *   900px   tablet portrait â€” where two columns become one
+   *   1100px  laptop â€” where the primary nav collapses into the menu
    *   1400px  wide
    */
   --page-max: 1600px;
@@ -117,7 +115,7 @@
   --radius-1: 2px;
   --radius-2: 4px;
 
-  /* Motion — one family of curves, used everywhere. */
+  /* Motion â€” one family of curves, used everywhere. */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
@@ -133,7 +131,7 @@
   --z-modal: 100;
 }
 
-/* --- Print: quiet stone on white, no nav, no motion ------------ */
+/* â”€â”€â”€ Print: quiet stone on white, no nav, no motion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media print {
   :root {
     --surface: #fff;

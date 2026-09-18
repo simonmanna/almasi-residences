@@ -1,48 +1,35 @@
 .stack {
   display: grid;
-  gap: 10px;
-  padding: 12px;
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
-  border-radius: 8px;
-  box-shadow: 
-    0 4px 24px rgba(0, 0, 0, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.04);
+  gap: 6px;
 }
 
 .row {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: stretch;
-  gap: 12px;
+  gap: 10px;
 }
 
 .mark {
   display: grid;
   place-items: center;
-  min-height: 60px;
-  border: 2px solid transparent;
-  border-radius: 6px;
+  min-height: 56px;
+  border: 1px solid transparent;
   font-family: var(--font-display);
-  font-size: 1.375rem;
-  font-weight: 500;
+  font-size: 1.25rem;
   color: var(--ink-muted);
-  background: var(--surface);
-  transition: all var(--dur-2) var(--ease-standard);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: color var(--dur-2) var(--ease-standard), border-color var(--dur-2) var(--ease-standard);
 }
 
 button.mark:hover,
 button.mark[aria-pressed='true'] {
   color: var(--ink);
-  border-color: var(--accent);
-  background: var(--surface-raised);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: var(--line);
 }
 
 .units {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -51,101 +38,61 @@ button.mark[aria-pressed='true'] {
   display: grid;
   align-content: center;
   justify-items: start;
+  /* A floor of ten residences overflowed this column and clipped the last two.
+     The units share the row instead; the code truncates rather than escapes. */
   flex: 1 1 0;
   min-width: 0;
-  min-height: 60px;
-  padding: 8px 12px;
-  border: 2px solid var(--status-colour);
-  border-radius: 8px;
+  min-height: 56px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--status-colour);
+  border-radius: var(--radius-1);
   background: var(--status-fill);
   color: var(--status-ink, var(--ink));
   text-align: left;
-  font-weight: 500;
-  overflow: hidden;
   transition:
     transform var(--dur-2) var(--ease-out),
     opacity var(--dur-2) var(--ease-standard),
-    box-shadow var(--dur-2) var(--ease-standard),
-    border-color var(--dur-2) var(--ease-standard);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow var(--dur-2) var(--ease-standard);
 }
 
 .unit[data-status='available'] {
   --status-colour: var(--status-available);
-  --status-fill: linear-gradient(135deg, color-mix(in srgb, var(--status-available) 20%, transparent) 0%, color-mix(in srgb, var(--status-available) 8%, transparent) 100%);
-  --status-ink: var(--ink);
-  border-width: 2px;
+  --status-fill: var(--status-available);
+  --status-ink: var(--surface);
 }
 
-.unit[data-status='booked'],
 .unit[data-status='reserved'] {
-  --status-colour: var(--status-booked, var(--status-reserved));
+  --status-colour: var(--status-reserved);
   --status-fill: repeating-linear-gradient(
     135deg,
-    color-mix(in srgb, var(--status-booked, var(--status-reserved)) 35%, transparent) 0 3px,
-    transparent 3px 8px
+    color-mix(in srgb, var(--status-reserved) 55%, transparent) 0 2px,
+    transparent 2px 7px
   );
-  border-width: 2px;
-  border-style: solid;
 }
 
 .unit[data-status='sold'] {
   --status-colour: var(--status-sold);
-  --status-fill: linear-gradient(135deg, color-mix(in srgb, var(--status-sold) 12%, transparent) 0%, color-mix(in srgb, var(--status-sold) 6%, transparent) 100%);
-  --status-ink: var(--ink);
-  border-width: 2px;
+  --status-fill: transparent;
+  --status-ink: var(--ink-muted);
 }
 
 .unit[data-status='unavailable'] {
   --status-colour: var(--status-unavailable);
-  --status-fill: linear-gradient(135deg, color-mix(in srgb, var(--status-unavailable) 25%, transparent) 0%, color-mix(in srgb, var(--status-unavailable) 10%, transparent) 100%);
+  --status-fill: transparent;
   --status-ink: var(--ink-muted);
-  border-width: 2px;
-  border-style: dashed;
+  border-style: dotted;
 }
 
 .unit[data-dim='true'] {
-  opacity: 0.25;
-  filter: grayscale(0.5);
+  opacity: 0.28;
 }
 
 @media (hover: hover) {
-  .unit:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  }
-  .unit[data-status='available']:hover {
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--status-available) 35%, transparent);
-  }
-  .unit[data-status='sold']:hover {
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--status-sold) 35%, transparent);
-  }
+  .unit:hover { transform: translateY(-2px); }
 }
 
 .unit[aria-pressed='true'] {
-  box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent), 0 8px 24px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-  z-index: 2;
-}
-
-.code {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--font-display);
-  font-size: 1.125rem;
-  font-weight: 600;
-  line-height: 1.1;
-  white-space: nowrap;
-  letter-spacing: -0.01em;
-}
-
-.area {
-  font-size: 0.75rem;
-  opacity: 0.9;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  font-weight: 500;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
 }
 
 .code {
