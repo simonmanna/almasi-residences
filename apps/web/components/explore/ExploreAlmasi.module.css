@@ -239,37 +239,105 @@
 
 .unit {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  min-height: 64px;
-  padding: 10px 0;
+  min-height: 68px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--line);
+  border-radius: 8px;
   text-align: left;
   font-size: var(--fs-xs);
-  transition: background-color var(--dur-2) var(--ease-standard);
+  transition: all var(--dur-2) var(--ease-out);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-sunk) 100%);
+  margin: 6px 0;
+}
+
+.unit[data-status='available'] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--status-available) 12%, transparent) 0%, color-mix(in srgb, var(--status-available) 5%, transparent) 100%);
+  border-left: 3px solid var(--status-available);
+}
+
+.unit[data-status='booked'],
+.unit[data-status='reserved'] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--status-booked, var(--status-reserved)) 12%, transparent) 0%, color-mix(in srgb, var(--status-booked, var(--status-reserved)) 5%, transparent) 100%);
+  border-left: 3px solid var(--status-booked, var(--status-reserved));
+}
+
+.unit[data-status='sold'] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--status-sold) 10%, transparent) 0%, color-mix(in srgb, var(--status-sold) 4%, transparent) 100%);
+  border-left: 3px solid var(--status-sold);
+}
+
+.unit[data-status='unavailable'] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--status-unavailable) 15%, transparent) 0%, color-mix(in srgb, var(--status-unavailable) 6%, transparent) 100%);
+  border-left: 3px dashed var(--status-unavailable);
 }
 
 @media (hover: hover) {
-  .unit:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+  .unit:hover {
+    background: var(--surface-raised);
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
 }
 
 .unitCode {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.625rem;
   line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .unitMeta {
   color: var(--ink-muted);
-  line-height: 1.45;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 .unitEnd {
   display: grid;
   justify-items: end;
   gap: 6px;
+}
+
+.unitEnd .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 16px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.unitEnd .status[data-status='available'] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--status-available) 20%, transparent) 0%, color-mix(in srgb, var(--status-available) 10%, transparent) 100%);
+  color: var(--status-available);
+  border: 1.5px solid var(--status-available);
+}
+
+.unitEnd .status[data-status='booked'],
+.unitEnd .status[data-status='reserved'] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--status-booked, var(--status-reserved)) 20%, transparent) 0%, color-mix(in srgb, var(--status-booked, var(--status-reserved)) 10%, transparent) 100%);
+  color: var(--status-booked, var(--status-reserved));
+  border: 1.5px solid var(--status-booked, var(--status-reserved));
+}
+
+.unitEnd .status[data-status='sold'] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--status-sold) 15%, transparent) 0%, color-mix(in srgb, var(--status-sold) 8%, transparent) 100%);
+  color: var(--status-sold);
+  border: 1.5px solid var(--status-sold);
+}
+
+.unitEnd .status[data-status='unavailable'] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--status-unavailable) 20%, transparent) 0%, color-mix(in srgb, var(--status-unavailable) 10%, transparent) 100%);
+  color: var(--status-unavailable);
+  border: 1.5px solid var(--status-unavailable);
 }
 
 .summary {

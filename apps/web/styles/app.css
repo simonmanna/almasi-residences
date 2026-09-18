@@ -241,13 +241,23 @@ html.lenis, html.lenis body { height: auto; }
   border: 1.5px solid var(--status-colour);
   background: var(--status-fill);
 }
-.status[data-status='available'] { --status-colour: var(--status-available); --status-fill: var(--status-available); }
-.status[data-status='reserved'] {
-  --status-colour: var(--status-reserved);
-  --status-fill: repeating-linear-gradient(135deg, var(--status-reserved) 0 1.5px, transparent 1.5px 4px);
+.status[data-status='available'] {
+  --status-colour: var(--status-available);
+  --status-fill: var(--status-available);
 }
-.status[data-status='sold'] { --status-colour: var(--status-sold); --status-fill: transparent; }
-.status[data-status='unavailable'] { --status-colour: var(--status-unavailable); --status-fill: transparent; }
+.status[data-status='booked'],
+.status[data-status='reserved'] {
+  --status-colour: var(--status-booked, var(--status-reserved));
+  --status-fill: repeating-linear-gradient(135deg, var(--status-booked, var(--status-reserved)) 0 1.5px, transparent 1.5px 4px);
+}
+.status[data-status='sold'] {
+  --status-colour: var(--status-sold);
+  --status-fill: transparent;
+}
+.status[data-status='unavailable'] {
+  --status-colour: var(--status-unavailable);
+  --status-fill: transparent;
+}
 .status[data-status='unavailable']::before { border-style: dotted; }
 
 /* ─── Form fields ───────────────────────────────────────────────────── */

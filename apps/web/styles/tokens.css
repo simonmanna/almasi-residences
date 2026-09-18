@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Almasi design tokens — quiet stone, warm light.
  *
  * Two grounds, each authored by hand rather than derived from a base:
@@ -27,10 +27,10 @@
      was four browns within ΔE 14 of each other; these hold ΔE ≥ 22 apart while
      staying inside the material palette — bronze live, ochre held, patinated
      zinc gone, warm stone not yet released. */
-  --status-available:   #6B4A22;
-  --status-reserved:    #AD7526;
-  --status-sold:        #3F6A75;
-  --status-unavailable: #8E8478;
+  --status-available:   #10B981;
+  --status-reserved:    #F59E0B;
+  --status-sold:        #EF4444;
+  --status-unavailable: #4a0d19;
   /* Map — one colour per landmark category, so the pin, the legend chip and
      the list row always agree. Seven categories cannot hold the status
      palette's ΔE 22, so the floor here is 18 — and no pin is ever colour
@@ -59,10 +59,10 @@
   --foliage:            #6B7A5E;
   --scrim:              rgba(8, 8, 7, 0.55);
   --elev:               0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 56px rgba(0, 0, 0, 0.45);
-  --status-available:   #D8AE7C;
-  --status-reserved:    #CE8B36;
-  --status-sold:        #79A2AE;
-  --status-unavailable: #757063;
+  --status-available:   #10B981;
+  --status-reserved:    #F59E0B;
+  --status-sold:        #EF4444;
+  --status-unavailable: #4a0d19;
   --cat-business:       #C9A27A;
   --cat-shopping:       #D98C46;
   --cat-health:         #6FA9B4;
