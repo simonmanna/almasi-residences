@@ -9,7 +9,7 @@ import type { FloorRow } from '../lib/types';
 import { useToast } from '../components/Toast';
 import { Badge, Button, Card, Empty, ErrorBox, Field, Input, LoadingPage, MediaImg, Modal, NumberInput, PageHead, Select, Textarea, Toggle } from '../components/ui';
 
-const refresh = () => invalidate('floors', 'floor:', 'building', 'dashboard', 'residences');
+const refresh = () => invalidate('floors', 'floor:', 'building', 'dashboard', 'residences', 'residence:', 'reservations', 'search:', 'sales:');
 
 export function FloorForm({ floor, onClose }: { floor?: FloorRow; onClose: () => void }) {
   const toast = useToast();
@@ -42,11 +42,11 @@ export function FloorForm({ floor, onClose }: { floor?: FloorRow; onClose: () =>
   return (
     <Modal title={floor ? `Edit ${floorName(floor)}` : 'Add a floor'} onClose={onClose} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" busy={busy} onClick={() => void save()}>{floor ? 'Save' : 'Create floor'}</Button></>}>
       <div className="form-grid">
-        <Field label="Level" hint="0 is the ground floor, −1 the basement." error={err && d.level === null ? err : undefined}>
-          <NumberInput value={d.level} step="1" onChange={(v) => setD({ ...d, level: v })} />
-        </Field>
         <Field label="Name" hint="As staff say it: Floor 3, Penthouse." error={err && !d.label.trim() ? err : undefined}>
           <Input value={d.label} onChange={(e) => setD({ ...d, label: e.target.value })} />
+        </Field>
+        <Field label="Floor Level" hint="0 is the ground floor, −1 the basement." error={err && d.level === null ? err : undefined}>
+          <NumberInput value={d.level} step="1" onChange={(v) => setD({ ...d, level: v })} />
         </Field>
         <Field label="Display name" hint="What visitors read, if different." className="full">
           <Input value={d.displayName} onChange={(e) => setD({ ...d, displayName: e.target.value })} placeholder="Penthouse level" />
@@ -139,6 +139,7 @@ export default function Floors() {
                 <div className="row" style={{ gap: 8 }}>
                   <h3>{floorName(f)}</h3>
                   <Badge tone="grey" plain>Level {f.level}</Badge>
+                  {f.displayName && <span className="muted small">Website: {f.displayName}</span>}
                   {!f.published && <Badge tone="grey" plain><EyeOff size={11} /> Hidden</Badge>}
                 </div>
                 <p className="muted small" style={{ margin: '4px 0 0', maxWidth: 560 }}>{f.description ?? (f.stats.total ? '' : 'No residences on this floor.')}</p>

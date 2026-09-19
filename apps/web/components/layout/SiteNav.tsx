@@ -13,8 +13,8 @@ import styles from './SiteNav.module.css';
 
 export const NAV_LINKS = [
   { href: '/residences', label: 'Residences' },
-  { href: '/tour', label: '3D tour' },
-  { href: '/3d-design', label: '3D Design' },
+  { href: '/tour', label: 'Visual Tour' },
+  { href: '/3d-design', label: '3D Tour' },
   { href: '/amenities', label: 'Amenities' },
   { href: '/location', label: 'Location' },
   { href: '/gallery', label: 'Gallery' },

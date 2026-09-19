@@ -113,8 +113,10 @@ export const NAV: NavGroup[] = [
     items: [
       { label: 'Page content', to: '/content/home', icon: FileText, needs: 'content.view', sub: 'Headlines and words, page by page' },
       { label: 'Amenities', to: '/amenities', icon: Sparkles, sub: 'Pool, gym, restaurant and the rest of the building' },
+      { label: 'Residences', to: '/residences', icon: DoorOpen, needs: 'residence.view', sub: 'Every home: status, price, specifications and media' },
       { label: 'Payment plans', to: '/payment-plans', icon: Wallet, sub: 'Deposit, milestones and instalments' },
       { label: 'Location', to: '/location', icon: MapPin, needs: 'content.view', sub: 'Location text and the places around the site' },
+      { label: 'Gallery', to: '/galleries', icon: Images, needs: 'gallery.view', sub: 'Curated galleries shown on the website' },
       { label: 'FAQs', to: '/faqs', icon: HelpCircle, sub: 'Questions buyers ask' },
       { label: 'Publishing', to: '/publishing', icon: Send, needs: 'content.view', sub: 'Drafts waiting to go live, and the archive' },
       { label: 'Placements', to: '/placements', icon: Home, needs: 'content.view', sub: 'Which image or film fills each place on the site' },
