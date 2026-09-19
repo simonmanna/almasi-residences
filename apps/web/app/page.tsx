@@ -66,6 +66,7 @@ export default async function HomePage() {
     label: home('ctaSecondaryLabel') || 'Book a private viewing',
     href: home('ctaSecondaryHref') || '/enquire#viewing',
   };
+  const showNearbyPlaces = pages.locationSection?.showNearbyPlaces === true || copy(pages, 'locationSection', 'showNearbyPlaces') === 'true';
 
   return (
     <main id="main">
@@ -89,11 +90,21 @@ export default async function HomePage() {
         lines={copyLines(pages, 'home', 'amenitiesTitle')}
         lead={home('amenitiesLede')}
       />
-      {dev && <LocationExperience landmarks={dev.landmarks} latitude={dev.latitude} longitude={dev.longitude} />}
+      {dev && showNearbyPlaces && (
+        <LocationExperience
+          landmarks={dev.landmarks}
+          latitude={dev.latitude}
+          longitude={dev.longitude}
+          kicker={copy(pages, 'locationSection', 'kicker')}
+          title={copy(pages, 'locationSection', 'title')}
+          lede={copy(pages, 'locationSection', 'lede')}
+          note={copy(pages, 'locationSection', 'note')}
+        />
+      )}
       <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} />
       <ProgressPreview updates={progress} kicker={home('progressKicker')} title={copyLines(pages, 'home', 'progressTitle')} />
       <FilmTeaser kicker={home('filmKicker')} title={home('filmTitle')} cta={home('filmCta')} />
-      <EnquireSection />
+      <EnquireSection compact />
       <SiteFooter />
     </main>
   );

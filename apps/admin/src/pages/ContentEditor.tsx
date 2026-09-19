@@ -124,6 +124,9 @@ export default function ContentEditor({ params }: { params: Record<string, strin
         </div>
       );
     }
+    if (f.type === 'boolean') {
+      return <Toggle checked={v as boolean} onChange={(val) => set(f.key, val)} label="Enabled" />;
+    }
     return <Input value={(v as string) ?? ''} onChange={(e) => set(f.key, e.target.value)} placeholder={f.type === 'url' ? '/residences or https://…' : undefined} />;
   };
 

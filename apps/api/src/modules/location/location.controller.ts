@@ -17,6 +17,7 @@ export class LocationController {
     return this.prisma.client.landmark.findMany({
       where: {
         development: { slug: devSlug },
+        visible: true,
         ...(category ? { category: category as never } : {}),
       },
       orderBy: { distanceM: 'asc' },

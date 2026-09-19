@@ -46,11 +46,12 @@ export default async function BuyingPage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(dev.faqs)) }}
         />
       )}
-      <PageHeader
+<PageHeader
+        bold
         kicker={copy(pages, 'buying', 'heroKicker')}
         title={<TitleLines lines={copyLines(pages, 'buying', 'heroTitle')} />}
         lede={copy(pages, 'buying', 'heroLede')}
-      />
+/>
 
       {steps.length > 0 && (
       <section className={`container ${styles.steps}`} aria-labelledby="steps-title">

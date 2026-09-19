@@ -523,6 +523,31 @@ export class CreateAmenityDto extends UpdateAmenityDto {
   @IsString() @Length(1, 120) declare name: string;
 }
 
+// ─── Landmarks (Website → Location) ─────────────────────────────────────
+
+export const LANDMARK_CATEGORIES = ['SCHOOL', 'EMBASSY', 'HOSPITAL', 'SHOPPING', 'AIRPORT', 'LEISURE', 'BUSINESS'] as const;
+type LandmarkCategory = (typeof LANDMARK_CATEGORIES)[number];
+
+export class UpdateLandmarkDto {
+  @IsOptional() @IsString() @Length(1, 120) name?: string;
+  @IsOptional() @IsIn(LANDMARK_CATEGORIES) category?: LandmarkCategory;
+  @IsOptional() @IsNumber() @Min(-90) @Max(90) latitude?: number;
+  @IsOptional() @IsNumber() @Min(-180) @Max(180) longitude?: number;
+  /** True keeps the three figures below as typed; false computes them from the coordinates. */
+  @IsOptional() @IsBoolean() manualDistance?: boolean;
+  @IsOptional() @IsInt() @Min(0) @Max(500000) distanceM?: number | null;
+  @IsOptional() @IsInt() @Min(1) @Max(600) driveMinutes?: number | null;
+  @IsOptional() @IsInt() @Min(1) @Max(600) walkMinutes?: number | null;
+  @IsOptional() @IsBoolean() visible?: boolean;
+}
+
+export class CreateLandmarkDto extends UpdateLandmarkDto {
+  @IsString() @Length(1, 120) declare name: string;
+  @IsIn(LANDMARK_CATEGORIES) declare category: LandmarkCategory;
+  @IsNumber() @Min(-90) @Max(90) declare latitude: number;
+  @IsNumber() @Min(-180) @Max(180) declare longitude: number;
+}
+
 // ─── Users ───────────────────────────────────────────────────────────────
 
 export class CreateUserDto {

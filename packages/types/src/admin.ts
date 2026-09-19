@@ -271,7 +271,7 @@ export const MILESTONE_TRIGGERS = [
   'ON_HANDOVER',
 ] as const;
 
-/** `ON_HOLD` → "On hold". For enum values that have no bespoke label. */
+/** `MOVED_OUT` → "Moved out". For enum values that have no bespoke label. */
 export function humanise(value: string): string {
   const words = value.toLowerCase().replace(/[_-]+/g, ' ').trim();
   return words.charAt(0).toUpperCase() + words.slice(1);
@@ -372,7 +372,7 @@ export const IMAGE_WIDTHS = [400, 800, 1600, 2400] as const;
 
 // ─── Website content (CMS) ───────────────────────────────────────────────
 
-export type ContentFieldType = 'text' | 'textarea' | 'url' | 'media' | 'list';
+export type ContentFieldType = 'text' | 'textarea' | 'url' | 'media' | 'list' | 'boolean';
 
 export interface ContentField {
   key: string;
@@ -427,6 +427,18 @@ export const CONTENT_PAGES: ContentPageDef[] = [
       { key: 'filmCta', label: 'Film teaser button', type: 'text' },
       { key: 'progressKicker', label: 'Construction progress kicker', type: 'text' },
       { key: 'progressTitle', label: 'Construction progress title', type: 'text', help: 'A line break is written as “|”.' },
+    ],
+  },
+{
+    key: 'locationSection',
+    title: 'Homepage location',
+    description: 'The location section of the homepage. Its nearby places and distances are managed under Website → Location.',
+    fields: [
+      { key: 'kicker', label: 'Heading', type: 'text', help: 'The large line, e.g. "Location".' },
+      { key: 'title', label: 'Subheading', type: 'text', help: 'One short line beneath the heading. Empty shows nothing.' },
+      { key: 'lede', label: 'Description', type: 'textarea' },
+      { key: 'note', label: 'Footnote', type: 'text', help: 'Small print beneath the list, e.g. how distances are measured.' },
+      { key: 'showNearbyPlaces', label: 'Show nearby places', type: 'boolean', help: 'Toggle to show/hide the nearby places list and map on the homepage and location page.' },
     ],
   },
   {

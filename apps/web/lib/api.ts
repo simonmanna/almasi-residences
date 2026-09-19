@@ -91,7 +91,7 @@ export interface PublicMediaDto {
   mimeType: string;
   /** §49 — PHOTOGRAPH, SUPPLIED_RENDER, CONCEPT_RENDER or DRAWING. */
   provenance?: string;
-  /** The note printed beside it: "Artist's impression." — empty for a photograph. */
+  /** Optional public note associated with the media provenance. */
   note?: string;
   /** CSS object-position from the admin's focal point. */
   focus?: string | null;
@@ -180,6 +180,7 @@ export interface LandmarkDto {
   distanceM: number | null;
   driveMinutes: number | null;
   walkMinutes: number | null;
+  visible: boolean;
 }
 
 export interface ContactDto {
@@ -331,7 +332,7 @@ export interface PublicResidenceDto {
   interiorSqm: number | null;
   balconySqm: number | null;
   terraceSqm: number | null;
-  status: 'available' | 'reserved' | 'sold' | 'unavailable';
+  status: 'available' | 'reserved' | 'booked' | 'sold' | 'unavailable';
   priceMinor: number | null;
   listPriceMinor: number | null;
   currency: string;

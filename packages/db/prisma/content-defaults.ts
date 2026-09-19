@@ -43,6 +43,16 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
       progressTitle: 'Rising in|Kimihurura.',
     },
   },
+  locationSection: {
+    title: 'Homepage location',
+    content: {
+      kicker: 'Location',
+      title: '',
+      lede: 'Almasi Residences rises in the heart of Kigali, just east of the city centre: embassies, restaurants and the Convention Centre on one side, the golf course and the airport road on the other, and quiet, tree-lined streets in between.',
+      note: 'Straight-line distances from the site. Drive times are estimates at an average city speed.',
+      showNearbyPlaces: true,
+    },
+  },
   about: {
     title: 'About the project',
     content: {
@@ -119,7 +129,7 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
   film: {
     title: 'Film page',
     content: {
-      caption: 'A silent film of artist’s impressions and concept visuals.',
+      caption: 'A silent architectural film of Almasi Residences.',
       downloadLabel: 'Download the film (MP4)',
     },
   },

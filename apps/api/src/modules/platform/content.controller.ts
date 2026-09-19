@@ -145,6 +145,10 @@ export class ContentController {
 
   private async validateField(field: ContentField, value: unknown, developmentId: string): Promise<unknown> {
     if (value === null || value === '') return null;
+    if (field.type === 'boolean') {
+      if (typeof value !== 'boolean') throw new BadRequestException(`${field.label} must be true or false.`);
+      return value;
+    }
     if (field.type === 'list') {
       if (!Array.isArray(value) || value.length > 30) throw new BadRequestException(`${field.label} must be a list of up to 30 items.`);
       return value.map((item, i) => {

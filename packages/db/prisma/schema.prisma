@@ -260,9 +260,8 @@ model Unit {
 enum UnitStatus {
   AVAILABLE
   RESERVED
-  ON_HOLD
+  BOOKED
   SOLD
-  OCCUPIED
   UNAVAILABLE
 }
 
@@ -925,10 +924,14 @@ model Landmark {
   category      LandmarkCategory
   latitude      Float
   longitude     Float
-  /// computed by PostGIS at seed/update time, not hardcoded
+  /// computed by PostGIS at seed/update time, not hardcoded — unless manualDistance
   distanceM     Int?
   driveMinutes  Int?
   walkMinutes   Int?
+  /// true when the admin typed the distance and times rather than having them computed
+  manualDistance Boolean       @default(false)
+  /// when false, the landmark is hidden from the public site but kept in the admin
+  visible       Boolean         @default(true)
 
   @@index([developmentId])
 }
@@ -1144,10 +1147,6 @@ model Enquiry {
   notifications  Notification[]
   buyerId        String?
   buyer          Buyer?         @relation(fields: [buyerId], references: [id], onDelete: SetNull)
-
-  // §6.7 — Turnstile unreachable: keep the lead, flag it for manual review
-  // rather than dropping it. Never silently trust an unverified submission.
-  verificationSkipped Boolean @default(false)
 
   // §5.9 — PII retention. Set to createdAt + 24 months on write, moved forward
   // on any status change. The nightly job hard-deletes rows past this date.

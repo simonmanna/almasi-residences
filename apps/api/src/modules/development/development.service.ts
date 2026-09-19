@@ -61,7 +61,7 @@ export class DevelopmentService {
           take: 1,
           select: { milestones: { orderBy: { sortOrder: 'asc' } } },
         },
-        landmarks: { orderBy: { distanceM: 'asc' } },
+        landmarks: { where: { visible: true }, orderBy: { distanceM: 'asc' } },
         faqs: { where: { ...live() }, orderBy: { sortOrder: 'asc' }, select: { id: true, question: true, answerMd: true, category: true } },
         seo: true,
         mediaSets: { include: { assets: true }, orderBy: { sortOrder: 'asc' } },
@@ -107,7 +107,7 @@ export class DevelopmentService {
     const counts: Record<string, number> = {};
     for (const u of units) counts[u.status] = (counts[u.status] ?? 0) + 1;
     const total = units.length;
-    const sold = (counts.SOLD ?? 0) + (counts.OCCUPIED ?? 0);
+    const sold = counts.SOLD ?? 0;
     const prices = units.filter((u) => u.status === 'AVAILABLE').map((u) => effectivePriceMinor(u));
 
     return {

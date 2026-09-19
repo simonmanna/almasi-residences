@@ -14,6 +14,7 @@ export function generateMetadata(): Promise<Metadata> {
 
 export default async function LocationPage() {
   const [dev, pages, slots] = await Promise.all([getDevelopment().catch(() => null), getPagesSafe(), getMediaSlotsSafe()]);
+  const showNearbyPlaces = pages.locationSection?.showNearbyPlaces === true || copy(pages, 'locationSection', 'showNearbyPlaces') === 'true';
   return (
     <main id="main">
       <PageHero
@@ -23,8 +24,19 @@ export default async function LocationPage() {
         title={<TitleLines lines={copyLines(pages, 'location', 'heroTitle')} />}
         lede={copy(pages, 'location', 'heroLede')}
       />
-      {dev && <LocationExperience id="neighbourhood" landmarks={dev.landmarks} latitude={dev.latitude} longitude={dev.longitude} />}
-      <EnquireSection source="location" heading={['Come and', 'see the site.']} />
+      {dev && showNearbyPlaces && (
+        <LocationExperience
+          id="neighbourhood"
+          landmarks={dev.landmarks}
+          latitude={dev.latitude}
+          longitude={dev.longitude}
+          kicker={copy(pages, 'locationSection', 'kicker')}
+          title={copy(pages, 'locationSection', 'title')}
+          lede={copy(pages, 'locationSection', 'lede')}
+          note={copy(pages, 'locationSection', 'note')}
+        />
+      )}
+      <EnquireSection source="location" heading={['Come and', 'see the site.']} compact />
       <SiteFooter />
     </main>
   );
