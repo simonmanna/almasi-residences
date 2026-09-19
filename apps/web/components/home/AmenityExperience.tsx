@@ -33,12 +33,14 @@ export function AmenityExperience({
   kicker,
   lines,
   lead,
+  ground = 'night',
 }: {
   amenities: AmenityInput[];
   id?: string;
   kicker: string;
   lines: string[];
   lead: string;
+  ground?: 'stone' | 'quiet' | 'night';
 }) {
   const [selected, setSelected] = useState<(AmenityInput & { photo: PublicMediaDto | null }) | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -70,7 +72,7 @@ export function AmenityExperience({
     <section
       id={id}
       className={`section ${styles.section}`}
-      data-ground="night"
+      data-ground={ground}
       aria-labelledby={labelledBy}
       aria-label={labelledBy ? undefined : 'Amenities'}
     >

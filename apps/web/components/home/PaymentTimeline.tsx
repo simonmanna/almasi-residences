@@ -21,11 +21,13 @@ export function PaymentTimeline({
   milestones,
   handover,
   id = 'payment',
+  ground = 'quiet',
 }: {
   milestones: MilestoneDto[];
   /** "Q2 2028", or null when the property has no handover date. */
   handover: string | null;
   id?: string;
+  ground?: 'stone' | 'quiet' | 'night';
 }) {
   const { summary, currency } = useInventory();
   const priced = RESIDENCE_TYPES.filter((t) => summary.byType[t].priceFromMinor !== null);
@@ -68,7 +70,7 @@ export function PaymentTimeline({
   }, [stages.length]);
 
   return (
-    <section ref={root} id={id} className={`section ${styles.section}`} aria-labelledby={`${id}-title`}>
+    <section ref={root} id={id} className={`section ${styles.section}`} data-ground={ground} aria-labelledby={`${id}-title`}>
       <div className="container">
         <header className={styles.head}>
           <div>

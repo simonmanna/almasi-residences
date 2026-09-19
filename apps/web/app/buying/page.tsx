@@ -54,7 +54,7 @@ export default async function BuyingPage() {
 />
 
       {steps.length > 0 && (
-      <section className={`container ${styles.steps}`} aria-labelledby="steps-title">
+      <section className={`container ground-band ${styles.steps}`} data-ground="quiet" aria-labelledby="steps-title">
         <h2 id="steps-title" className="h3">
           From enquiry to keys
         </h2>
@@ -87,7 +87,7 @@ export default async function BuyingPage() {
       )}
 
       {people.length > 0 && (
-        <section className={`section container ${styles.faq}`} aria-labelledby="people-title">
+        <section className={`section container ground-band ${styles.faq}`} data-ground="stone" aria-labelledby="people-title">
           <h2 id="people-title" className="h2">
             {copy(pages, 'about', 'developerTitle') || 'Who is building it'}
           </h2>
@@ -104,10 +104,10 @@ export default async function BuyingPage() {
         </section>
       )}
 
-      <PaymentTimeline milestones={milestones} handover={handover} />
+      <PaymentTimeline milestones={milestones} handover={handover} ground="quiet" />
 
       {dev && dev.faqs.length > 0 && (
-        <section className={`section container ${styles.faq}`} aria-labelledby="faq-title">
+        <section className={`section container ground-band ${styles.faq}`} data-ground="stone" aria-labelledby="faq-title">
           <h2 id="faq-title" className="h2">
             Questions
           </h2>
@@ -122,7 +122,7 @@ export default async function BuyingPage() {
         </section>
       )}
 
-      <EnquireSection source="buying" heading={['Talk to', 'the sales team.']} />
+      <EnquireSection source="buying" heading={['Talk to', 'the sales team.']} ground="quiet" />
       <SiteFooter />
     </main>
   );

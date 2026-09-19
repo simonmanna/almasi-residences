@@ -23,8 +23,8 @@ export default async function AmenitiesPage() {
         title={<TitleLines lines={copyLines(pages, 'amenities', 'heroTitle')} />}
         lede={copy(pages, 'amenities', 'heroLede')}
 />
-      <AmenityExperience id="amenity-list" amenities={amenities.length ? amenities : (dev?.amenities ?? [])} kicker="" lines={[]} lead="" />
-      <EnquireSection source="amenities" heading={['See it', 'for yourself.']} compact />
+      <AmenityExperience id="amenity-list" amenities={amenities.length ? amenities : (dev?.amenities ?? [])} kicker="" lines={[]} lead="" ground="quiet" />
+      <EnquireSection source="amenities" heading={['See it', 'for yourself.']} compact ground="stone" />
       <SiteFooter />
     </main>
   );

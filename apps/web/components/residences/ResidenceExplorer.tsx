@@ -171,7 +171,7 @@ export function ResidenceExplorer({
 
   return (
     <>
-      <header className={`container ${styles.header}`}>
+      <header className={`container ground-band ${styles.header}`} data-ground="stone">
         <h1 className={`display ${styles.title}`}>Residences</h1>
         <p className={`small ${styles.tally}`}>
           <span className="tabular">{summary.total}</span> residences ·{' '}
@@ -196,7 +196,7 @@ export function ResidenceExplorer({
         </dl>
       </header>
 
-      <div className={styles.bar} data-ground="stone">
+      <div className={styles.bar} data-ground="quiet">
         <div className={`container ${styles.barInner}`}>
           <details
             className={styles.filters}
@@ -375,7 +375,7 @@ export function ResidenceExplorer({
       )}
 
       {shortlist.compare.length >= 2 && (
-        <section id="compare" className={styles.compare} aria-labelledby="compare-title">
+        <section id="compare" className={styles.compare} data-ground="quiet" aria-labelledby="compare-title">
           <div className="container">
             <div className={styles.compareHead}>
               <div><p className="mark muted">Shortlist</p><h2 id="compare-title" className="h3">Compare residences</h2></div>

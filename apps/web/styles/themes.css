@@ -66,6 +66,33 @@
   --map-ground:         #0C1824;
 }
 
+[data-theme="blue"] [data-ground="quiet"] {
+  --surface:            #F7FAFC;
+  --surface-raised:     #FFFFFF;
+  --surface-sunk:       #EAF0F5;
+  --ink:                #11202E;
+  --ink-muted:          #4C6274;
+  --line:               #CBD9E3;
+  --accent:             #256C99;
+  --accent-weak:        #78A9C8;
+  --on-accent:          #FFFFFF;
+  --foliage:            #496F66;
+  --scrim:              rgba(17, 32, 46, 0.24);
+  --elev:               0 1px 2px rgba(17, 32, 46, 0.06), 0 18px 48px rgba(17, 32, 46, 0.12);
+  --status-available:   #704815;
+  --status-reserved:    #A45E13;
+  --status-sold:        #246678;
+  --status-unavailable: #6E6E6C;
+  --cat-business:       #256C99;
+  --cat-shopping:       #A45518;
+  --cat-health:         #28756C;
+  --cat-school:         #4C6337;
+  --cat-airport:        #76466E;
+  --cat-leisure:        #68631C;
+  --cat-embassy:        #9A4030;
+  --map-ground:         #EDF3F7;
+}
+
 /* Blue's personality: a hairline, high-contrast Garamond over a precise
    grotesk; near-square glass panels lit from within by a cool rim. */
 :root[data-theme="blue"] {
@@ -159,6 +186,33 @@
   --cat-leisure:        #DDD37F;
   --cat-embassy:        #F2A08E;
   --map-ground:         #15324F;
+}
+
+[data-theme="sky"] [data-ground="quiet"] {
+  --surface:            #FFFFFF;
+  --surface-raised:     #FFFFFF;
+  --surface-sunk:       #EDF5FC;
+  --ink:                #15375E;
+  --ink-muted:          #48647F;
+  --line:               #CCDEED;
+  --accent:             #1D6DB0;
+  --accent-weak:        #8CBFE6;
+  --on-accent:          #FFFFFF;
+  --foliage:            #3F6E5E;
+  --scrim:              rgba(21, 55, 94, 0.2);
+  --elev:               0 1px 2px rgba(21, 55, 94, 0.05), 0 18px 48px rgba(29, 109, 176, 0.1);
+  --status-available:   #6B4A22;
+  --status-reserved:    #A06818;
+  --status-sold:        #2F6474;
+  --status-unavailable: #7D766C;
+  --cat-business:       #1D6DB0;
+  --cat-shopping:       #A4571F;
+  --cat-health:         #2F7A77;
+  --cat-school:         #4B6A3A;
+  --cat-airport:        #7A4A72;
+  --cat-leisure:        #6E6A1F;
+  --cat-embassy:        #A0412F;
+  --map-ground:         #F0F7FC;
 }
 
 /* Sky Blue's personality: a confident display serif, open spacing, white

@@ -89,6 +89,7 @@ export default async function HomePage() {
         kicker={home('amenitiesKicker')}
         lines={copyLines(pages, 'home', 'amenitiesTitle')}
         lead={home('amenitiesLede')}
+        ground="quiet"
       />
       {dev && showNearbyPlaces && (
         <LocationExperience
@@ -104,7 +105,7 @@ export default async function HomePage() {
       <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} />
       <ProgressPreview updates={progress} kicker={home('progressKicker')} title={copyLines(pages, 'home', 'progressTitle')} />
       <FilmTeaser kicker={home('filmKicker')} title={home('filmTitle')} cta={home('filmCta')} />
-      <EnquireSection compact />
+      <EnquireSection compact ground="quiet" />
       <SiteFooter />
     </main>
   );

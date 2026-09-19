@@ -23,12 +23,16 @@ export default async function GalleryPage() {
         title={<TitleLines lines={copyLines(pages, 'gallery', 'heroTitle')} />}
         lede={copy(pages, 'gallery', 'heroLede')}
       />
-      <div className="container" style={{ marginBottom: 32 }}>
+      <div className="ground-band" data-ground="quiet">
+      <div className="container" style={{ paddingTop: 32, paddingBottom: 32 }}>
         <Link href="/film" className="btn btn--solid">
           Watch the film
         </Link>
       </div>
+      </div>
+      <div className="ground-band" data-ground="quiet">
       <GalleryGrid galleries={galleries} />
+      </div>
       <SiteFooter />
     </main>
   );

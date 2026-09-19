@@ -23,7 +23,7 @@ export function FeaturedResidences({ items }: { items: PublicResidenceCardDto[] 
   if (live.length === 0) return null;
 
   return (
-    <section className={`section ${styles.section}`} aria-labelledby="featured-title">
+    <section className={`section ${styles.section}`} data-ground="quiet" aria-labelledby="featured-title">
       <div className="container">
         <header className={styles.head}>
           <div>

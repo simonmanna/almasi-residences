@@ -14,7 +14,7 @@ export function ProgressPreview({ updates, kicker, title }: { updates: ProgressU
   const latest = recent.find((u) => u.percentComplete !== null)?.percentComplete ?? null;
 
   return (
-    <section className={`section ${styles.section}`} aria-labelledby="progress-preview-title">
+    <section className={`section ${styles.section}`} data-ground="stone" aria-labelledby="progress-preview-title">
       <div className={`container ${styles.layout}`}>
         <header className={styles.head}>
           {kicker && <p className="mark">{kicker}</p>}

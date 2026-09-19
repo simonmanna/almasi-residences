@@ -26,7 +26,7 @@ export default async function ProgressPage() {
         title={<TitleLines lines={copyLines(pages, 'progress', 'heroTitle')} />}
         lede={copy(pages, 'progress', 'heroLede')}
       />
-      <section className={`container ${styles.section}`} aria-label="Updates">
+      <section className={`container ground-band ${styles.section}`} data-ground="quiet" aria-label="Updates">
         {updates.length === 0 ? (
           empty && <p className="lead">{empty}</p>
         ) : (

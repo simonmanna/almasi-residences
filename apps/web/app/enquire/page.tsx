@@ -20,7 +20,7 @@ export default async function EnquirePage() {
         title={<TitleLines lines={copyLines(pages, 'contact', 'heroTitle')} />}
         lede={copy(pages, 'contact', 'heroLede')}
       />
-      <EnquireSection id="enquire-form" source="enquire-page" />
+      <EnquireSection id="enquire-form" source="enquire-page" ground="quiet" />
       <SiteFooter />
     </main>
   );

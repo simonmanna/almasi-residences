@@ -176,7 +176,7 @@ export function ResidenceDetail({
       </section>
 
       {/* ─── The spaces ──────────────────────────────────────────────── */}
-      <section className={`section ${styles.spaces}`} aria-labelledby="spaces-title">
+      <section className={`section ${styles.spaces}`} data-ground="quiet" aria-labelledby="spaces-title">
         <div className="container">
           <header className={styles.head}>
             <div>
@@ -221,7 +221,7 @@ export function ResidenceDetail({
       </section>
 
       {/* ─── Plan and position ───────────────────────────────────────── */}
-      <section ref={planRef} className={`section ${styles.plans}`} aria-labelledby="plan-title">
+      <section ref={planRef} className={`section ${styles.plans}`} data-ground="stone" aria-labelledby="plan-title">
         <div className="container">
           <header className={styles.head}>
             <div>
@@ -345,7 +345,7 @@ export function ResidenceDetail({
       )}
 
       {/* ─── Payment ─────────────────────────────────────────────────── */}
-      <section ref={paymentRef} className={`section ${styles.payment}`} aria-labelledby="payment-title">
+      <section ref={paymentRef} className={`section ${styles.payment}`} data-ground="quiet" aria-labelledby="payment-title">
         <div className="container">
           <header className={styles.head}>
             <div>
@@ -406,7 +406,7 @@ export function ResidenceDetail({
 
       {/* ─── Alternatives ────────────────────────────────────────────── */}
       {similar.length > 0 && (
-        <section className={`section ${styles.similarSection}`} aria-labelledby="similar-title">
+        <section className={`section ${styles.similarSection}`} data-ground="stone" aria-labelledby="similar-title">
           <div className="container">
             <h2 id="similar-title" className="h3">
               {r.publicStatus === 'available' ? 'Similar residences, available now' : 'Available instead'}
@@ -448,7 +448,7 @@ export function ResidenceDetail({
       />
 
       {/* ─── Enquire ─────────────────────────────────────────────────── */}
-      <section className={`section ${styles.enquire}`} data-hide-sticky-cta aria-labelledby="residence-enquire-title">
+      <section className={`section ${styles.enquire}`} data-ground="quiet" data-hide-sticky-cta aria-labelledby="residence-enquire-title">
         <div className={`container ${styles.enquireLayout}`}>
           <div className={styles.enquireText}>
             <p className={`mark ${styles.kicker}`}>Enquire</p>

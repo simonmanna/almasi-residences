@@ -10,7 +10,7 @@ import { contrastRatio, deltaE, parseTokenBlocks } from './contrast';
 
 const css = readFileSync(resolve(__dirname, '../styles/tokens.css'), 'utf8');
 const grounds = parseTokenBlocks(css, 'data-ground');
-const GROUNDS = ['stone', 'night'];
+const GROUNDS = ['stone', 'quiet', 'night'];
 
 // Visitor themes override the material tokens of each ground; status and map
 // colours inherit, so each theme x ground is checked as the merged palette.

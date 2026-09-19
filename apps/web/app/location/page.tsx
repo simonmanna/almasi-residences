@@ -33,9 +33,10 @@ export default async function LocationPage() {
           title={copy(pages, 'locationSection', 'title')}
           lede={copy(pages, 'locationSection', 'lede')}
           note={copy(pages, 'locationSection', 'note')}
+          ground="quiet"
         />
       )}
-      <EnquireSection source="location" heading={['Come and', 'see the site.']} compact />
+      <EnquireSection source="location" heading={['Come and', 'see the site.']} compact ground="stone" />
       <SiteFooter />
     </main>
   );

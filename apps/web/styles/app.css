@@ -43,6 +43,7 @@ table { border-collapse: collapse; }
 
 /* A section that declares a ground paints it; everything inside reads the tokens. */
 :where([data-ground]) { background-color: var(--surface); background-image: var(--ambient), var(--texture); color: var(--ink); }
+[data-ground="quiet"] { --ambient: none; --texture: none; }
 
 ::selection { background: var(--accent); color: var(--surface); }
 
@@ -132,6 +133,12 @@ html.lenis, html.lenis body { height: auto; }
   padding-inline: var(--page-margin);
 }
 .section { position: relative; padding-block: var(--section-y); background-image: var(--ambient), var(--texture); }
+.ground-band {
+  background-color: var(--surface);
+  background-image: var(--ambient), var(--texture);
+  box-shadow: 0 0 0 100vmax var(--surface);
+  clip-path: inset(0 -100vmax);
+}
 .rule { height: 1px; background: var(--line); border: 0; margin: 0; }
 
 .visually-hidden {

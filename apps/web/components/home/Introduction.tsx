@@ -56,7 +56,7 @@ export function Introduction({
 
 
   return (
-    <section className={styles.intro} data-ground="night" aria-labelledby="intro-title">
+    <section className={styles.intro} data-ground="quiet" aria-labelledby="intro-title">
       <div className={styles.media} aria-hidden="true">
         <Image
           src="/media/introduction.png"

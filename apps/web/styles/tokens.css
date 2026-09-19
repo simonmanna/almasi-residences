@@ -5,6 +5,7 @@
  * reading ground, walnut for the cinematic ground, a honey highlight caught in
  * the grain. Two grounds, each authored by hand rather than derived:
  *   stone — pale oak. Reading, data, forms.
+ *   quiet — warm white. A softer companion used between themed sections.
  *   night — walnut. Cinematic media, the film, the tour.
  * A section opts in with data-ground="night"; components only ever read
  * var(--…) and never compute a colour. Blue and Sky Blue re-author both
@@ -72,6 +73,33 @@
   --cat-leisure:        #C6BF6C;
   --cat-embassy:        #E7947E;
   --map-ground:         #33241A;
+}
+
+[data-ground="quiet"] {
+  --surface:            #FBF8F3;
+  --surface-raised:     #FFFFFF;
+  --surface-sunk:       #F1E9DF;
+  --ink:                #35261A;
+  --ink-muted:          #655344;
+  --line:               #DED0C1;
+  --accent:             #74492A;
+  --accent-weak:        #AE8C6D;
+  --on-accent:          #FFFFFF;
+  --foliage:            #56603F;
+  --scrim:              rgba(53, 38, 26, 0.26);
+  --elev:               0 1px 2px rgba(53, 38, 26, 0.06), 0 18px 48px rgba(88, 56, 30, 0.1);
+  --status-available:   #5E3E1A;
+  --status-reserved:    #9A5F16;
+  --status-sold:        #2F6070;
+  --status-unavailable: #7E7264;
+  --cat-business:       #74492A;
+  --cat-shopping:       #9C4F17;
+  --cat-health:         #2A6571;
+  --cat-school:         #465438;
+  --cat-airport:        #74435C;
+  --cat-leisure:        #625E16;
+  --cat-embassy:        #8C3B2A;
+  --map-ground:         #F4ECE3;
 }
 
 :root {

@@ -14,12 +14,14 @@ export async function EnquireSection({
   heading,
   source = 'home',
   compact = false,
+  ground,
 }: {
   id?: string;
   heading?: string[];
   source?: string;
   /** Sets the heading on one line at near-lead size, under a large kicker. */
   compact?: boolean;
+  ground?: 'stone' | 'quiet' | 'night';
 }) {
   const [dev, pages] = await Promise.all([getDevelopment().catch(() => null), getPagesSafe()]);
   const contact = contactFrom(dev?.contact, dev?.name);
@@ -31,7 +33,7 @@ export async function EnquireSection({
   const body = copy(pages, 'contact', 'enquireBody');
 
   return (
-    <section id={id} className={`section ${styles.section}`} data-hide-sticky-cta aria-labelledby={`${id}-title`}>
+    <section id={id} className={`section ${styles.section}`} data-ground={ground} data-hide-sticky-cta aria-labelledby={`${id}-title`}>
       <div className={`container ${styles.layout}`}>
         <div className={styles.text}>
           <p className={`mark ${styles.kicker}${compact ? ' kicker-lg' : ''}`}>Enquire</p>

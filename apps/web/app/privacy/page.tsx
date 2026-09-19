@@ -38,7 +38,7 @@ export default async function PrivacyPage() {
       />
 
       <div className={`container ${styles.prose}`}>
-        <section aria-labelledby="collect-title">
+        <section className="ground-band" data-ground="quiet" aria-labelledby="collect-title">
           <h2 id="collect-title" className="h3">
             What we collect
           </h2>
@@ -64,7 +64,7 @@ export default async function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="why-title">
+        <section className="ground-band" data-ground="stone" aria-labelledby="why-title">
           <h2 id="why-title" className="h3">
             Why we need it
           </h2>
@@ -76,7 +76,7 @@ export default async function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="shared-title">
+        <section className="ground-band" data-ground="quiet" aria-labelledby="shared-title">
           <h2 id="shared-title" className="h3">
             Who else sees it
           </h2>
@@ -95,7 +95,7 @@ export default async function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="analytics-title">
+        <section className="ground-band" data-ground="stone" aria-labelledby="analytics-title">
           <h2 id="analytics-title" className="h3">
             Measurement
           </h2>
@@ -108,7 +108,7 @@ export default async function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="keep-title">
+        <section className="ground-band" data-ground="quiet" aria-labelledby="keep-title">
           <h2 id="keep-title" className="h3">
             How long we keep it
           </h2>
@@ -118,7 +118,7 @@ export default async function PrivacyPage() {
           </p>
         </section>
 
-        <section aria-labelledby="rights-title">
+        <section className="ground-band" data-ground="stone" aria-labelledby="rights-title">
           <h2 id="rights-title" className="h3">
             Your choices
           </h2>

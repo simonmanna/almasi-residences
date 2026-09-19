@@ -26,7 +26,7 @@ export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCar
   const max = areas.length ? Math.max(...areas.map((t) => t.areaMax)) : 0;
 
   return (
-    <section id="residences" className={`section ${styles.section}`} aria-labelledby="residences-title">
+    <section id="residences" className={`section ${styles.section}`} data-ground="stone" aria-labelledby="residences-title">
       <div className="container">
         <header className={styles.head}>
           <div>

@@ -35,7 +35,7 @@ export default async function TermsPage() {
       />
 
       <div className={`container ${styles.prose}`}>
-        <section aria-labelledby="images-title">
+        <section className="ground-band" data-ground="quiet" aria-labelledby="images-title">
           <h2 id="images-title" className="h3">
             Images and drawings
           </h2>
@@ -45,7 +45,7 @@ export default async function TermsPage() {
           </p>
         </section>
 
-        <section aria-labelledby="price-title">
+        <section className="ground-band" data-ground="stone" aria-labelledby="price-title">
           <h2 id="price-title" className="h3">
             Prices and availability
           </h2>
@@ -62,7 +62,7 @@ export default async function TermsPage() {
           </p>
         </section>
 
-        <section aria-labelledby="spec-title">
+        <section className="ground-band" data-ground="quiet" aria-labelledby="spec-title">
           <h2 id="spec-title" className="h3">
             Specification
           </h2>
@@ -74,7 +74,7 @@ export default async function TermsPage() {
           </p>
         </section>
 
-        <section aria-labelledby="progress-title">
+        <section className="ground-band" data-ground="stone" aria-labelledby="progress-title">
           <h2 id="progress-title" className="h3">
             Construction and handover
           </h2>
@@ -85,7 +85,7 @@ export default async function TermsPage() {
           </p>
         </section>
 
-        <section aria-labelledby="use-title">
+        <section className="ground-band" data-ground="quiet" aria-labelledby="use-title">
           <h2 id="use-title" className="h3">
             Using this website
           </h2>
@@ -101,7 +101,7 @@ export default async function TermsPage() {
           </p>
         </section>
 
-        <section aria-labelledby="contact-title">
+        <section className="ground-band" data-ground="stone" aria-labelledby="contact-title">
           <h2 id="contact-title" className="h3">
             Questions
           </h2>

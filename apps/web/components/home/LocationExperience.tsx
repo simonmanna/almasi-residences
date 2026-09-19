@@ -27,6 +27,7 @@ export function LocationExperience({
   lede,
   note,
   id = 'location',
+  ground = 'stone',
 }: {
   landmarks: LandmarkDto[];
   latitude: number;
@@ -36,6 +37,7 @@ export function LocationExperience({
   lede: string;
   note: string;
   id?: string;
+  ground?: 'stone' | 'quiet' | 'night';
 }) {
   const [active, setActive] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export function LocationExperience({
     setSelected((s) => (s === landmarkId ? null : landmarkId));
 
   return (
-    <section id={id} className={`section ${styles.section}`} aria-labelledby={`${id}-title`}>
+    <section id={id} className={`section ${styles.section}`} data-ground={ground} aria-labelledby={`${id}-title`}>
       <div className={`container ${styles.layout}`}>
         <div className={styles.text}>
           {kicker && <p id={title ? undefined : `${id}-title`} className={`kicker-lg ${styles.kicker}`}>{kicker}</p>}
