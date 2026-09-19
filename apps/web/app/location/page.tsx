@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { copy, copyLines, getDevelopment, getMediaSlotsSafe, getPagesSafe } from '../../lib/api';
 import { pageMetadata } from '../../lib/page-metadata';
-import { PageHero, TitleLines } from '../../components/layout/PageHero';
+import { PageHeader, TitleLines } from '../../components/layout/PageHero';
 import { LocationExperience } from '../../components/home/LocationExperience';
 import { EnquireSection } from '../../components/home/EnquireSection';
 import { SiteFooter } from '../../components/layout/SiteFooter';
@@ -17,13 +17,12 @@ export default async function LocationPage() {
   const showNearbyPlaces = pages.locationSection?.showNearbyPlaces === true || copy(pages, 'locationSection', 'showNearbyPlaces') === 'true';
   return (
     <main id="main">
-      <PageHero
-        media={slots['page-location']?.image ?? null}
-        mediaLabel="Location page header"
+      <PageHeader
+        bold
         kicker={copy(pages, 'location', 'heroKicker')}
         title={<TitleLines lines={copyLines(pages, 'location', 'heroTitle')} />}
         lede={copy(pages, 'location', 'heroLede')}
-      />
+/>
       {dev && showNearbyPlaces && (
         <LocationExperience
           id="neighbourhood"

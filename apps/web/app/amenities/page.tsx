@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { copy, copyLines, getAmenities, getDevelopment, getMediaSlotsSafe, getPagesSafe } from '../../lib/api';
 import { pageMetadata } from '../../lib/page-metadata';
-import { PageHero, TitleLines } from '../../components/layout/PageHero';
+import { PageHeader, TitleLines } from '../../components/layout/PageHero';
 import { AmenityExperience } from '../../components/home/AmenityExperience';
 import { EnquireSection } from '../../components/home/EnquireSection';
 import { SiteFooter } from '../../components/layout/SiteFooter';
@@ -17,15 +17,14 @@ export default async function AmenitiesPage() {
   const [pages, amenities, dev, slots] = await Promise.all([getPagesSafe(), getAmenities().catch(() => []), getDevelopment().catch(() => null), getMediaSlotsSafe()]);
   return (
     <main id="main">
-      <PageHero
-        media={slots['page-amenities']?.image ?? null}
-        mediaLabel="Amenities page header"
+      <PageHeader
+        bold
         kicker={copy(pages, 'amenities', 'heroKicker')}
-        title={<TitleLines lines={copyLines(pages, 'amenities', 'heroTitle')} subtitle />}
+        title={<TitleLines lines={copyLines(pages, 'amenities', 'heroTitle')} />}
         lede={copy(pages, 'amenities', 'heroLede')}
-      />
+/>
       <AmenityExperience id="amenity-list" amenities={amenities.length ? amenities : (dev?.amenities ?? [])} kicker="" lines={[]} lead="" />
-      <EnquireSection source="amenities" heading={['See it', 'for yourself.']} />
+      <EnquireSection source="amenities" heading={['See it', 'for yourself.']} compact />
       <SiteFooter />
     </main>
   );
