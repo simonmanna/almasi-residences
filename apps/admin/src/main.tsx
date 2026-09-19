@@ -4,6 +4,7 @@ import { App } from './App.js';
 import { AuthProvider } from './lib/auth.js';
 import { ToastProvider } from './components/Toast.js';
 import './styles.css';
+import './crm.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

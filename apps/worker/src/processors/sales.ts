@@ -28,14 +28,14 @@ const salesTeam = () => (process.env.ENQUIRY_NOTIFY_EMAILS ?? '').split(',');
 /** §15.2 — the visitor's reminder, once, the day before a confirmed viewing. */
 export async function sendViewingReminders(queue: Queue, now = new Date()): Promise<number> {
   const due = await prisma.viewing.findMany({
-    where: { status: 'CONFIRMED', reminderSentAt: null, scheduledAt: { gt: now, lte: new Date(now.getTime() + VIEWING_REMINDER_HOURS * 3_600_000) } },
+    where: { status: { in: ['SCHEDULED', 'CONFIRMED', 'RESCHEDULED'] }, reminderSentAt: null, scheduledAt: { gt: now, lte: new Date(now.getTime() + VIEWING_REMINDER_HOURS * 3_600_000) } },
     include: { development: { select: { name: true, contactPhone: true, officeAddress: true } } },
   });
   for (const v of due) {
     const mail = emailViewingReminder({ developmentName: v.development.name, firstName: v.name.split(/\s+/)[0] ?? v.name, at: v.scheduledAt!, location: v.location ?? v.development.officeAddress, phone: v.development.contactPhone });
     // Claim first, so a second worker never sends it again.
     const { count } = await prisma.viewing.updateMany({ where: { id: v.id, reminderSentAt: null }, data: { reminderSentAt: now } });
-    if (count) await notify(queue, { developmentId: v.developmentId, kind: 'VIEWING_REMINDER', to: [v.email], subject: mail.subject, text: mail.text, viewingId: v.id });
+    if (count) await notify(queue, { developmentId: v.developmentId, kind: 'VIEWING_REMINDER', to: v.email ? [v.email] : [], subject: mail.subject, text: mail.text, viewingId: v.id });
   }
   return due.length;
 }
@@ -57,18 +57,31 @@ export async function processReservations(queue: Queue, now = new Date()): Promi
     await notify(queue, { developmentId: r.developmentId, kind: 'RESERVATION_EXPIRING', to: r.agent?.email ? [r.agent.email] : salesTeam(), subject: mail.subject, text: mail.text });
   }
 
-  const lapsed = await prisma.reservation.findMany({ where: { status: 'ACTIVE', heldUntil: { lte: now } }, include: { unit: true, development: { select: { slug: true } } } });
+  const lapsed = await prisma.reservation.findMany({ where: { status: 'ACTIVE', heldUntil: { lte: now } }, include: { unit: true, deal: { select: { id: true, status: true } }, development: { select: { slug: true } } } });
   for (const r of lapsed) {
     await prisma.$transaction(async (tx) => {
       const claimed = await tx.reservation.updateMany({ where: { id: r.id, status: 'ACTIVE' }, data: { status: 'EXPIRED', closedAt: now, closedReason: 'Hold lapsed' } });
       if (!claimed.count) return;
       // Only undo the hold if nobody has moved the residence on since.
-      if (r.unit.status === 'ON_HOLD' || r.unit.status === 'RESERVED') {
+      if (r.unit.status === 'BOOKED' || r.unit.status === 'RESERVED') {
         await tx.unit.update({ where: { id: r.unitId }, data: { status: r.previousStatus } });
         await tx.unitStatusLog.create({ data: { unitId: r.unitId, from: r.unit.status, to: r.previousStatus, actor: 'system', note: 'Reservation lapsed' } });
       }
+      // The deal goes back to negotiation, and so does its lead; the API files
+      // the lead into its pipeline column (stageId null → first column of its category).
+      if (r.deal && (r.deal.status === 'RESERVED' || r.deal.status === 'CONTRACT')) {
+        await tx.deal.update({ where: { id: r.deal.id }, data: { status: 'NEGOTIATION', reservationId: null } });
+      }
       if (r.enquiryId) {
-        await tx.leadNote.create({ data: { enquiryId: r.enquiryId, kind: 'SYSTEM', body: `The hold on ${r.unit.code} lapsed and the residence returned to sale.` } });
+        const lead = await tx.enquiry.findUnique({ where: { id: r.enquiryId }, select: { status: true } });
+        if (lead && (lead.status === 'RESERVED' || lead.status === 'CONTRACT')) {
+          await tx.enquiry.update({ where: { id: r.enquiryId }, data: { status: 'NEGOTIATION', stageId: null, stageChangedAt: now } });
+          await tx.leadStageChange.create({ data: { enquiryId: r.enquiryId, fromStatus: lead.status, toStatus: 'NEGOTIATION', actorId: null } });
+        }
+        await tx.leadNote.create({ data: { enquiryId: r.enquiryId, kind: 'RESERVATION', body: `The hold on ${r.unit.code} lapsed and the residence returned to sale.` } });
+      }
+      if (r.agentId) {
+        await tx.adminNotification.create({ data: { userId: r.agentId, kind: 'reservation.expired', title: `Hold on ${r.unit.code} lapsed`, body: 'The residence is back on sale and the deal is in negotiation again.', link: r.enquiryId ? `/crm/leads/${r.enquiryId}` : '/reservations', enquiryId: r.enquiryId } });
       }
       await tx.syncEvent.create({ data: { developmentSlug: r.development.slug, scope: 'inventory', tags: SCOPE_TAGS.inventory } });
     });
@@ -85,12 +98,12 @@ export async function sendLeadsDigest(queue: Queue, now = new Date()): Promise<n
     dayStart.setUTCHours(0, 0, 0, 0);
     const dayEnd = new Date(dayStart.getTime() + 86_400_000);
     const [uncontacted, overdue, today] = await Promise.all([
-      prisma.enquiry.findMany({ where: { developmentId: d.id, status: 'NEW', contactedAt: null }, orderBy: { createdAt: 'asc' }, include: { units: { include: { unit: { select: { code: true } } } } } }),
+      prisma.enquiry.findMany({ where: { developmentId: d.id, archivedAt: null, status: 'NEW', contactedAt: null }, orderBy: { createdAt: 'asc' }, include: { units: { include: { unit: { select: { code: true } } } } } }),
       prisma.enquiry.findMany({
-        where: { developmentId: d.id, status: { notIn: ['LOST', 'SPAM', 'SOLD'] }, OR: [{ followUpAt: { lt: now } }, { status: 'NEW', contactedAt: null, createdAt: { lt: new Date(now.getTime() - FIRST_RESPONSE_HOURS * 3_600_000) } }] },
+        where: { developmentId: d.id, archivedAt: null, status: { notIn: ['LOST', 'SPAM', 'SOLD', 'DISQUALIFIED', 'ON_HOLD'] }, OR: [{ followUpAt: { lt: now } }, { status: 'NEW', contactedAt: null, createdAt: { lt: new Date(now.getTime() - FIRST_RESPONSE_HOURS * 3_600_000) } }] },
         orderBy: { followUpAt: 'asc' },
       }),
-      prisma.viewing.findMany({ where: { developmentId: d.id, status: 'CONFIRMED', scheduledAt: { gte: dayStart, lt: dayEnd } }, orderBy: { scheduledAt: 'asc' }, include: { agent: { select: { name: true } } } }),
+      prisma.viewing.findMany({ where: { developmentId: d.id, status: { in: ['SCHEDULED', 'CONFIRMED', 'RESCHEDULED'] }, scheduledAt: { gte: dayStart, lt: dayEnd } }, orderBy: { scheduledAt: 'asc' }, include: { agent: { select: { name: true } } } }),
     ]);
     if (!uncontacted.length && !overdue.length && !today.length) continue;
     const mail = emailLeadsDigest({

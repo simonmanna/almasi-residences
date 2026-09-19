@@ -12,6 +12,8 @@ export const ADMIN_ROLES = [
   'SUPER_ADMIN',
   'PROPERTY_MANAGER',
   'SALES_MANAGER',
+  'SALES_AGENT',
+  'MARKETING',
   'CONTENT_MANAGER',
   'VIEWER',
 ] as const;
@@ -21,6 +23,8 @@ export const ROLE_LABEL: Record<AdminRole, string> = {
   SUPER_ADMIN: 'Super admin',
   PROPERTY_MANAGER: 'Property manager',
   SALES_MANAGER: 'Sales manager',
+  SALES_AGENT: 'Sales agent',
+  MARKETING: 'Marketing',
   CONTENT_MANAGER: 'Content manager',
   VIEWER: 'Viewer',
 };
@@ -28,7 +32,9 @@ export const ROLE_LABEL: Record<AdminRole, string> = {
 export const ROLE_DESCRIPTION: Record<AdminRole, string> = {
   SUPER_ADMIN: 'Full access, including users, settings and reversing a sale.',
   PROPERTY_MANAGER: 'Property, floors, residences, rooms, parking, amenities and residents.',
-  SALES_MANAGER: 'Availability, pricing, payment plans, reservations, enquiries and buyers.',
+  SALES_MANAGER: 'The whole CRM: every lead, the team, pipeline settings, deals, pricing and reservations.',
+  SALES_AGENT: 'Their own and unassigned leads: activities, tasks, viewings, deals and reservations. No price overrides.',
+  MARKETING: 'Campaigns, lead sources and CRM reports. Reads leads; does not work them.',
   CONTENT_MANAGER: 'Images, galleries, videos, floor plans, designs and website content.',
   VIEWER: 'Read-only. No access to resident or buyer contact details.',
 };
@@ -77,6 +83,17 @@ export const PERMISSIONS = [
   'settings.edit',
   'reservation.edit',
   'reports.view',
+  // CRM.
+  'enquiry.view-all',
+  'enquiry.assign',
+  'enquiry.merge',
+  'enquiry.archive',
+  'deal.edit',
+  'deal.price',
+  'deal.close',
+  'campaign.edit',
+  'crm.documents',
+  'crm.configure',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -120,6 +137,16 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
   'settings.edit': 'Change settings',
   'reservation.edit': 'Hold, extend and release reservations',
   'reports.view': 'See sales, demand and website reports',
+  'enquiry.view-all': 'See every lead, not only their own and unassigned ones',
+  'enquiry.assign': 'Assign and reassign leads to other people',
+  'enquiry.merge': 'Merge duplicate leads',
+  'enquiry.archive': 'Archive and restore leads',
+  'deal.edit': 'Create and work deals',
+  'deal.price': 'Agree prices and discounts on deals',
+  'deal.close': 'Mark deals sold or lost',
+  'campaign.edit': 'Manage marketing campaigns',
+  'crm.documents': 'Upload and read lead documents',
+  'crm.configure': 'Configure the pipeline, lead scoring and assignment rules',
 };
 
 const ALL: readonly Permission[] = PERMISSIONS;
@@ -178,6 +205,49 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'resident.view',
     'reservation.edit',
     'reports.view',
+    'enquiry.view-all',
+    'enquiry.assign',
+    'enquiry.merge',
+    'enquiry.archive',
+    'deal.edit',
+    'deal.price',
+    'deal.close',
+    'campaign.edit',
+    'crm.documents',
+    'crm.configure',
+  ],
+  // Works their own pipeline. Sees unassigned leads so they can pick them up;
+  // cannot move a lead to someone else, override a price or close a sale.
+  SALES_AGENT: [
+    'property.view',
+    'floor.view',
+    'residence.view',
+    'typology.view',
+    'parking.view',
+    'payment-plan.view',
+    'media.view',
+    'gallery.view',
+    'content.view',
+    'buyer.view',
+    'buyer.edit',
+    'enquiry.view',
+    'enquiry.edit',
+    'reservation.edit',
+    'deal.edit',
+    'crm.documents',
+  ],
+  MARKETING: [
+    'property.view',
+    'floor.view',
+    'residence.view',
+    'typology.view',
+    'media.view',
+    'gallery.view',
+    'content.view',
+    'enquiry.view',
+    'enquiry.view-all',
+    'campaign.edit',
+    'reports.view',
   ],
   CONTENT_MANAGER: [
     'property.view',
@@ -219,7 +289,7 @@ export function can(role: string | null | undefined, permission: Permission): bo
 // ─── Enumerations ────────────────────────────────────────────────────────
 
 /** §40.3 — the pipeline, then the two exits. */
-export const ENQUIRY_STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'VIEWING_SCHEDULED', 'VIEWED', 'INTERESTED', 'RESERVED', 'SOLD', 'LOST', 'SPAM'] as const;
+export const ENQUIRY_STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPERTY_INTEREST', 'VIEWING_SCHEDULED', 'VIEWED', 'NEGOTIATION', 'RESERVED', 'CONTRACT', 'SOLD', 'ON_HOLD', 'LOST', 'DISQUALIFIED', 'SPAM'] as const;
 export type EnquiryStatusValue = (typeof ENQUIRY_STATUSES)[number];
 
 export const BUYER_STAGES = [

@@ -1,336 +1,165 @@
-import { useEffect, useState } from 'react';
-import { AlarmClock, CalendarPlus, CheckSquare, Download, Handshake, Inbox, KeyRound, Mail, MessageCircle, Phone, ShieldAlert, UserPlus } from 'lucide-react';
-import {
-  ENQUIRY_STATUSES,
-  humanise,
-  LEAD_NOTE_KINDS,
-  LEAD_NOTE_LABEL,
-  LOST_REASON_LABEL,
-  LOST_REASONS,
-  NOTIFICATION_KIND_LABEL,
-  PIPELINE_STAGES,
-  STAGE_LABEL,
-  VIEWING_SLOTS,
-  VIEWING_STATUS_LABEL,
-} from '@avida/types';
-import { downloadUrl, get, patch, post, qs } from '../lib/api';
+import { useEffect, useRef, useState } from 'react';
+import { AlarmClock, Archive, Bookmark, CheckSquare, Download, Filter, Inbox, Plus, Search, ShieldAlert, Tag, Trash2, X } from 'lucide-react';
+import { humanise, LEAD_SOURCE_LABEL, LEAD_SOURCES, TEMPERATURE_LABEL, type LeadSourceValue } from '@avida/types';
+import { del, downloadUrl, get, post, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { ago, code as fmtCode, date, dateTime, ENQUIRY_TONE, money } from '../lib/format';
+import { isPast, refreshCrm, relDay, type LeadList, type Stage } from '../lib/crm';
+import { ago, code as fmtCode, money } from '../lib/format';
 import { invalidate, useQuery } from '../lib/query';
-import { useTeam } from '../lib/ref';
-import { Link, useDebounced, useSearchState } from '../lib/router';
-import type { Paged } from '../lib/types';
+import { useTeam, useTypes } from '../lib/ref';
+import { navigate, useDebounced, useSearchState } from '../lib/router';
 import { useToast } from '../components/Toast';
-import { Alert, Badge, Button, Card, Checkbox, Drawer, Empty, ErrorBox, Field, Input, KV, Modal, PageHead, Pagination, Segmented, Select, Skeleton, Textarea } from '../components/ui';
-import { ViewingForm } from './Viewings';
-import { ReservationForm } from './Reservations';
+import { Avatar, LostModal, NewLeadModal, PriorityBadge, ScorePill, StageBadge, TempBadge } from '../components/crm';
+import { Badge, Button, Card, Checkbox, Empty, ErrorBox, Field, Input, Menu, Modal, PageHead, Pagination, Select, Skeleton } from '../components/ui';
 
-export interface LeadRow {
+export type { LeadRow, LeadList as ListData } from '../lib/crm';
+
+const VIEWS = [
+  { value: '', label: 'All leads' },
+  { value: 'mine', label: 'My leads' },
+  { value: 'new', label: 'New' },
+  { value: 'unassigned', label: 'Unassigned' },
+  { value: 'overdue', label: 'Overdue' },
+  { value: 'closed', label: 'Closed' },
+  { value: 'archived', label: 'Archived' },
+] as const;
+
+const FILTER_KEYS = ['stageId', 'assignedTo', 'leadSource', 'temperature', 'typologyId', 'bedrooms', 'budgetMin', 'budgetMax', 'createdFrom', 'createdTo', 'followUp', 'lastActivity', 'tag', 'priority', 'campaignId'] as const;
+
+interface SavedView {
   id: string;
-  createdAt: string;
   name: string;
-  email: string;
-  phone: string;
-  countryIso: string | null;
-  intent: string;
-  status: string;
-  source: string | null;
-  assignedToId: string | null;
-  assignedToName: string | null;
-  followUpAt: string | null;
-  contactedAt: string | null;
-  lastActivityAt: string | null;
-  repeatCount: number;
-  noteCount: number;
-  overdue: boolean;
-  verificationSkipped: boolean;
-  openViewing: { id: string; status: string; scheduledAt: string | null; requestedDate: string | null } | null;
-  buyer: { id: string; fullName: string } | null;
-  units: { id: string; code: string; priceMinor: number; currency: string; status: string }[];
+  filters: Record<string, string>;
+  shared: boolean;
+  userId: string;
+  user: { name: string };
 }
 
-interface LeadDetail extends LeadRow {
-  message: string | null;
-  lostReason: string | null;
-  lostNote: string | null;
-  utmSource: string | null;
-  utmMedium: string | null;
-  utmCampaign: string | null;
-  landingPath: string | null;
-  referrer: string | null;
-  notes: { id: string; kind: string; body: string; createdAt: string; authorName: string }[];
-  viewings: { id: string; status: string; scheduledAt: string | null; requestedDate: string | null; requestedSlot: string | null; agent: { name: string } | null; units: string[] }[];
-  reservations: { id: string; status: string; heldUntil: string; unit: { code: string } }[];
-  notifications: { id: string; kind: string; recipient: string; status: string; lastError: string | null; sentAt: string | null; createdAt: string }[];
-  otherEnquiries: { id: string; createdAt: string; status: string }[];
-}
-
-export interface ListData extends Paged<LeadRow> {
-  byStatus: Record<string, number>;
-  overdue: number;
-  mine: number;
-}
-
-const whatsapp = (phone: string) => `https://wa.me/${phone.replace(/\D/g, '')}`;
-const toLocalInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
-
-function LostModal({ onConfirm, onClose, count = 1 }: { onConfirm: (reason: string, note: string) => void; onClose: () => void; count?: number }) {
-  const [reason, setReason] = useState('');
-  const [note, setNote] = useState('');
-  return (
-    <Modal title={count > 1 ? `Mark ${count} leads as lost` : 'Mark as lost'} sub="The reason is what the reports learn from." onClose={onClose} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!reason} onClick={() => onConfirm(reason, note)}>Mark as lost</Button></>}>
-      <Field label="Why?">
-        <Select value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Choose a reason" options={LOST_REASONS.map((r) => ({ value: r, label: LOST_REASON_LABEL[r] }))} />
-      </Field>
-      {count === 1 && <Field label="Anything to add (optional)"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>}
-    </Modal>
-  );
-}
-
-export function LeadDrawer({ id, onClose }: { id: string; onClose: () => void }) {
-  const { can } = useAuth();
-  const toast = useToast();
-  const { data: team } = useTeam();
-  const { data: e, error } = useQuery(`enquiries:detail:${id}`, () => get<LeadDetail>(`/admin/enquiries/${id}`));
-  const [kind, setKind] = useState<string>('CALL');
-  const [body, setBody] = useState('');
-  const [lost, setLost] = useState(false);
-  const [booking, setBooking] = useState(false);
-  const [reserving, setReserving] = useState(false);
-  const editable = can('enquiry.edit');
-  const refresh = () => invalidate('enquiries', 'dashboard', 'sales-desk', 'viewings', 'reservations');
-
-  const update = async (payload: Record<string, unknown>, msg = 'Saved.') => {
-    try {
-      await patch(`/admin/enquiries/${id}`, payload);
-      toast.success(msg);
-      refresh();
-    } catch (err) {
-      toast.error((err as Error).message);
-    }
-  };
-  const addNote = async () => {
-    try {
-      await post(`/admin/enquiries/${id}/notes`, { kind, body });
-      setBody('');
-      toast.success(`${LEAD_NOTE_LABEL[kind]} logged.`);
-      refresh();
-    } catch (err) {
-      toast.error((err as Error).message);
-    }
-  };
-
-  return (
-    <Drawer
-      title={e?.name ?? 'Lead'}
-      sub={e && `${humanise(e.intent)} · ${dateTime(e.createdAt)}${e.repeatCount ? ` · asked ${e.repeatCount + 1} times` : ''}`}
-      onClose={onClose}
-      footer={
-        e &&
-        editable && (
-          <>
-            {!e.buyer && can('buyer.edit') && e.status !== 'SPAM' && (
-              <Button icon={<Handshake size={15} />} onClick={async () => { try { await post(`/admin/enquiries/${id}/convert`); toast.success('Client record created.'); refresh(); } catch (err) { toast.error((err as Error).message); } }}>Make client</Button>
-            )}
-            <Button icon={<CalendarPlus size={15} />} onClick={() => setBooking(true)}>Book viewing</Button>
-            {can('reservation.edit') && e.units.some((u) => u.status === 'AVAILABLE') && <Button icon={<KeyRound size={15} />} onClick={() => setReserving(true)}>Reserve</Button>}
-            <span className="spacer" />
-            {e.status !== 'SPAM' && <Button variant="ghost" icon={<ShieldAlert size={15} />} onClick={() => void update({ status: 'SPAM' }, 'Marked as spam.')}>Spam</Button>}
-          </>
-        )
-      }
-    >
-      {error && <ErrorBox error={error} />}
-      {!e && !error && <Skeleton h={200} />}
-      {e && (
-        <div className="stack">
-          {e.overdue && <Alert tone="warn" icon={<AlarmClock size={18} />}>{e.contactedAt ? 'The follow-up date has passed.' : 'No one has answered this lead yet — the website promises a reply within one working day.'}</Alert>}
-          {e.verificationSkipped && <Alert tone="warn">The anti-spam check was unavailable when this arrived. Treat with care.</Alert>}
-
-          <div className="lead-contact">
-            <a className="btn btn-sm" href={`tel:${e.phone}`} onClick={() => editable && !e.contactedAt && void post(`/admin/enquiries/${id}/notes`, { kind: 'CALL', body: 'Called from the lead desk.' }).then(refresh)}><Phone size={14} /> {e.phone}</a>
-            <a className="btn btn-sm" href={whatsapp(e.phone)} target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp</a>
-            <a className="btn btn-sm" href={`mailto:${e.email}`}><Mail size={14} /> {e.email}</a>
-          </div>
-
-          <div className="grid-2">
-            <Field label="Stage">
-              <Select
-                value={e.status}
-                disabled={!editable}
-                onChange={(ev) => (ev.target.value === 'LOST' ? setLost(true) : void update({ status: ev.target.value }, `Moved to ${STAGE_LABEL[ev.target.value]}.`))}
-                options={ENQUIRY_STATUSES.map((s) => ({ value: s, label: STAGE_LABEL[s] ?? humanise(s) }))}
-              />
-            </Field>
-            <Field label="Owner">
-              <Select value={e.assignedToId ?? ''} disabled={!editable} onChange={(ev) => void update({ assignedToId: ev.target.value || null }, 'Owner changed.')} placeholder="Unassigned" options={(team ?? []).map((t) => ({ value: t.id, label: t.name }))} />
-            </Field>
-            <Field label="Next follow-up">
-              <Input type="date" disabled={!editable} defaultValue={toLocalInput(e.followUpAt)} key={e.followUpAt ?? 'none'} onChange={(ev) => void update({ followUpAt: ev.target.value ? new Date(`${ev.target.value}T09:00:00`).toISOString() : null }, ev.target.value ? `Follow-up set for ${date(ev.target.value)}.` : 'Follow-up cleared.')} />
-            </Field>
-            <Field label="First response">
-              <div className="small" style={{ paddingTop: 8 }}>{e.contactedAt ? `${dateTime(e.contactedAt)} (${ago(e.contactedAt)})` : <Badge tone="amber">Not yet</Badge>}</div>
-            </Field>
-          </div>
-          {e.status === 'LOST' && e.lostReason && <Alert tone="info">Lost — {LOST_REASON_LABEL[e.lostReason as keyof typeof LOST_REASON_LABEL]}{e.lostNote ? `: ${e.lostNote}` : ''}</Alert>}
-
-          {e.units.length > 0 && (
-            <div>
-              <div className="field-label">Residences asked about</div>
-              <div className="row-wrap" style={{ gap: 6, marginTop: 6 }}>
-                {e.units.map((u) => (
-                  <Link key={u.id} to={`/residences/${u.id}`} className="chip-link">
-                    <strong>{fmtCode(u.code)}</strong> {money(u.priceMinor, u.currency)} <Badge tone="grey" plain>{humanise(u.status)}</Badge>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-          {e.message && (
-            <div>
-              <div className="field-label">Their message</div>
-              <p className="quote">{e.message}</p>
-            </div>
-          )}
-
-          <div>
-            <div className="field-label">Viewings</div>
-            {e.viewings.length === 0 && <p className="muted small">None booked.</p>}
-            {e.viewings.map((v) => (
-              <div key={v.id} className="row" style={{ padding: '6px 0', borderTop: '1px solid var(--line-2)' }}>
-                <Badge tone={v.status === 'CONFIRMED' ? 'green' : v.status === 'REQUESTED' ? 'amber' : 'grey'}>{VIEWING_STATUS_LABEL[v.status as keyof typeof VIEWING_STATUS_LABEL]}</Badge>
-                <span className="small" style={{ flex: 1 }}>
-                  {v.scheduledAt ? dateTime(v.scheduledAt) : `Asked for ${v.requestedDate ? date(v.requestedDate) : 'any day'}${v.requestedSlot ? `, ${VIEWING_SLOTS.find((s) => s.key === v.requestedSlot)?.label}` : ''}`}
-                  {v.agent ? ` · ${v.agent.name}` : ''}
-                </span>
-                <Link to={`/viewings?open=${v.id}`} className="small">Open</Link>
-              </div>
-            ))}
-          </div>
-
-          {e.reservations.length > 0 && (
-            <div>
-              <div className="field-label">Reservations</div>
-              {e.reservations.map((r) => (
-                <div key={r.id} className="row small" style={{ padding: '6px 0' }}>
-                  <strong>{fmtCode(r.unit.code)}</strong> <Badge tone={r.status === 'ACTIVE' ? 'orange' : 'grey'} plain>{humanise(r.status)}</Badge> until {date(r.heldUntil)}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div>
-            <div className="field-label">History</div>
-            {editable && (
-              <div className="note-composer">
-                <Segmented value={kind} onChange={setKind} options={LEAD_NOTE_KINDS.map((k) => ({ value: k, label: LEAD_NOTE_LABEL[k] }))} />
-                <Textarea rows={2} placeholder={kind === 'CALL' ? 'What was said, and what happens next…' : 'Add to the history…'} value={body} onChange={(ev) => setBody(ev.target.value)} />
-                <div className="row" style={{ justifyContent: 'flex-end' }}>
-                  <Button size="sm" variant="primary" disabled={!body.trim()} onClick={() => void addNote()}>Log {(LEAD_NOTE_LABEL[kind] ?? humanise(kind)).toLowerCase()}</Button>
-                </div>
-              </div>
-            )}
-            <ol className="timeline">
-              {e.notes.map((n) => (
-                <li key={n.id} data-kind={n.kind}>
-                  <div className="timeline-head"><Badge tone={n.kind === 'STATUS' ? 'sky' : n.kind === 'SYSTEM' ? 'grey' : 'teal'} plain>{LEAD_NOTE_LABEL[n.kind] ?? n.kind}</Badge> <span className="muted small">{n.authorName} · {ago(n.createdAt)}</span></div>
-                  <p>{n.body}</p>
-                </li>
-              ))}
-              <li data-kind="SYSTEM">
-                <div className="timeline-head"><Badge tone="grey" plain>Received</Badge> <span className="muted small">{dateTime(e.createdAt)}</span></div>
-                <p className="small muted">From {e.source ?? 'the website'}{e.utmSource ? ` · ${e.utmSource}${e.utmMedium ? `/${e.utmMedium}` : ''}${e.utmCampaign ? ` · ${e.utmCampaign}` : ''}` : ''}{e.landingPath ? ` · landed on ${e.landingPath}` : ''}</p>
-              </li>
-            </ol>
-          </div>
-
-          <div>
-            <div className="field-label">Emails</div>
-            {e.notifications.length === 0 && <p className="muted small">None.</p>}
-            {e.notifications.map((n) => (
-              <div key={n.id} className="row small" style={{ padding: '4px 0' }}>
-                <Badge tone={n.status === 'SENT' ? 'green' : n.status === 'QUEUED' ? 'sky' : 'red'} plain>{humanise(n.status)}</Badge>
-                <span style={{ flex: 1 }}>{NOTIFICATION_KIND_LABEL[n.kind] ?? n.kind} → {n.recipient}</span>
-                {n.lastError && <span className="muted" title={n.lastError}>{n.lastError.slice(0, 40)}</span>}
-              </div>
-            ))}
-          </div>
-
-          <KV items={[['Country', e.countryIso ?? '—'], ['Client', e.buyer ? <Link to={`/buyers/${e.buyer.id}`}>{e.buyer.fullName}</Link> : '—'], ['Other enquiries', e.otherEnquiries.length ? `${e.otherEnquiries.length} from the same email or phone` : 'None']]} />
-        </div>
-      )}
-      {lost && <LostModal onClose={() => setLost(false)} onConfirm={(reason, note) => { setLost(false); void update({ status: 'LOST', lostReason: reason, lostNote: note || null }, 'Marked as lost.'); }} />}
-      {booking && e && <ViewingForm enquiryId={e.id} unitIds={e.units.map((u) => u.id)} onClose={() => setBooking(false)} />}
-      {reserving && e && <ReservationForm enquiryId={e.id} unitId={e.units.find((u) => u.status === 'AVAILABLE')?.id} onClose={() => setReserving(false)} />}
-    </Drawer>
-  );
-}
-
-/** §40.3 — the lead desk. */
+/** CRM — every lead, searchable and filterable, with bulk actions for managers. */
 export default function Enquiries() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const toast = useToast();
   const { data: team } = useTeam();
+  const { data: types } = useTypes();
   const [s, set] = useSearchState({ page: '1' });
   const [q, setQ] = useState(s.q ?? '');
   const term = useDebounced(q);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLost, setBulkLost] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Old links (/enquiries?open=…) land on the lead's own page.
+  useEffect(() => {
+    if (s.open) navigate(`/crm/leads/${s.open}`, { replace: true });
+  }, [s.open]);
   useEffect(() => {
     if ((s.q ?? '') !== term) set({ q: term, page: 1 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [term]);
-  const query = qs({ status: s.status, q: s.q, assignedTo: s.assignedTo, overdue: s.overdue, intent: s.intent, page: s.page });
-  const { data, error, refetch } = useQuery(`enquiries:${query}`, () => get<ListData>(`/admin/enquiries${query}`));
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'n' && can('enquiry.edit')) (e.preventDefault(), setAdding(true));
+      if (e.key === 'f') (e.preventDefault(), searchRef.current?.focus());
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [can]);
+
+  const query = qs({ view: s.view, q: s.q, page: s.page, sort: s.sort, status: s.status, ...Object.fromEntries(FILTER_KEYS.map((k) => [k, s[k]])) });
+  const { data, error, refetch } = useQuery(`enquiries:${query}`, () => get<LeadList>(`/admin/enquiries${query}`));
+  const { data: stages } = useQuery('crm:stages', () => get<(Stage & { leadCount: number })[]>('/admin/crm/stages'));
+  const { data: views } = useQuery('crm:views:leads', () => get<SavedView[]>('/admin/crm/views?scope=leads'));
   const editable = can('enquiry.edit');
+  const activeFilters = FILTER_KEYS.filter((k) => s[k]);
 
   const bulk = async (payload: Record<string, unknown>, msg: string) => {
     try {
       await post('/admin/enquiries/bulk', { ids: [...selected], ...payload });
       toast.success(msg);
       setSelected(new Set());
-      invalidate('enquiries', 'dashboard', 'sales-desk');
+      refreshCrm();
     } catch (err) {
       toast.error((err as Error).message);
     }
   };
+
   const rows = data?.data ?? [];
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
-  const total = data ? Object.entries(data.byStatus).filter(([k]) => k !== 'SPAM').reduce((a, [, n]) => a + n, 0) : 0;
+  const counts: Record<string, number | undefined> = data ? { '': data.meta.total, mine: data.mine, new: data.new, unassigned: data.unassigned, overdue: data.overdue } : {};
+
+  const applyView = (v: SavedView) => set({ ...Object.fromEntries([...FILTER_KEYS, 'view', 'sort', 'q'].map((k) => [k, v.filters[k] ?? null])), page: 1 });
 
   return (
     <>
-      <PageHead title="Enquiries" sub={data ? `${total} leads · ${data.overdue} overdue · ${data.mine} yours` : 'Every enquiry from the website'}>
-        {can('enquiry.export') && <a className="btn" href={downloadUrl('/admin/enquiries/export.csv')}><Download size={15} /> Export CSV</a>}
+      <PageHead title="Leads" sub={data ? `${data.meta.total} ${s.view ? VIEWS.find((v) => v.value === s.view)?.label.toLowerCase() : 'leads'} · ${data.overdue} overdue · ${data.unassigned} unassigned` : 'Every lead, from every source'}>
+        {can('enquiry.export') && <a className="btn" href={downloadUrl(`/admin/enquiries/export.csv${query}`)}><Download size={15} /> Export</a>}
+        {editable && <Button variant="primary" icon={<Plus size={16} />} onClick={() => setAdding(true)} title="Shortcut: N">New lead</Button>}
       </PageHead>
 
-      {data && (
-        <div className="pipeline" role="group" aria-label="Pipeline stages">
-          <button type="button" className={!s.status ? 'active' : undefined} onClick={() => set({ status: null, page: 1 })}><span>All open</span><strong>{total}</strong></button>
-          {PIPELINE_STAGES.map((st) => (
-            <button key={st} type="button" className={s.status === st ? 'active' : undefined} onClick={() => set({ status: st, page: 1 })} data-tone={ENQUIRY_TONE[st]}>
-              <span>{STAGE_LABEL[st]}</span>
-              <strong>{data.byStatus[st] ?? 0}</strong>
-            </button>
-          ))}
-          <button type="button" className={s.status === 'LOST' ? 'active' : undefined} onClick={() => set({ status: 'LOST', page: 1 })}><span>Lost</span><strong>{data.byStatus.LOST ?? 0}</strong></button>
-        </div>
-      )}
+      <div className="view-tabs" role="tablist" aria-label="Lead views">
+        {VIEWS.filter((v) => v.value !== 'archived' || can('enquiry.archive')).map((v) => (
+          <button key={v.value} type="button" role="tab" aria-selected={(s.view ?? '') === v.value} onClick={() => set({ view: v.value || null, page: 1 })}>
+            {v.label}
+            {counts[v.value] !== undefined && <span className={`count ${v.value === 'overdue' && counts[v.value] ? 'alert' : ''}`}>{counts[v.value]}</span>}
+          </button>
+        ))}
+      </div>
 
       <Card>
-        <div className="toolbar">
-          <Input placeholder="Search name, email, phone or message" value={q} onChange={(ev) => setQ(ev.target.value)} style={{ maxWidth: 320 }} />
-          <Select className="sm" style={{ width: 'auto' }} value={s.assignedTo ?? ''} onChange={(ev) => set({ assignedTo: ev.target.value, page: 1 })} placeholder="Anyone" options={[{ value: 'me', label: 'Mine' }, { value: 'none', label: 'Unassigned' }, ...(team ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
-          <Select className="sm" style={{ width: 'auto' }} value={s.intent ?? ''} onChange={(ev) => set({ intent: ev.target.value, page: 1 })} placeholder="Any request" options={[{ value: 'VIEWING', label: 'Viewings' }, { value: 'INFORMATION', label: 'Information' }, { value: 'RESERVATION', label: 'Reservations' }, { value: 'BROKER', label: 'Brokers' }]} />
-          <Button size="sm" variant={s.overdue === 'true' ? 'primary' : 'default'} icon={<AlarmClock size={14} />} onClick={() => set({ overdue: s.overdue === 'true' ? null : 'true', page: 1 })}>Overdue{data ? ` (${data.overdue})` : ''}</Button>
-          <Button size="sm" variant="ghost" onClick={() => set({ status: s.status === 'SPAM' ? null : 'SPAM', page: 1 })}>{s.status === 'SPAM' ? 'Hide spam' : 'Spam'}</Button>
+        <div className="toolbar lead-toolbar">
+          <label className="crm-search">
+            <Search size={16} aria-hidden="true" />
+            <span className="sr-only">Search leads</span>
+            <Input ref={searchRef} placeholder="Name, phone, email, residence or tag  (F)" value={q} onChange={(ev) => setQ(ev.target.value)} />
+          </label>
+          <Select className="sm" style={{ width: 'auto' }} value={s.stageId ?? ''} onChange={(ev) => set({ stageId: ev.target.value, page: 1 })} placeholder="Any stage" options={(stages ?? []).filter((st) => st.active).map((st) => ({ value: st.id, label: `${st.label} (${st.leadCount})` }))} />
+          {can('enquiry.view-all') && <Select className="sm" style={{ width: 'auto' }} value={s.assignedTo ?? ''} onChange={(ev) => set({ assignedTo: ev.target.value, page: 1 })} placeholder="Any owner" options={[{ value: 'me', label: 'Me' }, { value: 'none', label: 'Unassigned' }, ...(team ?? []).map((t) => ({ value: t.id, label: t.name }))]} />}
+          <Select className="sm" style={{ width: 'auto' }} value={s.temperature ?? ''} onChange={(ev) => set({ temperature: ev.target.value, page: 1 })} placeholder="Any temperature" options={(['HOT', 'WARM', 'COLD'] as const).map((t) => ({ value: t, label: TEMPERATURE_LABEL[t] }))} />
+          <Button size="sm" icon={<Filter size={14} />} variant={activeFilters.length ? 'primary' : 'default'} onClick={() => setFiltersOpen(true)}>Filters{activeFilters.length ? ` (${activeFilters.length})` : ''}</Button>
+          <span className="spacer" />
+          <Select className="sm" style={{ width: 'auto' }} value={s.sort ?? ''} onChange={(ev) => set({ sort: ev.target.value, page: 1 })} options={[{ value: '', label: 'Newest first' }, { value: 'score', label: 'Highest score' }, { value: 'followUp', label: 'Next follow-up' }, { value: 'lastActivity', label: 'Recent activity' }, { value: 'oldest', label: 'Oldest first' }, { value: 'name', label: 'Name A–Z' }]} />
+          <Menu
+            trigger={(toggle) => <Button size="sm" icon={<Bookmark size={14} />} onClick={toggle}>Views</Button>}
+          >
+            {(close) => (
+              <>
+                {(views ?? []).length === 0 && <div className="muted small" style={{ padding: 10 }}>No saved views yet.</div>}
+                {(views ?? []).map((v) => (
+                  <div key={v.id} className="row" style={{ gap: 4 }}>
+                    <button type="button" onClick={() => { applyView(v); close(); }}>{v.name}{v.shared && <Badge tone="sky" plain>team</Badge>}</button>
+                    {v.userId === user?.id && <button type="button" aria-label={`Delete ${v.name}`} style={{ width: 'auto' }} onClick={async () => { await del(`/admin/crm/views/${v.id}`); invalidate('crm:views'); }}><Trash2 size={13} /></button>}
+                  </div>
+                ))}
+                <hr />
+                <button type="button" onClick={() => { setSaving(true); close(); }}><Bookmark size={14} /> Save current view…</button>
+              </>
+            )}
+          </Menu>
         </div>
+
+        {activeFilters.length > 0 && (
+          <div className="filter-chips">
+            {activeFilters.map((k) => (
+              <button key={k} type="button" className="filter-chip" onClick={() => set({ [k]: null, page: 1 })}>
+                {humanise(k)}: <strong>{k === 'stageId' ? stages?.find((st) => st.id === s[k])?.label : k === 'assignedTo' ? (s[k] === 'me' ? 'Me' : s[k] === 'none' ? 'Unassigned' : team?.find((t) => t.id === s[k])?.name) : k === 'typologyId' ? types?.find((t) => t.id === s[k])?.name : k === 'leadSource' ? LEAD_SOURCE_LABEL[s[k] as LeadSourceValue] : s[k]}</strong> <X size={12} />
+              </button>
+            ))}
+            <button type="button" className="link-button small" onClick={() => set({ ...Object.fromEntries(FILTER_KEYS.map((k) => [k, null])), page: 1 })}>Clear all</button>
+          </div>
+        )}
 
         {editable && selected.size > 0 && (
           <div className="bulk-bar">
             <CheckSquare size={16} /> <strong>{selected.size} selected</strong>
-            <Select className="sm" style={{ width: 'auto' }} value="" onChange={(ev) => ev.target.value && void bulk({ action: 'assign', assignedToId: ev.target.value === 'none' ? null : ev.target.value }, 'Leads assigned.')} placeholder="Assign to…" options={[{ value: 'none', label: 'Nobody' }, ...(team ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
-            <Select className="sm" style={{ width: 'auto' }} value="" onChange={(ev) => (ev.target.value === 'LOST' ? setBulkLost(true) : ev.target.value && void bulk({ action: 'status', status: ev.target.value }, `Moved to ${STAGE_LABEL[ev.target.value] ?? humanise(ev.target.value)}.`))} placeholder="Move to…" options={ENQUIRY_STATUSES.filter((x) => x !== 'SPAM').map((x) => ({ value: x, label: STAGE_LABEL[x] ?? humanise(x) }))} />
+            {can('enquiry.assign') && <Select className="sm" style={{ width: 'auto' }} value="" onChange={(ev) => ev.target.value && void bulk({ action: 'assign', assignedToId: ev.target.value === 'none' ? null : ev.target.value }, 'Leads assigned.')} placeholder="Assign to…" options={[{ value: 'none', label: 'Nobody' }, ...(team ?? []).map((t) => ({ value: t.id, label: t.name }))]} />}
+            <Select className="sm" style={{ width: 'auto' }} value="" onChange={(ev) => { const st = stages?.find((x) => x.id === ev.target.value); if (!st) return; if (st.category === 'LOST') setBulkLost(true); else void bulk({ action: 'stage', stageId: st.id }, `Moved to ${st.label}.`); }} placeholder="Move to…" options={(stages ?? []).filter((st) => st.active && st.category !== 'SPAM').map((st) => ({ value: st.id, label: st.label }))} />
+            <Button size="sm" icon={<Tag size={14} />} onClick={() => { const t = window.prompt('Tag to add'); if (t?.trim()) void bulk({ action: 'tag', tags: [t.trim()] }, `Tagged “${t.trim()}”.`); }}>Tag</Button>
+            {can('enquiry.archive') && <Button size="sm" icon={<Archive size={14} />} onClick={() => void bulk({ action: s.view === 'archived' ? 'restore' : 'archive' }, s.view === 'archived' ? 'Restored.' : 'Archived.')}>{s.view === 'archived' ? 'Restore' : 'Archive'}</Button>}
             <Button size="sm" variant="ghost" icon={<ShieldAlert size={14} />} onClick={() => void bulk({ action: 'spam' }, 'Marked as spam.')}>Spam</Button>
             <span className="spacer" />
             <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
@@ -338,50 +167,114 @@ export default function Enquiries() {
         )}
 
         {error && <ErrorBox error={error} onRetry={refetch} />}
-        {!data && !error && <div className="card-body"><Skeleton h={220} /></div>}
-        {data && rows.length === 0 && <Empty title="No enquiries match" icon={<Inbox size={32} />} />}
+        {!data && !error && <div className="card-body"><Skeleton h={48} /><div style={{ height: 8 }} /><Skeleton h={48} /><div style={{ height: 8 }} /><Skeleton h={48} /></div>}
+        {data && rows.length === 0 && (
+          <Empty title={s.q || activeFilters.length ? 'No leads match' : 'No leads here yet'} icon={<Inbox size={32} />} action={editable && !s.q ? <Button variant="primary" icon={<Plus size={15} />} onClick={() => setAdding(true)}>Add a lead</Button> : undefined}>
+            {s.q || activeFilters.length ? 'Try a shorter search, or clear a filter.' : 'Website enquiries arrive here on their own. Add a call or walk-in by hand.'}
+          </Empty>
+        )}
         {rows.length > 0 && (
           <div className="table-wrap">
-            <table className="table">
+            <table className="table lead-table crm-cards">
               <thead>
                 <tr>
-                  {editable && <th style={{ width: 36 }}><Checkbox checked={allChecked} aria-label="Select all" onChange={(v) => setSelected(v ? new Set(rows.map((r) => r.id)) : new Set())} /></th>}
+                  {editable && <th className="check"><Checkbox checked={allChecked} aria-label="Select all" onChange={(v) => setSelected(v ? new Set(rows.map((r) => r.id)) : new Set())} /></th>}
                   <th>Lead</th>
-                  <th>Asked about</th>
+                  <th>Interest</th>
                   <th>Stage</th>
+                  <th className="num">Score</th>
                   <th>Owner</th>
-                  <th>Next</th>
-                  <th>Received</th>
+                  <th>Next action</th>
+                  <th>Last contact</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id} data-overdue={r.overdue ? 'true' : undefined}>
-                    {editable && <td><Checkbox checked={selected.has(r.id)} aria-label={`Select ${r.name}`} onChange={(v) => { const next = new Set(selected); if (v) next.add(r.id); else next.delete(r.id); setSelected(next); }} /></td>}
-                    <td>
-                      <button type="button" className="link-button" onClick={() => set({ open: r.id }, { replace: false })}>
-                        <strong>{r.name}</strong>
-                      </button>
-                      <div className="muted small">{r.email}{r.repeatCount ? ` · ×${r.repeatCount + 1}` : ''}{r.noteCount ? ` · ${r.noteCount} notes` : ''}</div>
-                    </td>
-                    <td className="small">{r.units.length ? r.units.map((u) => fmtCode(u.code)).join(', ') : <span className="faint">{humanise(r.intent)}</span>}</td>
-                    <td><Badge tone={ENQUIRY_TONE[r.status] ?? 'grey'}>{STAGE_LABEL[r.status] ?? r.status}</Badge></td>
-                    <td className="small">{r.assignedToName ?? (editable ? <button type="button" className="link-button small" onClick={() => void bulk({ ids: [r.id], action: 'assign', assignedToId: null }, '') }><UserPlus size={13} /> Unassigned</button> : <span className="faint">Unassigned</span>)}</td>
-                    <td className="small">
-                      {r.overdue && <Badge tone="red" plain>Overdue</Badge>}{' '}
-                      {r.openViewing ? `Viewing ${r.openViewing.scheduledAt ? dateTime(r.openViewing.scheduledAt) : 'requested'}` : r.followUpAt ? `Follow up ${date(r.followUpAt)}` : !r.contactedAt ? 'First response' : ''}
-                    </td>
-                    <td className="small muted">{ago(r.createdAt)}</td>
-                  </tr>
-                ))}
+                {rows.map((r) => {
+                  const unit = r.primaryUnit ?? r.units[0];
+                  const next = r.nextTask;
+                  return (
+                    <tr key={r.id} data-overdue={r.overdue ? 'true' : undefined} data-clickable="true" data-selected={selected.has(r.id) ? 'true' : undefined} onClick={() => navigate(`/crm/leads/${r.id}`)}>
+                      {editable && <td className="check" onClick={(e) => e.stopPropagation()}><Checkbox checked={selected.has(r.id)} aria-label={`Select ${r.name}`} onChange={(v) => { const n = new Set(selected); if (v) n.add(r.id); else n.delete(r.id); setSelected(n); }} /></td>}
+                      <td data-label="Lead">
+                        <div className="lead-cell">
+                          <strong>{r.name}</strong>
+                          <TempBadge temp={r.effectiveTemperature} compact />
+                          <PriorityBadge priority={r.priority} />
+                        </div>
+                        <div className="muted small">{LEAD_SOURCE_LABEL[r.leadSource as LeadSourceValue]}{r.city ? ` · ${r.city}` : ''}{r.repeatCount ? ` · asked ×${r.repeatCount + 1}` : ''} · {ago(r.createdAt)}</div>
+                      </td>
+                      <td data-label="Interest" className="small">
+                        {unit ? <><strong>{fmtCode(unit.code)}</strong> · {unit.typology.name}<div className="muted">{Math.round(unit.areaSqm)} m² · {money(unit.priceMinor, unit.currency, { compact: true })}</div></> : r.typology || r.bedrooms ? <>{r.typology?.name ?? `${r.bedrooms} bed`}<div className="muted">{r.budgetMaxMinor ? `≤ ${money(r.budgetMaxMinor, 'USD', { compact: true })}` : 'Budget unknown'}</div></> : <span className="faint">Not yet known</span>}
+                      </td>
+                      <td data-label="Stage">{r.stage ? <StageBadge label={r.stage.label} color={r.stage.color} /> : <Badge tone="grey">{humanise(r.status)}</Badge>}</td>
+                      <td data-label="Score" className="num"><ScorePill score={r.score} /></td>
+                      <td data-label="Owner"><span className="row" style={{ gap: 6 }}><Avatar name={r.assignedToName} size={24} /><span className="small">{r.assignedToName ?? <span className="faint">Unassigned</span>}</span></span></td>
+                      <td data-label="Next action" className="small">
+                        {next ? <><span className={isPast(next.dueAt) ? 'text-red' : ''}>{next.dueAt ? relDay(next.dueAt) : 'No date'}</span><div className="muted ellipsis">{next.title}</div></> : r.overdue ? <Badge tone="red" plain>First reply overdue</Badge> : ['SOLD', 'LOST', 'DISQUALIFIED', 'SPAM'].includes(r.status) ? <span className="faint">—</span> : <span className="text-amber"><AlarmClock size={12} /> No next step</span>}
+                      </td>
+                      <td data-label="Last contact" className="small muted">{r.lastContactAt ? ago(r.lastContactAt) : 'Never'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
         {data && data.meta.pages > 1 && <Pagination page={data.meta.page} pages={data.meta.pages} onChange={(p) => set({ page: p })} />}
       </Card>
-      {s.open && <LeadDrawer id={s.open} onClose={() => set({ open: null })} />}
+
+      {filtersOpen && <FiltersModal values={s} onApply={(v) => { set({ ...v, page: 1 }); setFiltersOpen(false); }} onClose={() => setFiltersOpen(false)} />}
+      {saving && <SaveViewModal filters={Object.fromEntries([...FILTER_KEYS, 'view', 'sort', 'q'].filter((k) => s[k]).map((k) => [k, s[k]!]))} onClose={() => setSaving(false)} />}
+      {adding && <NewLeadModal onClose={() => setAdding(false)} />}
       {bulkLost && <LostModal count={selected.size} onClose={() => setBulkLost(false)} onConfirm={(reason) => { setBulkLost(false); void bulk({ action: 'status', status: 'LOST', lostReason: reason }, 'Marked as lost.'); }} />}
     </>
+  );
+}
+
+function FiltersModal({ values, onApply, onClose }: { values: Record<string, string>; onApply: (v: Record<string, string | null>) => void; onClose: () => void }) {
+  const { data: types } = useTypes();
+  const { data: campaigns } = useQuery('crm:campaigns', () => get<{ id: string; name: string }[]>('/admin/crm/campaigns'));
+  const [d, setD] = useState<Record<string, string>>(Object.fromEntries(FILTER_KEYS.map((k) => [k, values[k] ?? ''])));
+  const f = (k: string) => ({ value: d[k] ?? '', onChange: (e: { target: { value: string } }) => setD({ ...d, [k]: e.target.value }) });
+  return (
+    <Modal title="Filter leads" onClose={onClose} footer={<><Button onClick={() => onApply(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))}>Clear all</Button><span className="spacer" /><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={() => onApply(Object.fromEntries(FILTER_KEYS.map((k) => [k, d[k] || null])))}>Apply</Button></>}>
+      <div className="grid-2">
+        <Field label="Source"><Select {...f('leadSource')} placeholder="Any" options={LEAD_SOURCES.map((x) => ({ value: x, label: LEAD_SOURCE_LABEL[x] }))} /></Field>
+        <Field label="Campaign"><Select {...f('campaignId')} placeholder="Any" options={(campaigns ?? []).map((c) => ({ value: c.id, label: c.name }))} /></Field>
+        <Field label="Residence type"><Select {...f('typologyId')} placeholder="Any" options={(types ?? []).map((t) => ({ value: t.id, label: t.name }))} /></Field>
+        <Field label="Bedrooms"><Select {...f('bedrooms')} placeholder="Any" options={[1, 2, 3, 4].map((n) => ({ value: String(n), label: String(n) }))} /></Field>
+        <Field label="Budget from ($)"><Input inputMode="numeric" {...f('budgetMin')} /></Field>
+        <Field label="Budget up to ($)"><Input inputMode="numeric" {...f('budgetMax')} /></Field>
+        <Field label="Created from"><Input type="date" {...f('createdFrom')} /></Field>
+        <Field label="Created to"><Input type="date" {...f('createdTo')} /></Field>
+        <Field label="Next follow-up"><Select {...f('followUp')} placeholder="Any" options={[{ value: 'overdue', label: 'Overdue' }, { value: 'today', label: 'Today' }, { value: 'week', label: 'Next 7 days' }, { value: 'none', label: 'None set' }]} /></Field>
+        <Field label="Last activity"><Select {...f('lastActivity')} placeholder="Any" options={[{ value: '7d', label: 'In the last 7 days' }, { value: 'stale', label: 'Quiet for 14+ days' }]} /></Field>
+        <Field label="Priority"><Select {...f('priority')} placeholder="Any" options={['LOW', 'NORMAL', 'HIGH', 'URGENT'].map((p) => ({ value: p, label: humanise(p) }))} /></Field>
+        <Field label="Tag"><Input {...f('tag')} placeholder="investor" /></Field>
+      </div>
+    </Modal>
+  );
+}
+
+function SaveViewModal({ filters, onClose }: { filters: Record<string, string>; onClose: () => void }) {
+  const { can } = useAuth();
+  const toast = useToast();
+  const [name, setName] = useState('');
+  const [shared, setShared] = useState(false);
+  const save = async () => {
+    try {
+      await post('/admin/crm/views', { scope: 'leads', name, filters, shared });
+      toast.success('View saved.');
+      invalidate('crm:views');
+      onClose();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+  return (
+    <Modal title="Save this view" sub={`${Object.keys(filters).length} filter${Object.keys(filters).length === 1 ? '' : 's'} and the sort order`} onClose={onClose} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!name.trim()} onClick={() => void save()}>Save</Button></>}>
+      <Field label="Name"><Input autoFocus value={name} placeholder="Hot diaspora investors" onChange={(e) => setName(e.target.value)} /></Field>
+      {can('enquiry.view-all') && <Checkbox checked={shared} onChange={setShared} label="Share with the team" />}
+    </Modal>
   );
 }

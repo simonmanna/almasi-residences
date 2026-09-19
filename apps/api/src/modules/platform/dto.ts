@@ -31,9 +31,6 @@ import {
   BUYER_STAGES,
   CONSTRUCTION_STATUSES,
   DEVELOPMENT_STATUSES,
-  ENQUIRY_STATUSES,
-  LEAD_NOTE_KINDS,
-  LOST_REASONS,
   VIEWING_STATUSES,
   MEDIA_COLLECTIONS,
   MEDIA_PROVENANCES,
@@ -321,29 +318,7 @@ export class BuyerUnitDto {
   @IsIn(['interest', 'purchase']) relation!: 'interest' | 'purchase';
 }
 
-// ─── Enquiries ───────────────────────────────────────────────────────────
-
-export class UpdateEnquiryDto {
-  @IsOptional() @IsIn(ENQUIRY_STATUSES) status?: string;
-  @IsOptional() @IsString() @MaxLength(40) assignedToId?: string | null;
-  @IsOptional() @IsDateString() followUpAt?: string | null;
-  @IsOptional() @IsIn(LOST_REASONS) lostReason?: string | null;
-  @IsOptional() @IsString() @MaxLength(1000) lostNote?: string | null;
-  @IsOptional() @IsString() buyerId?: string | null;
-}
-
-export class LeadNoteDto {
-  @IsIn(LEAD_NOTE_KINDS) kind!: string;
-  @IsString() @Length(1, 5000) body!: string;
-  @IsOptional() @IsDateString() followUpAt?: string | null;
-}
-
-export class BulkEnquiryDto extends IdsDto {
-  @IsIn(['assign', 'status', 'spam']) action!: 'assign' | 'status' | 'spam';
-  @IsOptional() @IsString() assignedToId?: string | null;
-  @IsOptional() @IsIn(ENQUIRY_STATUSES) status?: string;
-  @IsOptional() @IsIn(LOST_REASONS) lostReason?: string;
-}
+// Leads, tasks, deals and the rest of the CRM: see crm.dto.ts.
 
 // ─── Viewings ────────────────────────────────────────────────────────────
 

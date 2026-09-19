@@ -14,8 +14,9 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import type { Prisma, ReservationStatus, UnitStatus } from '@avida/db';
-import { can, DEFAULT_HOLD_DAYS, formatMoney } from '@avida/types';
+import type { Prisma, ReservationStatus } from '@avida/db';
+import { can, formatMoney } from '@avida/types';
+import { CrmService } from '../../common/crm.service.js';
 import { AuditService } from '../../common/audit.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
@@ -24,18 +25,12 @@ import { PublicSync } from '../../common/public-sync.service.js';
 import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
 import { actorOf, assertCan } from './actor.js';
 import { CloseReservationDto, CreateReservationDto, UpdateReservationDto } from './dto.js';
-
-const include = {
-  unit: { select: { id: true, code: true, status: true, priceMinor: true, currency: true, floor: { select: { label: true, displayName: true } } } },
-  buyer: { select: { id: true, fullName: true } },
-  enquiry: { select: { id: true, name: true } },
-  agent: { select: { id: true, name: true } },
-} satisfies Prisma.ReservationInclude;
+import { reservationInclude as include, ReservationService } from './reservation.service.js';
 
 /**
  * Audit §12 / §40.3 — a reservation is a record: which residence, for whom,
  * held until when, with what deposit, by which agent. Placing a hold puts the
- * residence ON_HOLD (the website reads it as reserved at once); converting it
+ * residence BOOKED (the website reads it as booked at once); converting it
  * sells the residence; cancelling or letting it lapse returns it to its previous
  * status. The worker expires lapsed holds hourly and warns the agent first.
  */
@@ -49,6 +44,8 @@ export class ReservationsController {
     private readonly dev: CurrentDevelopment,
     private readonly audit: AuditService,
     private readonly sync: PublicSync,
+    private readonly crm: CrmService,
+    private readonly reservations: ReservationService,
   ) {}
 
   @Get()
@@ -76,32 +73,16 @@ export class ReservationsController {
   @RequirePermission('reservation.edit')
   async create(@Body() dto: CreateReservationDto, @Req() req: AdminRequest) {
     const actor = actorOf(req);
-    assertCan(actor, 'residence.status');
     const developmentId = await this.dev.id();
-    const unit = await this.prisma.client.unit.findFirst({ where: { id: dto.unitId, developmentId, archivedAt: null } });
-    if (!unit) throw new NotFoundException('No such residence');
-    if (unit.status !== 'AVAILABLE') throw new ConflictException(`${unit.code} is ${unit.status.toLowerCase().replace('_', ' ')}, so it cannot be held.`);
-    const active = await this.prisma.client.reservation.count({ where: { unitId: unit.id, status: 'ACTIVE' } });
-    if (active) throw new ConflictException(`${unit.code} already has an active reservation.`);
     if (dto.buyerId && !(await this.prisma.client.buyer.count({ where: { id: dto.buyerId, developmentId } }))) throw new BadRequestException('That client does not belong to this property.');
-    if (dto.enquiryId && !(await this.prisma.client.enquiry.count({ where: { id: dto.enquiryId, developmentId } }))) throw new BadRequestException('That enquiry does not belong to this property.');
-    const heldUntil = dto.heldUntil ? new Date(dto.heldUntil) : new Date(Date.now() + DEFAULT_HOLD_DAYS * 86_400_000);
-    if (heldUntil.getTime() <= Date.now()) throw new BadRequestException('A hold must end in the future.');
-
-    const reservation = await this.prisma.client.$transaction(async (tx) => {
-      const r = await tx.reservation.create({
-        data: { developmentId, unitId: unit.id, buyerId: dto.buyerId ?? null, enquiryId: dto.enquiryId ?? null, agentId: dto.agentId ?? actor.id, heldUntil, depositMinor: dto.depositMinor ?? null, currency: unit.currency, notes: dto.notes ?? null, previousStatus: unit.status },
-        include,
-      });
-      await tx.unit.update({ where: { id: unit.id }, data: { status: 'ON_HOLD' } });
-      await tx.unitStatusLog.create({ data: { unitId: unit.id, from: unit.status, to: 'ON_HOLD', actor: actor.id, note: `Reserved until ${heldUntil.toISOString().slice(0, 10)}` } });
-      if (dto.enquiryId) {
-        await tx.enquiry.update({ where: { id: dto.enquiryId }, data: { status: 'RESERVED', lastActivityAt: new Date() } });
-        await tx.leadNote.create({ data: { enquiryId: dto.enquiryId, authorId: actor.id, kind: 'STATUS', body: `Reserved residence ${unit.code} until ${heldUntil.toISOString().slice(0, 10)}` } });
-      }
-      return r;
-    });
-    await this.audit.record({ actorId: actor.id, action: 'reservation.create', entity: 'residence', entityId: unit.id, target: unit.code, summary: `Reserved ${unit.code} until ${heldUntil.toISOString().slice(0, 10)}${dto.depositMinor ? `, deposit ${formatMoney({ amountMinor: dto.depositMinor, currency: unit.currency })}` : ''}`, req });
+    if (dto.enquiryId) {
+      const lead = await this.prisma.client.enquiry.findFirst({ where: { AND: [{ id: dto.enquiryId, developmentId }, this.crm.leadScope(actor)] }, select: { id: true } });
+      if (!lead) throw new BadRequestException('That lead does not belong to this property.');
+    }
+    const reservation = await this.prisma.client.$transaction((tx) => this.reservations.hold(tx, { developmentId, ...dto }, actor.id));
+    await this.audit.record({ actorId: actor.id, action: 'reservation.create', entity: 'residence', entityId: reservation.unitId, target: reservation.unit.code, summary: `Reserved ${reservation.unit.code} until ${reservation.heldUntil.toISOString().slice(0, 10)}${dto.depositMinor ? `, deposit ${formatMoney({ amountMinor: dto.depositMinor, currency: reservation.currency })}` : ''}`, after: { status: 'BOOKED', heldUntil: reservation.heldUntil }, req });
+    if (reservation.enquiryId) await this.crm.rescore(reservation.enquiryId);
+    await this.crm.notify(await this.crm.managerIds(), { kind: 'reservation.created', title: `${reservation.unit.code} reserved`, body: `${actor.name} placed a hold until ${reservation.heldUntil.toISOString().slice(0, 10)}.`, link: reservation.enquiryId ? `/crm/leads/${reservation.enquiryId}` : '/reservations', enquiryId: reservation.enquiryId }, actor.id);
     await this.sync.changed('inventory');
     return reservation;
   }
@@ -125,7 +106,8 @@ export class ReservationsController {
       include,
     });
     const parts = [dto.heldUntil ? `extended to ${dto.heldUntil.slice(0, 10)}` : null, dto.depositReceivedAt ? 'deposit received' : null, dto.depositMinor !== undefined ? 'deposit amount' : null, dto.agentId !== undefined ? 'agent' : null].filter(Boolean);
-    await this.audit.record({ actorId: actorOf(req).id, action: 'reservation.update', entity: 'residence', entityId: before.unitId, target: before.unit.code, summary: `Reservation of ${before.unit.code}: ${parts.join(', ') || 'details'}`, req });
+    await this.audit.record({ actorId: actorOf(req).id, action: 'reservation.update', entity: 'residence', entityId: before.unitId, target: before.unit.code, summary: `Reservation of ${before.unit.code}: ${parts.join(', ') || 'details'}`, before: { heldUntil: before.heldUntil, depositMinor: before.depositMinor, depositReceivedAt: before.depositReceivedAt, agentId: before.agentId }, after: { heldUntil: row.heldUntil, depositMinor: row.depositMinor, depositReceivedAt: row.depositReceivedAt, agentId: row.agentId }, req });
+    if (before.enquiryId && parts.length) await this.crm.logActivity(this.prisma.client, before.enquiryId, 'RESERVATION', `Reservation of ${before.unit.code}: ${parts.join(', ')}`, actorOf(req).id, { meta: { reservationId: id } });
     return row;
   }
 
@@ -135,23 +117,12 @@ export class ReservationsController {
   @RequirePermission('reservation.edit')
   async close(@Param('id') id: string, @Body() dto: CloseReservationDto, @Req() req: AdminRequest) {
     const actor = actorOf(req);
-    assertCan(actor, 'residence.status');
+    // Cancelling a hold is routine; declaring a sale is not.
+    if (dto.action === 'convert') assertCan(actor, 'deal.close');
     const r = await this.owned(id);
-    if (r.status !== 'ACTIVE') throw new ConflictException('This reservation is already closed.');
-    const next: UnitStatus = dto.action === 'convert' ? 'SOLD' : r.previousStatus;
-    await this.prisma.client.$transaction(async (tx) => {
-      await tx.reservation.update({ where: { id }, data: { status: dto.action === 'convert' ? 'CONVERTED' : 'CANCELLED', closedAt: new Date(), closedReason: dto.reason ?? null } });
-      const unit = await tx.unit.findUniqueOrThrow({ where: { id: r.unitId } });
-      if (unit.status !== next) {
-        await tx.unit.update({ where: { id: r.unitId }, data: { status: next, ...(dto.action === 'convert' && r.buyerId ? { buyerId: r.buyerId } : {}) } });
-        await tx.unitStatusLog.create({ data: { unitId: r.unitId, from: unit.status, to: next, actor: actor.id, note: dto.action === 'convert' ? 'Reservation converted to a sale' : `Reservation cancelled${dto.reason ? `: ${dto.reason}` : ''}` } });
-      }
-      if (r.enquiryId) {
-        await tx.enquiry.update({ where: { id: r.enquiryId }, data: { status: dto.action === 'convert' ? 'SOLD' : 'INTERESTED', lastActivityAt: new Date() } });
-        await tx.leadNote.create({ data: { enquiryId: r.enquiryId, authorId: actor.id, kind: 'STATUS', body: dto.action === 'convert' ? `Reservation of ${r.unit.code} converted to a sale` : `Reservation of ${r.unit.code} cancelled${dto.reason ? `: ${dto.reason}` : ''}` } });
-      }
-    });
-    await this.audit.record({ actorId: actor.id, action: `reservation.${dto.action}`, entity: 'residence', entityId: r.unitId, target: r.unit.code, summary: dto.action === 'convert' ? `Converted the reservation of ${r.unit.code} into a sale` : `Cancelled the reservation of ${r.unit.code}; it is ${next.toLowerCase()} again`, req });
+    const { unitStatus } = await this.prisma.client.$transaction((tx) => this.reservations.close(tx, r.id, dto.action, actor.id, dto.reason));
+    await this.audit.record({ actorId: actor.id, action: `reservation.${dto.action}`, entity: 'residence', entityId: r.unitId, target: r.unit.code, summary: dto.action === 'convert' ? `Converted the reservation of ${r.unit.code} into a sale` : `Cancelled the reservation of ${r.unit.code}; it is ${unitStatus.toLowerCase()} again`, before: { status: 'ACTIVE' }, after: { status: dto.action === 'convert' ? 'CONVERTED' : 'CANCELLED', unitStatus }, req });
+    if (r.enquiryId) await this.crm.rescore(r.enquiryId);
     await this.sync.changed('inventory');
     return { ok: true };
   }

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Clock, Mail, Phone, Plus } from 'lucide-react';
-import { VIEWING_SLOTS, VIEWING_STATUS_LABEL, type ViewingStatusValue } from '@avida/types';
+import { isBookedViewing, VIEWING_INTEREST_LABEL, VIEWING_SLOTS, VIEWING_STATUS_LABEL, type ViewingStatusValue } from '@avida/types';
+import { ViewingFeedbackModal } from '../components/crm';
+import { refreshCrm } from '../lib/crm';
 import { get, patch, post } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { code as fmtCode, date, dateTime } from '../lib/format';
-import { invalidate, useQuery } from '../lib/query';
+import { useQuery } from '../lib/query';
 import { useTeam } from '../lib/ref';
 import { Link, useSearchState } from '../lib/router';
 import { useToast } from '../components/Toast';
@@ -13,9 +15,11 @@ import { Alert, Badge, Button, Card, CardHead, Drawer, Empty, ErrorBox, Field, I
 interface Viewing {
   id: string;
   name: string;
-  email: string;
-  phone: string;
+  email: string | null;
+  phone: string | null;
   status: ViewingStatusValue;
+  interestLevel?: string | null;
+  objections?: string | null;
   requestedDate: string | null;
   requestedSlot: string | null;
   scheduledAt: string | null;
@@ -35,10 +39,11 @@ interface Viewing {
 interface CalendarData {
   scheduled: Viewing[];
   requests: Viewing[];
+  feedbackDue: Viewing[];
   counts: Record<string, number>;
 }
 
-const TONE: Record<ViewingStatusValue, string> = { REQUESTED: 'amber', CONFIRMED: 'green', COMPLETED: 'teal', NO_SHOW: 'red', CANCELLED: 'grey' };
+const TONE: Record<ViewingStatusValue, string> = { REQUESTED: 'amber', SCHEDULED: 'purple', CONFIRMED: 'green', RESCHEDULED: 'orange', COMPLETED: 'teal', NO_SHOW: 'red', CANCELLED: 'grey' };
 const slotLabel = (k: string | null) => VIEWING_SLOTS.find((s) => s.key === k)?.label ?? '';
 
 /** `YYYY-MM-DDTHH:mm` in the browser's time, for a datetime-local input. */
@@ -70,7 +75,7 @@ export function ViewingForm({ enquiryId, unitIds, onClose }: { enquiryId?: strin
         notes: d.notes || null,
       });
       toast.success(d.scheduledAt ? 'Viewing booked. The confirmation email is on its way.' : 'Viewing request saved.');
-      invalidate('viewings', 'enquiries', 'sales-desk');
+      refreshCrm();
       onClose();
     } catch (e) {
       toast.error((e as Error).message);
@@ -79,7 +84,7 @@ export function ViewingForm({ enquiryId, unitIds, onClose }: { enquiryId?: strin
     }
   };
   return (
-    <Modal title="Book a viewing" onClose={onClose} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" busy={busy} disabled={!enquiryId && (!d.name || !d.email || !d.phone)} onClick={() => void save()}>{d.scheduledAt ? 'Book and confirm' : 'Save request'}</Button></>}>
+    <Modal title="Book a viewing" onClose={onClose} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" busy={busy} disabled={!enquiryId && (!d.name || (!d.email && !d.phone))} onClick={() => void save()}>{d.scheduledAt ? 'Book and confirm' : 'Save request'}</Button></>}>
       {!enquiryId && (
         <div className="grid-2">
           <Field label="Name"><Input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} autoFocus /></Field>
@@ -104,13 +109,14 @@ function ViewingDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const { data: team } = useTeam();
   const { data: v, error } = useQuery(`viewings:detail:${id}`, () => get<Viewing>(`/admin/viewings/${id}`));
   const [when, setWhen] = useState<string | null>(null);
-  const [outcome, setOutcome] = useState<string | null>(null);
+  const [, setOutcome] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState(false);
   const editable = can('enquiry.edit');
   const update = async (body: Record<string, unknown>, msg: string) => {
     try {
       await patch(`/admin/viewings/${id}`, body);
       toast.success(msg);
-      invalidate('viewings', 'enquiries', 'sales-desk');
+      refreshCrm();
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -118,7 +124,8 @@ function ViewingDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   if (error) return <Drawer title="Viewing" onClose={onClose}><ErrorBox error={error} /></Drawer>;
   if (!v) return <Drawer title="Viewing" onClose={onClose}><Skeleton h={200} /></Drawer>;
   const whenValue = when ?? localInput(v.scheduledAt, v.requestedDate, v.requestedSlot);
-  const open = v.status === 'REQUESTED' || v.status === 'CONFIRMED';
+  const open = v.status === 'REQUESTED' || isBookedViewing(v.status);
+  const booked = isBookedViewing(v.status);
 
   return (
     <Drawer
@@ -129,8 +136,8 @@ function ViewingDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         editable &&
         open && (
           <>
-            {v.status === 'CONFIRMED' && <Button variant="primary" onClick={() => void update({ status: 'COMPLETED', outcome: outcome ?? v.outcome }, 'Viewing completed — the lead moves to Viewed.')}>Mark completed</Button>}
-            {v.status === 'CONFIRMED' && <Button onClick={() => void update({ status: 'NO_SHOW' }, 'Recorded as a no-show.')}>No-show</Button>}
+            {booked && <Button variant="primary" onClick={() => setFeedback(true)}>Record outcome</Button>}
+            {(v.status === 'SCHEDULED' || v.status === 'RESCHEDULED') && <Button onClick={() => void update({ status: 'CONFIRMED' }, 'Marked as confirmed by the visitor.')}>Visitor confirmed</Button>}
             <span className="spacer" />
             <Button variant="ghost" onClick={() => void update({ status: 'CANCELLED' }, 'Viewing cancelled.')}>Cancel viewing</Button>
           </>
@@ -139,10 +146,11 @@ function ViewingDrawer({ id, onClose }: { id: string; onClose: () => void }) {
     >
       <div className="stack">
         <div className="lead-contact">
-          <a className="btn btn-sm" href={`tel:${v.phone}`}><Phone size={14} /> {v.phone}</a>
-          <a className="btn btn-sm" href={`mailto:${v.email}`}><Mail size={14} /> {v.email}</a>
-          {v.enquiry && <Link className="btn btn-sm" to={`/enquiries?open=${v.enquiry.id}`}>Open the lead</Link>}
+          {v.phone && <a className="btn sm" href={`tel:${v.phone}`}><Phone size={14} /> {v.phone}</a>}
+          {v.email && <a className="btn sm" href={`mailto:${v.email}`}><Mail size={14} /> {v.email}</a>}
+          {v.enquiry && <Link className="btn sm" to={`/crm/leads/${v.enquiry.id}`}>Open the lead</Link>}
         </div>
+        {v.interestLevel && <Alert tone="success">{VIEWING_INTEREST_LABEL[v.interestLevel as keyof typeof VIEWING_INTEREST_LABEL]}{v.objections ? ` · Objections: ${v.objections}` : ''}</Alert>}
         {v.status === 'REQUESTED' && (
           <Alert tone="warn" icon={<Clock size={18} />}>
             Asked for {v.requestedDate ? date(v.requestedDate) : 'any day'}{v.requestedSlot ? `, ${slotLabel(v.requestedSlot).toLowerCase()}` : ''}. Choose a time and an agent to confirm — they get a confirmation email, and a reminder the day before.
@@ -163,8 +171,8 @@ function ViewingDrawer({ id, onClose }: { id: string; onClose: () => void }) {
           </Field>
         </div>
         {editable && open && when !== null && when !== localInput(v.scheduledAt) && (
-          <Button variant="primary" icon={<CalendarCheck size={15} />} onClick={() => { void update({ scheduledAt: new Date(whenValue).toISOString(), status: 'CONFIRMED' }, v.status === 'CONFIRMED' ? 'Rescheduled — a new confirmation is on its way.' : 'Confirmed — the confirmation email is on its way.'); setWhen(null); }}>
-            {v.status === 'CONFIRMED' ? 'Reschedule and notify' : 'Confirm and notify'}
+          <Button variant="primary" icon={<CalendarCheck size={15} />} onClick={() => { void update({ scheduledAt: new Date(whenValue).toISOString() }, booked ? 'Rescheduled — a new confirmation is on its way.' : 'Scheduled — the confirmation email is on its way.'); setWhen(null); }}>
+            {booked ? 'Reschedule and notify' : 'Schedule and notify'}
           </Button>
         )}
         {v.units.length > 0 && <p className="small">Residences: {v.units.map((u) => fmtCode(u.code)).join(', ')}</p>}
@@ -176,6 +184,7 @@ function ViewingDrawer({ id, onClose }: { id: string; onClose: () => void }) {
           {v.confirmationSentAt ? `Confirmation sent ${dateTime(v.confirmationSentAt)}.` : 'No confirmation sent yet.'} {v.reminderSentAt ? `Reminder sent ${dateTime(v.reminderSentAt)}.` : ''}
         </div>
       </div>
+      {feedback && <ViewingFeedbackModal viewing={v} onClose={() => setFeedback(false)} />}
     </Drawer>
   );
 }
@@ -210,7 +219,7 @@ export default function Viewings() {
 
   return (
     <>
-      <PageHead title="Viewings" sub={`${data.requests.length} waiting for a time · ${data.scheduled.filter((v) => v.status === 'CONFIRMED').length} confirmed this week`}>
+      <PageHead title="Viewings" sub={`${data.requests.length} waiting for a time · ${data.scheduled.filter((v) => isBookedViewing(v.status)).length} booked this week · ${data.feedbackDue.length} awaiting feedback`}>
         {can('enquiry.edit') && <Button variant="primary" icon={<Plus size={16} />} onClick={() => setBooking(true)}>Book a viewing</Button>}
       </PageHead>
 
@@ -223,6 +232,20 @@ export default function Viewings() {
               <strong style={{ flex: 1, textAlign: 'left' }}>{v.name}</strong>
               <span className="small">{v.requestedDate ? date(v.requestedDate) : 'Any day'}{v.requestedSlot ? ` · ${slotLabel(v.requestedSlot)}` : ''}</span>
               <span className="small muted">{v.units.map((u) => fmtCode(u.code)).join(', ')}</span>
+            </button>
+          ))}
+        </Card>
+      )}
+
+      {data.feedbackDue.length > 0 && (
+        <Card>
+          <CardHead title="How did it go?" icon={<CalendarCheck size={18} />} sub="Viewings that have happened but have no outcome yet" />
+          {data.feedbackDue.map((v) => (
+            <button key={v.id} type="button" className="row list-row" onClick={() => set({ open: v.id }, { replace: false })}>
+              <Badge tone="orange">Feedback due</Badge>
+              <strong style={{ flex: 1, textAlign: 'left' }}>{v.name}</strong>
+              <span className="small">{v.scheduledAt ? dateTime(v.scheduledAt) : ''}</span>
+              <span className="small muted">{v.units.map((u) => fmtCode(u.code)).join(', ')}{v.agent ? ` · ${v.agent.name}` : ''}</span>
             </button>
           ))}
         </Card>
@@ -250,7 +273,7 @@ export default function Viewings() {
                     <span className="tabular">{new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(v.scheduledAt!))}</span>
                     <strong>{v.name}</strong>
                     <span className="small">{v.units.map((u) => fmtCode(u.code)).join(', ')}{v.agent ? ` · ${v.agent.name}` : ''}</span>
-                    {v.status !== 'CONFIRMED' && <Badge tone={TONE[v.status]} plain>{VIEWING_STATUS_LABEL[v.status]}</Badge>}
+                    {v.status !== 'CONFIRMED' && v.status !== 'SCHEDULED' && <Badge tone={TONE[v.status]} plain>{VIEWING_STATUS_LABEL[v.status]}</Badge>}
                   </button>
                 ))}
               </section>

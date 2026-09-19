@@ -1,11 +1,11 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { parsePhoneNumberWithError } from 'libphonenumber-js';
-import { buildWhatsAppUrl, emailEnquiryAcknowledgement, emailEnquiryAlert, ENQUIRY_DEDUP_HOURS } from '@avida/types';
+import { buildWhatsAppUrl, emailEnquiryAcknowledgement, emailEnquiryAlert, ENQUIRY_DEDUP_HOURS, leadSourceFromUtm } from '@avida/types';
+import { CrmService } from '../../common/crm.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { NotificationService } from '../../common/notification.service.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import type { CreateEnquiryDto } from './enquiry.dto.js';
-import { TurnstileService } from './turnstile.service.js';
 
 /** §5.9 — enquiries are hard-deleted 24 months after their last status change. */
 const RETENTION_MONTHS = 24;
@@ -26,9 +26,9 @@ export class EnquiryService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly turnstile: TurnstileService,
     private readonly notifications: NotificationService,
     private readonly dev: CurrentDevelopment,
+    private readonly crm: CrmService,
   ) {}
 
   async create(dto: CreateEnquiryDto, meta: { ip?: string; userAgent?: string }) {
@@ -36,11 +36,6 @@ export class EnquiryService {
     if (dto.company && dto.company.trim() !== '') {
       this.log.debug('Honeypot triggered; discarding submission');
       return { id: 'discarded', whatsappUrl: null };
-    }
-
-    const verification = await this.turnstile.verify(dto.turnstileToken, meta.ip);
-    if (verification === 'failed') {
-      throw new BadRequestException('Could not verify that you are human. Please try again.');
     }
 
     // §40.5 — a lead belongs to this property and may only name residences a
@@ -72,11 +67,31 @@ export class EnquiryService {
         developmentId: development.id,
         email,
         createdAt: { gte: new Date(now.getTime() - ENQUIRY_DEDUP_HOURS * 3_600_000) },
-        status: { notIn: ['SPAM', 'LOST', 'SOLD'] },
+        status: { notIn: ['SPAM', 'LOST', 'SOLD', 'DISQUALIFIED'] },
+        archivedAt: null,
       },
       orderBy: { createdAt: 'desc' },
-      select: { id: true },
+      select: { id: true, assignedToId: true },
     });
+
+    // CRM intake: the channel from the UTM tags, a matching campaign, the first
+    // pipeline column, and an owner by the configured assignment rule.
+    await this.crm.ensureStages(development.id);
+    const leadSource = leadSourceFromUtm(dto.utm?.source, dto.utm?.medium, dto.referrer);
+    const campaign = dto.utm?.campaign
+      ? await this.prisma.client.campaign.findFirst({ where: { developmentId: development.id, active: true, utmCampaign: { equals: dto.utm.campaign, mode: 'insensitive' } }, select: { id: true, channel: true } })
+      : null;
+    const firstStage = existing ? null : this.crm.firstOf(await this.crm.stages(development.id), 'NEW');
+    const assignedToId = existing ? null : await this.crm.autoAssign(development.id);
+    // An older lead with the same phone or email, outside the join window: flagged for a person to merge, never merged silently.
+    const tail = phone.replace(/\D/g, '').slice(-9);
+    const earlier = existing
+      ? null
+      : await this.prisma.client.enquiry.findFirst({
+          where: { developmentId: development.id, archivedAt: null, OR: [{ email }, { phone: { endsWith: tail } }] },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, name: true, assignedToId: true },
+        });
 
     const enquiry = await this.prisma.client.$transaction(async (tx) => {
       let id: string;
@@ -113,8 +128,11 @@ export class EnquiryService {
             referrer: dto.referrer ?? null,
             landingPath: dto.landingPath ?? null,
             userAgent: meta.userAgent ?? null,
-            // §6.7 — kept for manual review rather than lost.
-            verificationSkipped: verification === 'unavailable',
+            leadSource: campaign ? (campaign.channel === 'CAMPAIGN' ? leadSource === 'WEBSITE' ? 'CAMPAIGN' : leadSource : campaign.channel) : leadSource,
+            campaignId: campaign?.id ?? null,
+            stageId: firstStage?.id ?? null,
+            assignedToId: earlier?.assignedToId ?? assignedToId,
+            primaryUnitId: units.length === 1 ? units[0]!.id : null,
             lastActivityAt: now,
             purgeAfter,
             units: { create: units.map((u) => ({ unitId: u.id })) },
@@ -122,6 +140,9 @@ export class EnquiryService {
           select: { id: true },
         });
         id = row.id;
+        await tx.leadStageChange.create({ data: { enquiryId: id, toStageId: firstStage?.id ?? null, toStatus: 'NEW' } });
+        await tx.leadNote.create({ data: { enquiryId: id, kind: 'SYSTEM', direction: 'IN', body: `New ${wantsViewing ? 'viewing request' : 'enquiry'} from the website${units.length ? ` about ${units.map((u) => u.code).join(', ')}` : ''}${message ? `:\n\n${message}` : '.'}` } });
+        if (earlier) await tx.leadNote.create({ data: { enquiryId: id, kind: 'SYSTEM', body: `Possible duplicate of ${earlier.name} — same phone or email. Review and merge if it is the same person.`, meta: { duplicateOfId: earlier.id } } });
       }
 
       let viewingId: string | null = null;
@@ -145,6 +166,17 @@ export class EnquiryService {
       }
       return { id, viewingId };
     });
+
+    // In-app: the owner (or, for an unassigned lead, the managers) hears at once.
+    const owner = existing?.assignedToId ?? (await this.prisma.client.enquiry.findUnique({ where: { id: enquiry.id }, select: { assignedToId: true } }))?.assignedToId ?? null;
+    await this.crm.notify(owner ? [owner] : await this.crm.managerIds(), {
+      kind: existing ? 'lead.replied' : 'lead.new',
+      title: existing ? `${name} asked again` : `New lead: ${name}`,
+      body: `${wantsViewing ? 'Viewing request' : 'Website enquiry'}${units.length ? ` · ${units.map((u) => u.code).join(', ')}` : ''}${owner ? '' : ' · unassigned'}`,
+      link: `/crm/leads/${enquiry.id}`,
+      enquiryId: enquiry.id,
+    });
+    await this.crm.rescore(enquiry.id);
 
     // §15.1 — tell the sales team and the visitor, through the delivery queue.
     const alert = emailEnquiryAlert({

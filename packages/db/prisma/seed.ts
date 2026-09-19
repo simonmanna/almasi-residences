@@ -3,9 +3,9 @@
  *
  * D-33 — the admin is the source of truth. The seed writes the FIRST state of
  * each record and never overwrites one that exists: prices, statuses,
- * amenities, FAQs and page copy edited in the admin survive a re-seed. Only
- * reference data the admin does not manage (landmarks, the time-state media
- * sets, tours) is reconciled on every run.
+ * amenities, FAQs, landmarks and page copy edited in the admin survive a
+ * re-seed. Only reference data the admin does not manage (the time-state
+ * media sets, tours) is reconciled on every run.
  *
  * Rules it enforces rather than assumes:
  *   1. Payment milestones sum to exactly 100% (§5.6 rule 5).
@@ -277,7 +277,7 @@ async function main() {
   if (planned.length !== 28) throw new Error(`Planned ${planned.length} units, expected 28`);
 
   // Status assignment: sold from the bottom up (that is how buildings sell).
-  const statusOrder: UnitStatus[] = (['SOLD', 'ON_HOLD', 'RESERVED', 'AVAILABLE', 'OCCUPIED', 'UNAVAILABLE'] as UnitStatus[]).flatMap(
+  const statusOrder: UnitStatus[] = (['SOLD', 'BOOKED', 'RESERVED', 'AVAILABLE', 'UNAVAILABLE'] as UnitStatus[]).flatMap(
     (s) => Array<UnitStatus>(statusDistribution[s]).fill(s),
   );
   const byHeight = [...planned].sort((a, b) => a.level - b.level || a.positionIndex - b.positionIndex);
@@ -441,9 +441,9 @@ async function main() {
           sizeSqm: 12.5,
           unitId: u.id,
           status:
-            fresh.status === 'SOLD' || fresh.status === 'OCCUPIED'
+            fresh.status === 'SOLD'
               ? 'SOLD'
-              : fresh.status === 'RESERVED' || fresh.status === 'ON_HOLD'
+              : fresh.status === 'RESERVED' || fresh.status === 'BOOKED'
                 ? 'RESERVED'
                 : 'ASSIGNED',
         });
@@ -488,8 +488,10 @@ async function main() {
   }
 
   // ── Landmarks, with PostGIS distances (§4.5 — never computed in JS) ─────
-  await prisma.landmark.deleteMany({ where: { developmentId: dev.id } });
-  await prisma.landmark.createMany({ data: landmarks.map((l) => ({ ...l, developmentId: dev.id })) });
+  // Written once; after that they are edited under Website → Location.
+  if ((await prisma.landmark.count({ where: { developmentId: dev.id } })) === 0) {
+    await prisma.landmark.createMany({ data: landmarks.map((l) => ({ ...l, developmentId: dev.id })) });
+  }
   await prisma.$executeRaw`
     UPDATE "Landmark" l
     SET "distanceM" = ROUND(
@@ -499,7 +501,7 @@ async function main() {
                                 ${development.latitude}::double precision), 4326)::geography
       )
     )::int
-    WHERE l."developmentId" = ${dev.id}
+    WHERE l."developmentId" = ${dev.id} AND NOT l."manualDistance"
   `;
   // Travel time is a modelled estimate (§13) — 28 km/h urban average, 4.5 km/h walking.
   await prisma.$executeRaw`
@@ -508,7 +510,7 @@ async function main() {
         "walkMinutes"  = CASE WHEN "distanceM" <= 3000
                               THEN GREATEST(1, ROUND(("distanceM" / 1000.0) / 4.5 * 60)::int)
                               ELSE NULL END
-    WHERE "developmentId" = ${dev.id}
+    WHERE "developmentId" = ${dev.id} AND NOT "manualDistance"
   `;
 
   // ── Media sets and assets (time-state system) ──────────────────────────
@@ -583,7 +585,7 @@ async function main() {
 
   // ── Buyers, for the residences already sold or held ────────────────────
   const soldOrHeld = await prisma.unit.findMany({
-    where: { developmentId: dev.id, status: { in: ['SOLD', 'RESERVED', 'ON_HOLD'] }, buyerId: null },
+    where: { developmentId: dev.id, status: { in: ['SOLD', 'RESERVED', 'BOOKED'] }, buyerId: null },
     orderBy: { code: 'asc' },
   });
   if ((await prisma.buyer.count({ where: { developmentId: dev.id } })) === 0) {
@@ -608,7 +610,7 @@ async function main() {
 
   // ── Enquiries: 25 across all statuses (§4.6), only into an empty inbox ──
   if ((await prisma.enquiry.count({ where: { developmentId: dev.id } })) === 0) {
-    const statuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'VIEWING_SCHEDULED', 'VIEWED', 'INTERESTED', 'RESERVED', 'SOLD', 'LOST', 'SPAM'] as const;
+    const statuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'VIEWING_SCHEDULED', 'VIEWED', 'NEGOTIATION', 'RESERVED', 'SOLD', 'LOST', 'SPAM'] as const;
     const pick = rng(4242);
     const RETENTION_MONTHS = 24; // §5.9
     for (let i = 0; i < 25; i++) {

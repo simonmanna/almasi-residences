@@ -31,7 +31,7 @@ export class SalesDeskController {
     const developmentId = await this.dev.id();
     const me = actorOf(req).id;
     const now = new Date();
-    const open = { notIn: ['LOST', 'SPAM', 'SOLD'] as EnquiryStatus[] };
+    const open = { notIn: ['LOST', 'SPAM', 'SOLD', 'DISQUALIFIED', 'ON_HOLD'] as EnquiryStatus[] };
     const [uncontacted, overdue, requests, upcoming, expiring, mine, health] = await Promise.all([
       this.prisma.client.enquiry.findMany({
         where: { developmentId, status: 'NEW', contactedAt: null },
@@ -47,7 +47,7 @@ export class SalesDeskController {
       }),
       this.prisma.client.viewing.findMany({ where: { developmentId, status: 'REQUESTED' }, orderBy: [{ requestedDate: 'asc' }, { createdAt: 'asc' }], take: 12, select: { id: true, name: true, requestedDate: true, requestedSlot: true, createdAt: true, units: { select: { unit: { select: { code: true } } } } } }),
       this.prisma.client.viewing.findMany({
-        where: { developmentId, status: 'CONFIRMED', scheduledAt: { gte: new Date(now.getTime() - 2 * 3_600_000), lte: new Date(now.getTime() + 7 * 86_400_000) } },
+        where: { developmentId, status: { in: ['SCHEDULED', 'CONFIRMED', 'RESCHEDULED'] }, scheduledAt: { gte: new Date(now.getTime() - 2 * 3_600_000), lte: new Date(now.getTime() + 7 * 86_400_000) } },
         orderBy: { scheduledAt: 'asc' },
         take: 12,
         select: { id: true, name: true, scheduledAt: true, agent: { select: { name: true } }, units: { select: { unit: { select: { code: true } } } } },
@@ -84,7 +84,7 @@ export class SalesDeskController {
         _count: { _all: true },
       }),
       this.prisma.client.enquiry.findMany({
-        where: { developmentId, duplicateOfId: null },
+        where: { developmentId, duplicateOfId: null, archivedAt: null },
         select: { status: true, assignedTo: { select: { id: true, name: true } }, units: { select: { unitId: true } } },
       }),
       this.prisma.client.unit.findMany({
@@ -130,8 +130,8 @@ export class SalesDeskController {
       if (!lead.assignedTo) continue;
       const row = agents.get(lead.assignedTo.id) ?? { ...lead.assignedTo, leads: 0, viewings: 0, reservations: 0, sales: 0 };
       row.leads++;
-      if (['VIEWING_SCHEDULED', 'VIEWED', 'INTERESTED', 'RESERVED', 'SOLD'].includes(lead.status)) row.viewings++;
-      if (['RESERVED', 'SOLD'].includes(lead.status)) row.reservations++;
+      if (['VIEWING_SCHEDULED', 'VIEWED', 'NEGOTIATION', 'RESERVED', 'CONTRACT', 'SOLD'].includes(lead.status)) row.viewings++;
+      if (['RESERVED', 'CONTRACT', 'SOLD'].includes(lead.status)) row.reservations++;
       if (lead.status === 'SOLD') row.sales++;
       agents.set(row.id, row);
     }

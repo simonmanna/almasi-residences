@@ -59,15 +59,15 @@ model Development {
   videoMedia   Media?  @relation("DevelopmentVideo", fields: [videoMediaId], references: [id], onDelete: SetNull)
 
   // Contact — one place, read by the footer, the enquiry panel and WhatsApp links.
-  contactPhone   String?
-  contactEmail   String?
-  whatsappNumber String?
+  contactPhone        String?
+  contactEmail        String?
+  whatsappNumber      String?
   /// Shows the small site-wide WhatsApp launcher when a number is configured.
   whatsappIconVisible Boolean @default(true)
-  officeAddress  String?
-  officeHours    String?
+  officeAddress       String?
+  officeHours         String?
   /// { instagram, facebook, linkedin, youtube, x, tiktok } — URLs.
-  socials        Json?
+  socials             Json?
 
   buildings       Building[]
   typologies      Typology[]
@@ -97,6 +97,12 @@ model Development {
   reservations    Reservation[]
   notifications   Notification[]
   analyticsEvents AnalyticsEvent[]
+  pipelineStages  PipelineStage[]
+  leadTasks       LeadTask[]
+  deals           Deal[]
+  campaigns       Campaign[]
+  leadDocuments   LeadDocument[]
+  crmSettings     CrmSettings?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -240,6 +246,10 @@ model Unit {
   interests     BuyerInterest[]
   viewings      ViewingUnit[]
   reservations  Reservation[]
+  primaryLeads  Enquiry[]       @relation("LeadPrimaryUnit")
+  deals         Deal[]
+  leadTasks     LeadTask[]
+  altViewings   Viewing[]       @relation("ViewingAlternative")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -402,6 +412,7 @@ model Typology {
   mediaSets      MediaSet[]
   media          Media[]
   specifications Specification[]
+  leads          Enquiry[]
 
   /// §40.2 — who published it and when; set by the publish action, not by an edit.
   publishedAt   DateTime?
@@ -849,6 +860,7 @@ model PaymentPlan {
   sortOrder           Int                @default(0)
   milestones          PaymentMilestone[]
   units               Unit[]
+  deals               Deal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -917,21 +929,21 @@ model Amenity {
 }
 
 model Landmark {
-  id            String           @id @default(cuid())
-  developmentId String
-  development   Development      @relation(fields: [developmentId], references: [id], onDelete: Cascade)
-  name          String
-  category      LandmarkCategory
-  latitude      Float
-  longitude     Float
+  id             String           @id @default(cuid())
+  developmentId  String
+  development    Development      @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name           String
+  category       LandmarkCategory
+  latitude       Float
+  longitude      Float
   /// computed by PostGIS at seed/update time, not hardcoded — unless manualDistance
-  distanceM     Int?
-  driveMinutes  Int?
-  walkMinutes   Int?
+  distanceM      Int?
+  driveMinutes   Int?
+  walkMinutes    Int?
   /// true when the admin typed the distance and times rather than having them computed
-  manualDistance Boolean       @default(false)
+  manualDistance Boolean          @default(false)
   /// when false, the landmark is hidden from the public site but kept in the admin
-  visible       Boolean         @default(true)
+  visible        Boolean          @default(true)
 
   @@index([developmentId])
 }
@@ -1073,6 +1085,7 @@ model Buyer {
   residents    Resident[]
   viewings     Viewing[]
   reservations Reservation[]
+  deals        Deal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1105,16 +1118,21 @@ model BuyerInterest {
 // ─────────────────────────── Leads ──────────────────────────────────
 
 model Enquiry {
-  id            String        @id @default(cuid())
+  id               String         @id @default(cuid())
   /// §40.5 — every lead belongs to a property. Backfilled from its residences.
-  developmentId String
-  development   Development   @relation(fields: [developmentId], references: [id], onDelete: Cascade)
-  name          String
-  email         String
-  phone         String
-  countryIso    String?
-  message       String?       @db.Text
-  intent        EnquiryIntent @default(INFORMATION)
+  developmentId    String
+  development      Development    @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name             String
+  /// A walk-in or a phone call may leave only one way to reach them; the API
+  /// requires at least a phone or an email.
+  email            String?
+  phone            String?
+  whatsapp         String?
+  countryIso       String?
+  city             String?
+  preferredContact ContactMethod?
+  message          String?        @db.Text
+  intent           EnquiryIntent  @default(INFORMATION)
 
   units EnquiryUnit[]
 
@@ -1126,7 +1144,50 @@ model Enquiry {
   landingPath String?
   userAgent   String?
 
-  status         EnquiryStatus  @default(NEW)
+  status         EnquiryStatus    @default(NEW)
+  /// The configurable pipeline column. `status` is kept equal to the stage's
+  /// category, so automation and reports never depend on a label an admin renamed.
+  stageId        String?
+  stage          PipelineStage?   @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  stageChangedAt DateTime         @default(now())
+  /// Where the lead came from, as the sales team counts it (`source` is the website placement).
+  leadSource     LeadSource       @default(WEBSITE)
+  campaignId     String?
+  campaign       Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  /// Manual override; null means "derived from the score".
+  temperature    LeadTemperature?
+  /// Cached transparent score (0-100), recomputed on every write. The breakdown is computed on read.
+  score          Int              @default(0)
+  priority       CrmPriority      @default(NORMAL)
+
+  typologyId        String?
+  typology          Typology?         @relation(fields: [typologyId], references: [id], onDelete: SetNull)
+  primaryUnitId     String?
+  primaryUnit       Unit?             @relation("LeadPrimaryUnit", fields: [primaryUnitId], references: [id], onDelete: SetNull)
+  bedrooms          Int?
+  sizeMinSqm        Float?
+  sizeMaxSqm        Float?
+  budgetMinMinor    Int?
+  budgetMaxMinor    Int?
+  floorPreference   String?
+  purpose           LeadPurpose?
+  financingRequired Boolean?
+  budgetConfirmed   Boolean           @default(false)
+  timeline          PurchaseTimeline?
+  decisionMaker     String?
+  tags              String[]          @default([])
+
+  lastContactAt      DateTime?
+  createdById        String?
+  createdBy          AdminUser?          @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Soft delete. An archived lead is hidden from every list but keeps its history.
+  archivedAt         DateTime?
+  tasks              LeadTask[]
+  deals              Deal[]
+  documents          LeadDocument[]
+  stageChanges       LeadStageChange[]
+  adminNotifications AdminNotification[]
+
   /// §40.3 — the agent working the lead (a real foreign key, audit §15.5).
   assignedToId   String?
   assignedTo     AdminUser?     @relation("EnquiryAgent", fields: [assignedToId], references: [id], onDelete: SetNull)
@@ -1163,6 +1224,9 @@ model Enquiry {
   @@index([assignedToId])
   @@index([followUpAt])
   @@index([email])
+  @@index([phone])
+  @@index([developmentId, stageId])
+  @@index([developmentId, archivedAt])
 }
 
 enum EnquiryIntent {
@@ -1177,13 +1241,69 @@ enum EnquiryStatus {
   NEW
   CONTACTED
   QUALIFIED
+  PROPERTY_INTEREST
   VIEWING_SCHEDULED
+  /// Viewing completed.
   VIEWED
-  INTERESTED
+  NEGOTIATION
   RESERVED
+  CONTRACT
   SOLD
+  ON_HOLD
   LOST
+  DISQUALIFIED
   SPAM
+}
+
+enum LeadSource {
+  WEBSITE
+  WHATSAPP
+  FACEBOOK
+  INSTAGRAM
+  GOOGLE
+  PROPERTY_PORTAL
+  REFERRAL
+  WALK_IN
+  PHONE
+  EMAIL
+  CAMPAIGN
+  AGENT
+  OTHER
+}
+
+enum LeadTemperature {
+  HOT
+  WARM
+  COLD
+}
+
+enum ContactMethod {
+  PHONE
+  WHATSAPP
+  EMAIL
+  SMS
+}
+
+enum LeadPurpose {
+  OWN_USE
+  INVESTMENT
+  OTHER
+}
+
+enum PurchaseTimeline {
+  IMMEDIATE
+  WITHIN_3_MONTHS
+  WITHIN_6_MONTHS
+  WITHIN_12_MONTHS
+  OVER_12_MONTHS
+  UNDECIDED
+}
+
+enum CrmPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
 enum LostReason {
@@ -1198,16 +1318,23 @@ enum LostReason {
 
 /// §15.4 — one entry per touch: a note, a call, a message. Never overwritten.
 model LeadNote {
-  id        String       @id @default(cuid())
-  enquiryId String
-  enquiry   Enquiry      @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
-  authorId  String?
-  author    AdminUser?   @relation("LeadNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
-  kind      LeadNoteKind @default(NOTE)
-  body      String       @db.Text
-  createdAt DateTime     @default(now())
+  id          String       @id @default(cuid())
+  enquiryId   String
+  enquiry     Enquiry      @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  authorId    String?
+  author      AdminUser?   @relation("LeadNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  kind        LeadNoteKind @default(NOTE)
+  body        String       @db.Text
+  /// "IN" (the customer reached us) or "OUT". Null for notes and system events.
+  direction   String?
+  durationMin Int?
+  /// Structured detail for system events: { unitId, dealId, taskId, viewingId, from, to }.
+  meta        Json?
+  pinned      Boolean      @default(false)
+  createdAt   DateTime     @default(now())
 
   @@index([enquiryId, createdAt])
+  @@index([kind, createdAt])
 }
 
 enum LeadNoteKind {
@@ -1215,42 +1342,313 @@ enum LeadNoteKind {
   CALL
   EMAIL
   WHATSAPP
+  SMS
   MEETING
+  VIEWING
+  DOCUMENT
+  TASK
+  ASSIGNMENT
+  RESERVATION
+  DEAL
   STATUS
   SYSTEM
 }
 
+/// Every pipeline move, so reports can say how long a lead sat in each stage.
+model LeadStageChange {
+  id          String         @id @default(cuid())
+  enquiryId   String
+  enquiry     Enquiry        @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  fromStageId String?
+  toStageId   String?
+  fromStatus  EnquiryStatus?
+  toStatus    EnquiryStatus
+  actorId     String?
+  createdAt   DateTime       @default(now())
+
+  @@index([enquiryId, createdAt])
+  @@index([createdAt])
+}
+
+/// The admin-configurable pipeline. Each column maps to a system category.
+model PipelineStage {
+  id            String        @id @default(cuid())
+  developmentId String
+  development   Development   @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  label         String
+  category      EnquiryStatus
+  /// A tone name from the admin palette: sky, blue, teal, purple, orange, indigo, green, grey, red.
+  color         String        @default("sky")
+  position      Int
+  /// Win probability used for the weighted pipeline value.
+  probability   Int           @default(0)
+  active        Boolean       @default(true)
+  leads         Enquiry[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([developmentId, position])
+}
+
+/// A follow-up, a call to make, a document to send. A lead's "next action" is its earliest open task.
+model LeadTask {
+  id            String      @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  enquiryId     String?
+  enquiry       Enquiry?    @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  unitId        String?
+  unit          Unit?       @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  dealId        String?
+  deal          Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  title         String
+  type          TaskType    @default(FOLLOW_UP)
+  priority      CrmPriority @default(NORMAL)
+  dueAt         DateTime?
+  /// True when only the day matters, not the time.
+  allDay        Boolean     @default(false)
+  remindAt      DateTime?
+  status        TaskStatus  @default(OPEN)
+  assignedToId  String?
+  assignedTo    AdminUser?  @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdBy     AdminUser?  @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  completedAt   DateTime?
+  completedById String?
+  notes         String?     @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([developmentId, status, dueAt])
+  @@index([assignedToId, status])
+  @@index([enquiryId, status])
+}
+
+enum TaskType {
+  CALL
+  WHATSAPP
+  EMAIL
+  SMS
+  MEETING
+  FOLLOW_UP
+  SEND_BROCHURE
+  SEND_FLOOR_PLAN
+  SEND_QUOTATION
+  SEND_PAYMENT_PLAN
+  SCHEDULE_VIEWING
+  POST_VIEWING
+  PAYMENT
+  OTHER
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  CANCELLED
+}
+
+/// A negotiation on one residence for one lead: the price, the terms, and the
+/// reservation and sale it becomes. Unit status only changes through the deal's
+/// reservation, so the inventory rules live in one place.
+model Deal {
+  id                     String         @id @default(cuid())
+  developmentId          String
+  development            Development    @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  enquiryId              String?
+  enquiry                Enquiry?       @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+  buyerId                String?
+  buyer                  Buyer?         @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  unitId                 String
+  unit                   Unit           @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  agentId                String?
+  agent                  AdminUser?     @relation("DealAgent", fields: [agentId], references: [id], onDelete: SetNull)
+  status                 DealStatus     @default(NEGOTIATION)
+  listPriceMinor         Int
+  agreedPriceMinor       Int?
+  discountMinor          Int?
+  currency               String         @default("USD")
+  reservationAmountMinor Int?
+  paymentPlanId          String?
+  paymentPlan            PaymentPlan?   @relation(fields: [paymentPlanId], references: [id], onDelete: SetNull)
+  expectedCloseAt        DateTime?
+  contractSignedAt       DateTime?
+  closedAt               DateTime?
+  lostReason             LostReason?
+  lostNote               String?
+  notes                  String?        @db.Text
+  reservationId          String?        @unique
+  reservation            Reservation?   @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  createdById            String?
+  createdBy              AdminUser?     @relation("DealCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  archivedAt             DateTime?
+  tasks                  LeadTask[]
+  documents              LeadDocument[]
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@index([developmentId, status])
+  @@index([unitId, status])
+  @@index([enquiryId])
+}
+
+enum DealStatus {
+  NEGOTIATION
+  RESERVED
+  CONTRACT
+  SOLD
+  LOST
+  CANCELLED
+}
+
+model Campaign {
+  id            String      @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  name          String
+  channel       LeadSource  @default(CAMPAIGN)
+  /// Website leads whose utm_campaign equals this are linked automatically.
+  utmCampaign   String?
+  startsAt      DateTime?
+  endsAt        DateTime?
+  budgetMinor   Int?
+  active        Boolean     @default(true)
+  notes         String?     @db.Text
+  leads         Enquiry[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([developmentId, name])
+  @@index([developmentId, utmCampaign])
+}
+
+/// A file on a lead or deal: a quotation sent, a signed agreement, an ID copy.
+model LeadDocument {
+  id            String       @id @default(cuid())
+  developmentId String
+  development   Development  @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  enquiryId     String?
+  enquiry       Enquiry?     @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  dealId        String?
+  deal          Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  kind          DocumentKind @default(OTHER)
+  name          String
+  storageKey    String?
+  url           String?
+  mimeType      String?
+  sizeBytes     Int?
+  sentAt        DateTime?
+  uploadedById  String?
+  uploadedBy    AdminUser?   @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  archivedAt    DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([enquiryId])
+  @@index([dealId])
+}
+
+enum DocumentKind {
+  BROCHURE
+  FLOOR_PLAN
+  PAYMENT_PLAN
+  QUOTATION
+  AGREEMENT
+  ID_DOCUMENT
+  RECEIPT
+  OTHER
+}
+
+/// In-app notifications for one admin user (the bell). Email delivery is `Notification`.
+model AdminNotification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  title     String
+  body      String?
+  link      String?
+  enquiryId String?
+  enquiry   Enquiry?  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  /// Makes generation idempotent ("task-overdue:<taskId>").
+  dedupeKey String?   @unique
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt, createdAt])
+}
+
+model SavedView {
+  id        String    @id @default(cuid())
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope     String
+  name      String
+  filters   Json
+  shared    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([scope, userId])
+}
+
+model CrmSettings {
+  id               String         @id @default(cuid())
+  developmentId    String         @unique
+  development      Development    @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  assignmentMode   AssignmentMode @default(MANUAL)
+  /// The agents new website leads rotate between (AdminUser ids).
+  assignmentPool   String[]       @default([])
+  roundRobinCursor Int            @default(0)
+  /// [{ key, points, enabled }] — overrides the defaults in @avida/types.
+  scoringRules     Json?
+  hotThreshold     Int            @default(70)
+  warmThreshold    Int            @default(40)
+  updatedAt        DateTime       @updatedAt
+}
+
+enum AssignmentMode {
+  MANUAL
+  ROUND_ROBIN
+  LEAST_LOADED
+}
+
 /// §15.2 — a viewing is booked, not implied by an enquiry's intent.
 model Viewing {
-  id                 String         @id @default(cuid())
+  id                 String           @id @default(cuid())
   developmentId      String
-  development        Development    @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  development        Development      @relation(fields: [developmentId], references: [id], onDelete: Cascade)
   enquiryId          String?
-  enquiry            Enquiry?       @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+  enquiry            Enquiry?         @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
   buyerId            String?
-  buyer              Buyer?         @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  buyer              Buyer?           @relation(fields: [buyerId], references: [id], onDelete: SetNull)
   /// Copied from the enquiry so a viewing survives the lead's retention purge window on its own terms.
   name               String
-  email              String
-  phone              String
+  email              String?
+  phone              String?
   /// What the visitor asked for.
   requestedDate      DateTime?
   requestedSlot      String?
   /// What the sales team confirmed.
   scheduledAt        DateTime?
-  durationMinutes    Int            @default(45)
+  durationMinutes    Int              @default(45)
   agentId            String?
-  agent              AdminUser?     @relation("ViewingAgent", fields: [agentId], references: [id], onDelete: SetNull)
-  status             ViewingStatus  @default(REQUESTED)
+  agent              AdminUser?       @relation("ViewingAgent", fields: [agentId], references: [id], onDelete: SetNull)
+  status             ViewingStatus    @default(REQUESTED)
   location           String?
-  notes              String?        @db.Text
-  outcome            String?        @db.Text
+  notes              String?          @db.Text
+  outcome            String?          @db.Text
+  /// Post-viewing feedback.
+  interestLevel      ViewingInterest?
+  objections         String?          @db.Text
+  alternativeUnitId  String?
+  alternativeUnit    Unit?            @relation("ViewingAlternative", fields: [alternativeUnitId], references: [id], onDelete: SetNull)
+  feedbackAt         DateTime?
+  feedbackById       String?
+  rescheduleCount    Int              @default(0)
   confirmationSentAt DateTime?
   reminderSentAt     DateTime?
   units              ViewingUnit[]
   notifications      Notification[]
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   @@index([developmentId, scheduledAt])
   @@index([status])
@@ -1259,10 +1657,20 @@ model Viewing {
 
 enum ViewingStatus {
   REQUESTED
+  SCHEDULED
   CONFIRMED
+  RESCHEDULED
   COMPLETED
   NO_SHOW
   CANCELLED
+}
+
+enum ViewingInterest {
+  VERY_INTERESTED
+  INTERESTED
+  NEEDS_FOLLOW_UP
+  NOT_INTERESTED
+  WANTS_ANOTHER
 }
 
 model ViewingUnit {
@@ -1299,6 +1707,7 @@ model Reservation {
   closedAt           DateTime?
   closedReason       String?
   expiryNoticeSentAt DateTime?
+  deal               Deal?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
@@ -1549,17 +1958,17 @@ model ContentRevision {
 
 /// Phase 6 — publication work that the worker executes at the requested time.
 model PublicationSchedule {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   developmentId String
   entity        String
   entityId      String
   action        String
   runAt         DateTime
   requestedById String
-  status        String   @default("PENDING")
+  status        String    @default("PENDING")
   lastError     String?
   completedAt   DateTime?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   @@index([status, runAt])
   @@index([developmentId, entity, entityId])
@@ -1567,17 +1976,17 @@ model PublicationSchedule {
 
 /// Editors request a decision; a publisher approves or rejects it explicitly.
 model PublicationApproval {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   developmentId String
   entity        String
   entityId      String
   action        String
   note          String?
-  status        String   @default("PENDING")
+  status        String    @default("PENDING")
   requestedById String
   decidedById   String?
   decidedAt     DateTime?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   @@index([developmentId, status, createdAt])
 }
@@ -1634,11 +2043,19 @@ model AdminUser {
   updatedAt          DateTime  @default(now()) @updatedAt
 
   auditLogs    AdminAuditLog[]
-  buyers       Buyer[]         @relation("BuyerAgent")
-  enquiries    Enquiry[]       @relation("EnquiryAgent")
-  leadNotes    LeadNote[]      @relation("LeadNoteAuthor")
-  viewings     Viewing[]       @relation("ViewingAgent")
-  reservations Reservation[]   @relation("ReservationAgent")
+  buyers       Buyer[]             @relation("BuyerAgent")
+  enquiries    Enquiry[]           @relation("EnquiryAgent")
+  leadNotes    LeadNote[]          @relation("LeadNoteAuthor")
+  viewings     Viewing[]           @relation("ViewingAgent")
+  reservations Reservation[]       @relation("ReservationAgent")
+  leadsCreated Enquiry[]           @relation("LeadCreator")
+  tasks        LeadTask[]          @relation("TaskAssignee")
+  tasksCreated LeadTask[]          @relation("TaskCreator")
+  deals        Deal[]              @relation("DealAgent")
+  dealsCreated Deal[]              @relation("DealCreator")
+  documents    LeadDocument[]      @relation("DocumentUploader")
+  inbox        AdminNotification[]
+  savedViews   SavedView[]
 }
 
 // §5.9 — every consequential admin action writes one row: who, what, which
@@ -1669,6 +2086,8 @@ enum AdminRole {
   SUPER_ADMIN
   PROPERTY_MANAGER
   SALES_MANAGER
+  SALES_AGENT
+  MARKETING
   CONTENT_MANAGER
   VIEWER
 }

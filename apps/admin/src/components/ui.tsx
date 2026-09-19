@@ -7,11 +7,11 @@ import {
   useRef,
   useState,
   type ButtonHTMLAttributes,
+  type ComponentProps,
   type ChangeEvent,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
-  type TextareaHTMLAttributes,
 } from 'react';
 import { AlertTriangle, ChevronLeft, ChevronRight, Inbox, X } from 'lucide-react';
 import { STATUS_TONE, statusLabel } from '../lib/format';
@@ -208,8 +208,8 @@ export function Field({ label, hint, error, children, className = '' }: { label:
   );
 }
 
-export const Input = ({ className = '', ...p }: InputHTMLAttributes<HTMLInputElement>) => <input className={`input ${className}`} {...p} />;
-export const Textarea = ({ className = '', ...p }: TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea className={`textarea ${className}`} {...p} />;
+export const Input = ({ className = '', ...p }: ComponentProps<'input'>) => <input className={`input ${className}`} {...p} />;
+export const Textarea = ({ className = '', ...p }: ComponentProps<'textarea'>) => <textarea className={`textarea ${className}`} {...p} />;
 export function Select({ className = '', options, placeholder, ...p }: SelectHTMLAttributes<HTMLSelectElement> & { options: { value: string; label: string }[]; placeholder?: string }) {
   return (
     <select className={`select ${className}`} {...p}>

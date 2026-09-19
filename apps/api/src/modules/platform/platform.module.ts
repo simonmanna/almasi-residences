@@ -9,13 +9,19 @@ import { DashboardController } from './dashboard.controller.js';
 import { EnquiriesController } from './enquiries.controller.js';
 import { FloorsController } from './floors.controller.js';
 import { GalleriesController } from './galleries.controller.js';
+import { LandmarksController } from './landmarks.controller.js';
 import { ParkingController } from './parking.controller.js';
 import { PaymentPlansController } from './payment-plans.controller.js';
 import { PresentationController } from './presentation.controller.js';
 import { PropertyController } from './property.controller.js';
 import { PublishingController } from './publishing.controller.js';
 import { ReservationsController } from './reservations.controller.js';
+import { ReservationService } from './reservation.service.js';
 import { ViewingsController } from './viewings.controller.js';
+import { CrmConfigController } from './crm-config.controller.js';
+import { CrmController } from './crm.controller.js';
+import { DealsController } from './deals.controller.js';
+import { TasksController } from './tasks.controller.js';
 import { SalesDeskController } from './sales-desk.controller.js';
 import { ResidencesController } from './residences.controller.js';
 import { ResidencesService } from './residences.service.js';
@@ -43,6 +49,7 @@ import { UsersController } from './users.controller.js';
     AssetsController,
     GalleriesController,
     ContentController,
+    LandmarksController,
     UsersController,
     AuditController,
     PresentationController,
@@ -50,7 +57,11 @@ import { UsersController } from './users.controller.js';
     ViewingsController,
     ReservationsController,
     SalesDeskController,
+    CrmController,
+    CrmConfigController,
+    TasksController,
+    DealsController,
   ],
-  providers: [ResidencesService],
+  providers: [ResidencesService, ReservationService],
 })
 export class PlatformModule {}

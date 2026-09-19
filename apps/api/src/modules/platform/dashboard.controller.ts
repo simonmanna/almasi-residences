@@ -1,5 +1,6 @@
 import { Controller, Get, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common';
 import { can, effectivePriceMinor, PARKING_STATUSES, UNIT_STATUSES, type Permission, type UnitStatus } from '@avida/types';
+import { CrmService } from '../../common/crm.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
@@ -7,8 +8,8 @@ import { StorageService } from '../../common/storage.service.js';
 import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
 import { actorOf } from './actor.js';
 
-const SOLD: UnitStatus[] = ['SOLD', 'OCCUPIED'];
-const HELD: UnitStatus[] = ['RESERVED', 'ON_HOLD'];
+const SOLD: UnitStatus[] = ['SOLD'];
+const HELD: UnitStatus[] = ['RESERVED', 'BOOKED'];
 
 /**
  * §3 / §39 / §49 — every number on the dashboard is counted from rows at
@@ -40,6 +41,7 @@ export class DashboardController {
     private readonly prisma: PrismaService,
     private readonly dev: CurrentDevelopment,
     private readonly storage: StorageService,
+    private readonly crm: CrmService,
   ) {}
 
   @Get('dashboard')
@@ -148,7 +150,7 @@ export class DashboardController {
           total: enquiries.reduce((a, e) => a + e._count, 0),
           new: enquiryCounts.NEW ?? 0,
           thisWeek: newThisWeek,
-          open: enquiries.filter((e) => !['SOLD', 'LOST', 'SPAM'].includes(e.status)).reduce((a, e) => a + e._count, 0),
+          open: enquiries.filter((e) => !['SOLD', 'LOST', 'SPAM', 'DISQUALIFIED'].includes(e.status)).reduce((a, e) => a + e._count, 0),
           byStatus: enquiryCounts,
         },
       },
@@ -265,9 +267,16 @@ export class DashboardController {
         ? this.prisma.client.buyer.findMany({ where: { developmentId, OR: [{ fullName: like }, { email: like }, { phone: { contains: q } }] }, take: 5 })
         : Promise.resolve([]),
       can(role, 'enquiry.view')
-        ? this.prisma.client.enquiry.findMany({ where: { developmentId, OR: [{ name: like }, { email: like }, { phone: { contains: q } }] }, take: 5, orderBy: { createdAt: 'desc' } })
+        ? this.prisma.client.enquiry.findMany({ where: { AND: [{ developmentId, archivedAt: null, OR: [{ name: like }, { email: like }, { phone: { contains: q.replace(/\s+/g, '') } }, { whatsapp: { contains: q.replace(/\s+/g, '') } }] }, this.crm.leadScope(actorOf(req))] }, take: 6, orderBy: { createdAt: 'desc' }, include: { stage: { select: { label: true } } } })
         : Promise.resolve([]),
     ]);
+    const [deals, viewings, activities] = can(role, 'enquiry.view')
+      ? await Promise.all([
+          this.prisma.client.deal.findMany({ where: { AND: [{ developmentId, archivedAt: null, OR: [{ enquiry: { name: like } }, { buyer: { fullName: like } }, { unit: { code: codeLike } }] }, can(role, 'enquiry.view-all') ? {} : { OR: [{ agentId: actorOf(req).id }, { enquiry: { assignedToId: actorOf(req).id } }] }] }, take: 4, include: { unit: { select: { code: true } }, enquiry: { select: { id: true, name: true } } } }),
+          this.prisma.client.viewing.findMany({ where: { developmentId, name: like, ...(can(role, 'enquiry.view-all') ? {} : { agentId: actorOf(req).id }) }, take: 4, orderBy: { createdAt: 'desc' } }),
+          q.length >= 3 ? this.prisma.client.leadNote.findMany({ where: { body: like, enquiry: { developmentId, ...this.crm.leadScope(actorOf(req)) } }, take: 4, orderBy: { createdAt: 'desc' }, include: { enquiry: { select: { id: true, name: true } } } }) : Promise.resolve([]),
+        ])
+      : [[], [], []];
 
     // An exact code match goes first, so typing "A2" lands on A2.
     const exact = (code: string) => code.replace(/-/g, ' ').toLowerCase() === q.replace(/-/g, ' ').toLowerCase();
@@ -279,7 +288,10 @@ export class DashboardController {
         ...floors.map((f) => ({ type: 'floor', id: f.id, title: f.displayName ?? f.label, subtitle: 'Floor', href: `/floors/${f.id}` })),
         ...residents.map((r) => ({ type: 'resident', id: r.id, title: r.fullName, subtitle: r.unit ? `Resident · ${r.unit.code}` : 'Resident', href: `/residents/${r.id}` })),
         ...buyers.map((b) => ({ type: 'buyer', id: b.id, title: b.fullName, subtitle: `Client · ${b.stage.toLowerCase()}`, href: `/buyers/${b.id}` })),
-        ...enquiries.map((e) => ({ type: 'enquiry', id: e.id, title: e.name, subtitle: `Enquiry · ${e.status.toLowerCase()}`, href: `/enquiries?open=${e.id}` })),
+        ...enquiries.map((e) => ({ type: 'lead', id: e.id, title: e.name, subtitle: `Lead · ${e.stage?.label ?? e.status.toLowerCase()}`, href: `/crm/leads/${e.id}` })),
+        ...deals.map((d) => ({ type: 'deal', id: d.id, title: `${d.enquiry?.name ?? 'Deal'} · ${d.unit.code}`, subtitle: `Deal · ${d.status.toLowerCase()}`, href: d.enquiry ? `/crm/leads/${d.enquiry.id}?tab=deals` : '/crm/deals' })),
+        ...viewings.map((v) => ({ type: 'viewing', id: v.id, title: v.name, subtitle: `Viewing · ${v.status.toLowerCase()}${v.scheduledAt ? ` · ${v.scheduledAt.toISOString().slice(0, 10)}` : ''}`, href: `/viewings?open=${v.id}` })),
+        ...activities.map((n) => ({ type: 'activity', id: n.id, title: n.body.slice(0, 70), subtitle: `${n.kind.toLowerCase()} · ${n.enquiry.name}`, href: `/crm/leads/${n.enquiry.id}` })),
         ...amenities.map((a) => ({ type: 'amenity', id: a.id, title: a.name, subtitle: 'Amenity', href: `/amenities?open=${a.id}` })),
         ...galleries.map((g) => ({ type: 'gallery', id: g.id, title: g.title, subtitle: 'Gallery', href: `/galleries/${g.id}` })),
         ...media.map((m) => ({ type: 'media', id: m.id, title: m.title ?? 'Untitled file', subtitle: `Media · ${m.category.toLowerCase().replace(/_/g, ' ')}`, href: `/media?open=${m.id}` })),

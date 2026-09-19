@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Bell, ChevronDown, KeyRound, LogOut, Menu as MenuIcon, Search, Settings } from 'lucide-react';
 import { ROLE_LABEL, type AdminRole } from '@avida/types';
-import { get, qs } from '../lib/api';
+import { get, post, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { initials } from '../lib/format';
-import { useQuery } from '../lib/query';
+import { ago, initials } from '../lib/format';
+import { invalidate, useQuery } from '../lib/query';
 import { Link, navigate, useDebounced, useLocation } from '../lib/router';
-import type { Paged } from '../lib/types';
 import { Menu } from '../components/ui';
 import { NAV, navFor } from './nav';
 
@@ -65,7 +64,7 @@ function GlobalSearch() {
       <input
         ref={input}
         value={q}
-        placeholder="Search residences, residents, floors…"
+        placeholder="Search leads, residences, deals…"
         aria-label="Search the admin"
         onChange={(e) => {
           setQ(e.target.value);
@@ -109,15 +108,72 @@ function GlobalSearch() {
   );
 }
 
+interface InboxItem {
+  id: string;
+  kind: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+/** The bell: new and assigned leads, due and overdue follow-ups, viewing and deal changes. */
 function Notifications() {
   const { can } = useAuth();
-  const { data } = useQuery(can('enquiry.view') ? 'enquiries:new-count' : null, () => get<Paged<unknown>>('/admin/enquiries?status=NEW&pageSize=1'));
-  const count = data?.meta.total ?? 0;
+  const allowed = can('enquiry.view');
+  const { data } = useQuery(allowed ? 'crm:inbox' : null, () => get<{ items: InboxItem[]; unread: number }>('/admin/crm/inbox'));
+  useEffect(() => {
+    if (!allowed) return;
+    const t = setInterval(() => invalidate('crm:inbox'), 60_000);
+    return () => clearInterval(t);
+  }, [allowed]);
+  if (!allowed) return <span className="icon-btn" aria-hidden="true"><Bell size={19} /></span>;
+  const unread = data?.unread ?? 0;
+  const markRead = async (ids?: string[]) => {
+    await post('/admin/crm/inbox/read', ids ? { ids } : {}).catch(() => undefined);
+    invalidate('crm:inbox');
+  };
   return (
-    <Link to={can('enquiry.view') ? '/enquiries?status=NEW' : '/'} className="icon-btn" aria-label={count ? `${count} new enquiries` : 'Notifications'} title={count ? `${count} new enquiries` : 'No new enquiries'}>
-      <Bell size={19} />
-      {count > 0 && <span className="dot" />}
-    </Link>
+    <Menu
+      trigger={(toggle) => (
+        <button type="button" className="icon-btn" onClick={toggle} aria-label={unread ? `${unread} unread notifications` : 'Notifications'} title={unread ? `${unread} unread` : 'No new notifications'}>
+          <Bell size={19} />
+          {unread > 0 && <span className="bell-count">{unread > 9 ? '9+' : unread}</span>}
+        </button>
+      )}
+    >
+      {(close) => (
+        <div className="inbox">
+          <div className="inbox-head">
+            <strong>Notifications</strong>
+            {unread > 0 && <button type="button" className="link-button small" onClick={() => void markRead()}>Mark all read</button>}
+          </div>
+          {(data?.items ?? []).length === 0 && <div className="inbox-empty">You are all caught up.</div>}
+          <div className="inbox-list">
+            {(data?.items ?? []).map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                className={`inbox-item ${n.readAt ? '' : 'unread'} kind-${n.kind.split('.')[0]}`}
+                onClick={() => {
+                  close();
+                  if (!n.readAt) void markRead([n.id]);
+                  if (n.link) navigate(n.link);
+                }}
+              >
+                <span className={`inbox-dot ${n.kind.includes('overdue') || n.kind.includes('cancel') || n.kind.includes('lost') ? 'red' : n.kind.includes('due') ? 'amber' : ''}`} />
+                <span className="inbox-text">
+                  <strong>{n.title}</strong>
+                  {n.body && <small>{n.body}</small>}
+                  <small className="faint">{ago(n.createdAt)}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </Menu>
   );
 }
 

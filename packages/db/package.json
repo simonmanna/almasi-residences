@@ -20,6 +20,7 @@
     "migrate:deploy": "prisma migrate deploy",
     "studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
+    "seed:crm": "tsx prisma/crm-seed.ts",
     "reset": "prisma migrate reset --force && tsx prisma/seed.ts",
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",

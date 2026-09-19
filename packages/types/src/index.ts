@@ -1,6 +1,7 @@
 export * from './admin.js';
 export * from './building.js';
 export * from './concierge.js';
+export * from './crm.js';
 export * from './enquiry.js';
 export * from './format.js';
 export * from './inventory.js';
