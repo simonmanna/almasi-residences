@@ -1,0 +1,10 @@
+{
+  "enabled": false,
+  "base": "/media/hero/v1",
+  "poster": "/media/home-hero.png",
+  "sources": {
+    "desktop1440": "hero-1440",
+    "desktop1080": "hero-1080",
+    "mobile": "hero-mobile"
+  }
+}

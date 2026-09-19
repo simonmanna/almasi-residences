@@ -4,7 +4,7 @@
  * residence at a time — a curated choice should not look like a catalogue.
  */
 .section {
-  background: var(--surface-sunk);
+  background-color: var(--surface-sunk);
 }
 
 .head {
@@ -17,7 +17,6 @@
 
 .kicker {
   margin-bottom: 20px;
-  color: var(--accent);
 }
 
 .aside {
@@ -44,10 +43,11 @@
 }
 
 .media {
+  border-radius: var(--radius-media);
   position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  background: var(--surface-sunk);
+  background-color: var(--surface-sunk);
 }
 
 @media (hover: hover) {
@@ -101,4 +101,8 @@
   .card { grid-template-columns: 1fr; gap: 24px; }
   .item:nth-child(even) .card > :first-child { order: 0; }
   .media { aspect-ratio: 4 / 3; }
+}
+
+.cta {
+  margin-top: 16px;
 }

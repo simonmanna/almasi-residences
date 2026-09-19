@@ -1,80 +1,82 @@
 /**
- * Almasi design tokens — quiet stone, warm light.
+ * Almasi design tokens — the Wooden theme, and the base every theme overrides.
  *
- * Two grounds, each authored by hand rather than derived from a base:
- *   stone — honed limestone. The default: reading, data, forms.
- *   night — charcoal at blue hour. Cinematic media, the film, the tour.
+ * Drawn from theme-reference/wooden-theme.png: pale oak and ivory for the
+ * reading ground, walnut for the cinematic ground, a honey highlight caught in
+ * the grain. Two grounds, each authored by hand rather than derived:
+ *   stone — pale oak. Reading, data, forms.
+ *   night — walnut. Cinematic media, the film, the tour.
  * A section opts in with data-ground="night"; components only ever read
- * var(--…) and never compute a colour. The contrast floors are asserted by
+ * var(--…) and never compute a colour. Blue and Sky Blue re-author both
+ * grounds in themes.css. The contrast floors are asserted by
  * tests/tokens.contrast.test.ts — if that test fails, the value here is wrong.
- *
- * DECISIONS D-28 records why this replaces the §2.3 time-of-day palette.
  */
 :root,
 [data-ground="stone"] {
-  --surface:            #EFEBE3;  /* honed limestone — warm, not cream */
-  --surface-raised:     #F7F4EE;
-  --surface-sunk:       #E4DED3;
-  --ink:                #1D1F1B;  /* charcoal with a trace of eucalyptus */
-  --ink-muted:          #55574F;
-  --line:               #CFC7B9;
-  --accent:             #7A5B39;  /* anodised bronze, text-safe */
-  --accent-weak:        #B79C7E;
-  --foliage:            #4B5A43;
-  --scrim:              rgba(29, 31, 27, 0.36);
-  --elev:               0 1px 2px rgba(29, 31, 27, 0.06), 0 18px 48px rgba(29, 31, 27, 0.10);
-  /* Four states a buyer must tell apart at a glance and at 14px. The old set
-     was four browns within ΔE 14 of each other; these hold ΔE ≥ 22 apart while
-     staying inside the material palette — bronze live, ochre held, patinated
+  --surface:            #EADCCB;  /* pale oak, sampled #E5D4C4 */
+  --surface-raised:     #F4EBDF;  /* ivory, sampled #EEDFCD */
+  --surface-sunk:       #DECAB4;  /* amenity strip, sampled #DDC6AF */
+  --ink:                #35261A;  /* dark walnut, sampled #45372A */
+  --ink-muted:          #5E4938;
+  --line:               #C8AD91;
+  --accent:             #74492A;  /* walnut, sampled #754B2B */
+  --accent-weak:        #AE8C6D;
+  --on-accent:          #F4EBDF;
+  --foliage:            #56603F;
+  --scrim:              rgba(53, 38, 26, 0.38);
+  --elev:               0 1px 2px rgba(53, 38, 26, 0.08), 0 18px 48px rgba(88, 56, 30, 0.16);
+  /* Four states a buyer must tell apart at a glance and at 14px, held ΔE ≥ 22
+     apart inside the material palette — bronze live, ochre held, patinated
      zinc gone, warm stone not yet released. */
-  --status-available:   #6B4A22;
-  --status-reserved:    #AD7526;
-  --status-sold:        #3F6A75;
-  --status-unavailable: #8E8478;
+  --status-available:   #5E3E1A;
+  --status-reserved:    #9A5F16;
+  --status-sold:        #2F6070;
+  --status-unavailable: #7E7264;
   /* Map — one colour per landmark category, so the pin, the legend chip and
      the list row always agree. Seven categories cannot hold the status
      palette's ΔE 22, so the floor here is 18 — and no pin is ever colour
      alone: each carries its name, its category and its distance. */
-  --cat-business:       #7A5B39;
-  --cat-shopping:       #A4571F;
-  --cat-health:         #2F6C77;
-  --cat-school:         #4B5A43;
-  --cat-airport:        #7A4A62;
-  --cat-leisure:        #6E6A1F;
-  --cat-embassy:        #94412F;
-  /* The map's own paper — one step below the page so the frame reads as a
-     surface you look into rather than a panel sitting on top. */
-  --map-ground:         #E9E3D7;
+  --cat-business:       #74492A;
+  --cat-shopping:       #9C4F17;
+  --cat-health:         #2A6571;
+  --cat-school:         #465438;
+  --cat-airport:        #74435C;
+  --cat-leisure:        #625E16;
+  --cat-embassy:        #8C3B2A;
+  /* The map's own paper — one step below the page. */
+  --map-ground:         #E4D3BF;
 }
 
 [data-ground="night"] {
-  --surface:            #151613;  /* blue-hour charcoal, never neutral black */
-  --surface-raised:     #1E201C;
-  --surface-sunk:       #0F100E;
-  --ink:                #EFEBE3;
-  --ink-muted:          #A8A396;
-  --line:               #34362F;
-  --accent:             #C9A27A;  /* the same bronze, catching interior light */
-  --accent-weak:        #7E6446;
-  --foliage:            #6B7A5E;
-  --scrim:              rgba(8, 8, 7, 0.55);
-  --elev:               0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 56px rgba(0, 0, 0, 0.45);
-  --status-available:   #D8AE7C;
-  --status-reserved:    #CE8B36;
-  --status-sold:        #79A2AE;
-  --status-unavailable: #757063;
-  --cat-business:       #C9A27A;
-  --cat-shopping:       #D98C46;
-  --cat-health:         #6FA9B4;
-  --cat-school:         #92A882;
-  --cat-airport:        #C08BA6;
-  --cat-leisure:        #B5AE5E;
-  --cat-embassy:        #D98671;
-  --map-ground:         #191B17;
+  --surface:            #3A281B;  /* walnut, sampled #503A21–#6E492D, taken deeper for film */
+  --surface-raised:     #4A3424;
+  --surface-sunk:       #2C1E14;
+  --ink:                #F4EBDF;
+  --ink-muted:          #D2BEA8;
+  --line:               #5E4631;
+  --accent:             #E3BD9B;  /* honey highlight, sampled #E3BD9B */
+  --accent-weak:        #9D6D43;
+  --on-accent:          #35261A;
+  --foliage:            #8A9670;
+  --scrim:              rgba(24, 16, 10, 0.55);
+  --elev:               0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 56px rgba(20, 12, 6, 0.5);
+  --status-available:   #E8C08E;
+  --status-reserved:    #D98E3A;
+  --status-sold:        #86B3C0;
+  --status-unavailable: #A59A8C;
+  --cat-business:       #E3BD9B;
+  --cat-shopping:       #E79A55;
+  --cat-health:         #7DB7C2;
+  --cat-school:         #A3B98F;
+  --cat-airport:        #D29AB7;
+  --cat-leisure:        #C6BF6C;
+  --cat-embassy:        #E7947E;
+  --map-ground:         #33241A;
 }
 
 :root {
-  /* Type — Gambetta for display, Supreme for everything a visitor operates. */
+  /* Type — Wooden sets Gambetta, a warm bookish serif, over Supreme. Blue and
+     Sky Blue swap both faces in themes.css. */
   --font-display: var(--font-display-face, 'Gambetta'), 'Iowan Old Style', Georgia, serif;
   --font-ui: var(--font-ui-face, 'Supreme'), ui-sans-serif, system-ui, -apple-system, sans-serif;
 
@@ -111,9 +113,62 @@
   --gutter: clamp(16px, 2vw, 28px);
   --nav-h: 76px;
 
-  /* Corners stay architectural: nearly square. */
+  /* Corners stay architectural: nearly square. Controls use 1, menus 2; the
+     theme's cards, media and buttons read their own radius below. */
   --radius-1: 2px;
-  --radius-2: 4px;
+  --radius-2: 6px;
+
+  /* ─── Theme personality — Wooden defaults, overridden in themes.css ───
+     Everything a theme changes beyond colour: type, shape, depth, material.
+     Components read these; they never branch on the theme name. */
+  --display-tracking: 1;              /* multiplier on each type role's tracking */
+  --display-weight: 400;
+  --radius-card: 10px;
+  --radius-media: 8px;
+  --radius-btn: 999px;
+  --btn-caps: all-small-caps;
+  --btn-tracking: 0.16em;
+  --btn-weight: 500;
+  --btn-shadow: none;
+  --btn-h: 52px;
+  /* Cards are walnut panels set on pale oak, framed by a hairline of ivory —
+     the reference's "wood inlay" rather than a floating white box. */
+  --card-surface:       #5A3D27;
+  --card-ink:           #F6EDE2;
+  --card-muted:         #DCC8B1;
+  --card-accent:        #EBC9A6;
+  --card-line:          rgba(246, 237, 226, 0.18);
+  --card-border:        1px solid rgba(90, 61, 39, 0.9);
+  --card-frame:         inset 0 0 0 1px rgba(246, 237, 226, 0.1);
+  --card-shadow:        0 2px 4px rgba(58, 36, 20, 0.12), 0 22px 48px -12px rgba(74, 46, 24, 0.38);
+  --card-shadow-hover:  0 4px 8px rgba(58, 36, 20, 0.14), 0 34px 70px -14px rgba(74, 46, 24, 0.48);
+  --card-lift:          -4px;
+  /* Material: a horizontal oak grain, drawn as noise stretched along x. */
+  --texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='640' height='640'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.004 0.19' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.29 0 0 0 0 0.18 0 0 0 0 0.09 0 0 0 0.32 -0.12'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
+  --ambient: none;
+  /* The tint laid over photographs — scrims, captions over image, the film.
+     rgb channels so a component chooses its own alpha: rgb(var(--shade) / .6). */
+  --shade: 30 19 11;
+  --on-media: 246 237 226;
+  /* The evening sky behind the introduction's render, bottom to top. */
+  --dusk-base: #140D08;
+  --dusk-low:  #24170E;
+  --dusk-mid:  #4A2F1C;
+  --dusk-high: #7C5334;
+  /* Navigation once the page moves. */
+  --nav-blur: 14px;
+  --nav-shadow: 0 10px 30px -18px rgba(30, 19, 11, 0.6);
+
+  /* The theme contract under its public names, for anything outside the
+     component system (embeds, the 3D canvas, third-party widgets). */
+  --theme-primary: var(--accent);
+  --theme-background: var(--surface);
+  --theme-surface: var(--surface-raised);
+  --theme-text: var(--ink);
+  --theme-text-muted: var(--ink-muted);
+  --theme-border: var(--line);
+  --theme-radius-md: var(--radius-card);
+  --theme-animation-easing: var(--ease-out);
 
   /* Motion — one family of curves, used everywhere. */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);

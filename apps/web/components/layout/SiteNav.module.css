@@ -9,7 +9,8 @@
     opacity var(--dur-4) var(--ease-out),
     background-color var(--dur-2) var(--ease-standard),
     color var(--dur-2) var(--ease-standard),
-    border-color var(--dur-2) var(--ease-standard);
+    border-color var(--dur-2) var(--ease-standard),
+    box-shadow var(--dur-3) var(--ease-standard);
 }
 
 /* Over imagery the nav has no ground of its own — the image is the ground. */
@@ -19,10 +20,12 @@
 }
 
 .nav[data-mode='solid'] {
-  background: color-mix(in srgb, var(--surface) 95%, transparent);
-  border-bottom-color: var(--line);
-  backdrop-filter: blur(16px) saturate(1.1);
-  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  background-color: color-mix(in srgb, var(--surface) 86%, transparent);
+  background-image: var(--texture);
+  border-bottom-color: color-mix(in srgb, var(--line) 70%, transparent);
+  box-shadow: var(--nav-shadow);
+  backdrop-filter: blur(var(--nav-blur)) saturate(1.2);
+  -webkit-backdrop-filter: blur(var(--nav-blur)) saturate(1.2);
 }
 
 .nav[data-hidden='true'] {
@@ -125,7 +128,8 @@
 }
 
 @media (max-width: 640px) {
-  .enquire { display: none; }
+  .actions .enquire { display: none; }
+  .actions { gap: 4px; }
 }
 
 /* ─── Full-screen menu ─────────────────────────────────────────────── */

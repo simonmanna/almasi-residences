@@ -49,3 +49,6 @@ storage/
 e2e/.auth/
 api.log
 hero-overlap.png
+
+# hero film: generated source shots and the 4K master (large; kept out of git)
+media-src/

@@ -13,25 +13,29 @@ export async function EnquireSection({
   id = 'enquire',
   heading,
   source = 'home',
+  compact = false,
 }: {
   id?: string;
   heading?: string[];
   source?: string;
+  /** Sets the heading on one line at near-lead size, under a large kicker. */
+  compact?: boolean;
 }) {
   const [dev, pages] = await Promise.all([getDevelopment().catch(() => null), getPagesSafe()]);
   const contact = contactFrom(dev?.contact, dev?.name);
   const wa = whatsappHref(contact);
   const tel = telHref(contact);
   const mail = mailtoHref(contact);
-  const lines = heading ?? twoLines(copy(pages, 'contact', 'enquireTitle'));
+  const title = heading ?? twoLines(copy(pages, 'contact', 'enquireTitle'));
+  const lines = compact ? [title.join(' ')] : title;
   const body = copy(pages, 'contact', 'enquireBody');
 
   return (
     <section id={id} className={`section ${styles.section}`} data-hide-sticky-cta aria-labelledby={`${id}-title`}>
       <div className={`container ${styles.layout}`}>
         <div className={styles.text}>
-          <p className={`mark ${styles.kicker}`}>Enquire</p>
-          <RevealText as="h2" id={`${id}-title`} className="h2" lines={lines} />
+          <p className={`mark ${styles.kicker}${compact ? ' kicker-lg' : ''}`}>Enquire</p>
+          <RevealText as="h2" id={`${id}-title`} className={compact ? 'title-sm' : 'h2'} lines={lines} />
           {body && <p className="lead">{body}</p>}
           <ul className={styles.channels}>
             {wa && (

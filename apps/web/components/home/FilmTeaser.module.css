@@ -16,12 +16,12 @@
   inset: 0;
   z-index: 1;
   background:
-    linear-gradient(to top, rgba(12, 13, 11, 0.78) 0%, rgba(12, 13, 11, 0.15) 50%, rgba(12, 13, 11, 0.35) 100%);
+    linear-gradient(to top, rgb(var(--shade) / 0.78) 0%, rgb(var(--shade) / 0.15) 50%, rgb(var(--shade) / 0.35) 100%);
   transition: background-color var(--dur-3) var(--ease-out);
 }
 
 @media (hover: hover) {
-  .frame:hover .shade { background-color: rgba(12, 13, 11, 0.12); }
+  .frame:hover .shade { background-color: rgb(var(--shade) / 0.12); }
 }
 
 .copy {
@@ -67,7 +67,7 @@
   place-items: center;
   width: 64px;
   height: 64px;
-  border: 1px solid rgba(239, 235, 227, 0.6);
+  border: 1px solid rgb(var(--on-media) / 0.6);
   border-radius: 50%;
   transition: background-color var(--dur-3) var(--ease-out), border-color var(--dur-3) var(--ease-out);
 }

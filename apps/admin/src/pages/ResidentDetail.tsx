@@ -22,7 +22,7 @@ interface ResidentDetail extends ResidentRow {
 
 function MoveModal({ r, onClose }: { r: ResidentDetail; onClose: () => void }) {
   const toast = useToast();
-  const { data: units } = useQuery('residences:sold', () => get<Paged<{ id: string; code: string }>>(`/admin/residences${qs({ status: 'SOLD,OCCUPIED', pageSize: 500, sort: 'code' })}`));
+  const { data: units } = useQuery('residences:sold', () => get<Paged<{ id: string; code: string }>>(`/admin/residences${qs({ status: 'SOLD', pageSize: 500, sort: 'code' })}`));
   const [unitId, setUnitId] = useState('');
   const [when, setWhen] = useState(new Date().toISOString().slice(0, 10));
   const save = async () => {

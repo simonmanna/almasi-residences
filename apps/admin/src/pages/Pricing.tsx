@@ -86,7 +86,7 @@ export default function Pricing() {
   return (
     <>
       <PageHead title="Pricing" sub="List price, discounts, promotions and price per m² for every residence.">
-        <Select className="sm" style={{ width: 'auto' }} value={s.status ?? ''} onChange={(e) => set({ status: e.target.value, page: 1 })} placeholder="All statuses" options={[{ value: 'AVAILABLE', label: 'Available only' }, { value: 'RESERVED,ON_HOLD', label: 'Reserved / on hold' }, { value: 'SOLD,OCCUPIED', label: 'Sold / occupied' }]} />
+        <Select className="sm" style={{ width: 'auto' }} value={s.status ?? ''} onChange={(e) => set({ status: e.target.value, page: 1 })} placeholder="All statuses" options={[{ value: 'AVAILABLE', label: 'Available only' }, { value: 'RESERVED,BOOKED', label: 'Reserved / booked' }, { value: 'SOLD', label: 'Sold only' }]} />
         <Select className="sm" style={{ width: 'auto' }} value={`${s.sort}:${s.dir ?? 'asc'}`} onChange={(e) => { const [sort, dir] = e.target.value.split(':'); set({ sort, dir, page: 1 }); }} options={[{ value: 'floor:asc', label: 'By floor' }, { value: 'price:desc', label: 'Highest price first' }, { value: 'price:asc', label: 'Lowest price first' }, { value: 'size:desc', label: 'Largest first' }]} />
         <Link to="/residences" className="btn">Bulk price change</Link>
       </PageHead>

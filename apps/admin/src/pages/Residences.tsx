@@ -19,7 +19,7 @@ import {
   TriangleAlert,
   X,
 } from 'lucide-react';
-import { STATUS_LABEL, UNIT_STATUSES, UNPLACED_IN_MODEL_NOTE } from '@avida/types';
+import { STATUS_LABEL, VISIBLE_UNIT_STATUSES, UNPLACED_IN_MODEL_NOTE } from '@avida/types';
 import { del, downloadUrl, get, patch, post, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { area, code as fmtCode, money } from '../lib/format';
@@ -257,7 +257,7 @@ export default function Residences() {
           <Input placeholder="Search by unit code, type or tag…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ maxWidth: 280 }} className="sm" />
           <Select className="sm" style={{ width: 'auto' }} value={s.floorId ?? ''} onChange={(e) => set({ floorId: e.target.value, page: 1 })} placeholder="All floors" options={floorOptions} />
           <Select className="sm" style={{ width: 'auto' }} value={s.typologyId ?? ''} onChange={(e) => set({ typologyId: e.target.value, page: 1 })} placeholder="All types" options={(types ?? []).map((t) => ({ value: t.id, label: t.name }))} />
-          <Select className="sm" style={{ width: 'auto' }} value={s.status ?? ''} onChange={(e) => set({ status: e.target.value, page: 1 })} placeholder="All statuses" options={UNIT_STATUSES.map((v) => ({ value: v, label: STATUS_LABEL[v] }))} />
+          <Select className="sm" style={{ width: 'auto' }} value={s.status ?? ''} onChange={(e) => set({ status: e.target.value, page: 1 })} placeholder="All statuses" options={VISIBLE_UNIT_STATUSES.map((v) => ({ value: v, label: STATUS_LABEL[v] }))} />
           <Select className="sm" style={{ width: 'auto' }} value={s.bedrooms ?? ''} onChange={(e) => set({ bedrooms: e.target.value, page: 1 })} placeholder="Any bedrooms" options={[1, 2, 3, 4].map((n) => ({ value: String(n), label: `${n} bedroom${n > 1 ? 's' : ''}` }))} />
           <Select className="sm" style={{ width: 'auto' }} value={s.published ?? ''} onChange={(e) => set({ published: e.target.value, page: 1 })} placeholder="Published or hidden" options={[{ value: 'true', label: 'Published' }, { value: 'false', label: 'Hidden' }]} />
           <Button size="sm" icon={<SlidersHorizontal size={15} />} onClick={() => setMore((m) => !m)} aria-pressed={more}>
@@ -383,7 +383,7 @@ export default function Residences() {
           <div className="bulk-bar" role="region" aria-label="Bulk actions">
             <strong>{selected.size} selected</strong>
             {can('residence.status') && !archivedView && (
-              <Select className="sm" style={{ width: 'auto' }} value="" onChange={(e) => e.target.value && void bulk('status', { status: e.target.value }, e.target.value === 'SOLD' ? { title: `Mark ${selected.size} residences as sold?`, body: 'The website shows them as sold at once. Only a super admin can undo a sale.' } : undefined)} placeholder="Change status…" options={UNIT_STATUSES.map((v) => ({ value: v, label: STATUS_LABEL[v] }))} />
+              <Select className="sm" style={{ width: 'auto' }} value="" onChange={(e) => e.target.value && void bulk('status', { status: e.target.value }, e.target.value === 'SOLD' ? { title: `Mark ${selected.size} residences as sold?`, body: 'The website shows them as sold at once. Only a super admin can undo a sale.' } : undefined)} placeholder="Change status…" options={VISIBLE_UNIT_STATUSES.map((v) => ({ value: v, label: STATUS_LABEL[v] }))} />
             )}
             {can('residence.price') && !archivedView && <Button size="sm" onClick={() => setBulkPrice(true)}>Change price</Button>}
             {can('residence.edit') && !archivedView && (

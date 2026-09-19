@@ -51,8 +51,8 @@ export default function FloorDetailPage({ params }: { params: Record<string, str
       <div className="grid-4">
         <Stat label="Residences" value={f.stats.total} icon={<Building2 size={20} />} tone="sky" />
         <Stat label="Available" value={f.stats.AVAILABLE} icon={<Building2 size={20} />} tone="green" />
-        <Stat label="Reserved / on hold" value={f.stats.RESERVED + f.stats.ON_HOLD} icon={<Building2 size={20} />} tone="blue" />
-        <Stat label="Sold / occupied" value={f.stats.SOLD + f.stats.OCCUPIED} icon={<Building2 size={20} />} tone="red" />
+        <Stat label="Reserved / booked" value={f.stats.RESERVED + f.stats.BOOKED} icon={<Building2 size={20} />} tone="blue" />
+        <Stat label="Sold" value={f.stats.SOLD} icon={<Building2 size={20} />} tone="red" />
       </div>
 
       <Card>

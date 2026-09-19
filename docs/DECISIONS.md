@@ -194,9 +194,14 @@ packages use explicit `.js` specifiers.
 
 `Enquiry.purgeAfter` is a required column set to `createdAt + 24 months`, indexed,
 with a `pii:purge` queue already declared in the worker. Retention added later is
-retention never added. `Enquiry.verificationSkipped` exists for the §6.7 case
-where Turnstile is unreachable and a lead is kept for manual review rather than
-dropped. `AdminAuditLog` records exports, deletes and bulk status changes.
+retention never added. `AdminAuditLog` records exports, deletes and bulk status
+changes.
+
+**Amended 2026-09-17:** Cloudflare Turnstile was removed, along with
+`Enquiry.verificationSkipped` — the flag existed only for the §6.7 "Turnstile
+unreachable" case. The public enquiry form is now defended by the hidden
+honeypot field and the per-IP rate limit (5 per 10 minutes) on
+`POST /api/v1/enquiry`.
 
 ---
 
@@ -419,20 +424,25 @@ Rules that make the database authoritative:
 Media uploads go through `StorageService`: signature-checked, stored once as
 the original, and rendered to WebP at 400/800/1600/2400 px with a blur
 placeholder. `STORAGE_DRIVER=local` (default) writes under `storage/media` and
-serves `/api/v1/files/*` with a sandboxing CSP; `s3` writes to R2.
+serves `/api/v1/files/*` with a sandboxing CSP; `s3` writes to the bucket.
 `pnpm media:import` moved the site's existing renders into the library.
 
 ## D-34 — Residence statuses, and who may undo a sale
 
 **Status:** decided, 2026-09-11 · **supersedes the §5.5 pipeline in `@avida/types`**
 
-Statuses are AVAILABLE, RESERVED, ON_HOLD, SOLD, OCCUPIED, UNAVAILABLE. The
-migration mapped BOOKED → ON_HOLD and NOT_RELEASED → UNAVAILABLE. The strict
-AVAILABLE → RESERVED → BOOKED → SOLD pipeline made the sales team fight the
-tool, so open statuses now move freely. The one guarded edge is undoing a sale:
-SOLD or OCCUPIED back to an open status needs `residence.reverse-sale` (super
-admin). SOLD ↔ OCCUPIED is a move-in or move-out and follows the residents
-module automatically. Every change writes `UnitStatusLog`, an audit row, and
+**Amended 2026-09-17:** the statuses the business uses are AVAILABLE, RESERVED,
+BOOKED and SOLD, matching how the sales team and the public site already speak.
+ON_HOLD was renamed back to BOOKED, and OCCUPIED was folded into SOLD — whether
+a sold home is lived in is a `Residency` question, not a sales-pipeline one, and
+keeping it in the enum meant a sold unit's status flipped whenever a resident
+moved. UNAVAILABLE survives as a stored value for inventory the developer has
+withheld, but no picker or legend offers it (`VISIBLE_UNIT_STATUSES`).
+
+Open statuses still move freely: the strict AVAILABLE → RESERVED → BOOKED → SOLD
+pipeline made the sales team fight the tool. The one guarded edge is undoing a
+sale: SOLD back to an open status needs `residence.reverse-sale` (super admin).
+Every change writes `UnitStatusLog`, an audit row, and
 moves the residence's parking bays with it. A general edit cannot change a
 status; only the status endpoint can. A floor holding residences cannot be
 deleted without naming where they go (`Unit.floor` is `onDelete: Restrict`).

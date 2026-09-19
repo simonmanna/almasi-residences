@@ -22,7 +22,7 @@ export function PageHero({
   return (
     <section className={styles.hero} data-ground="night" data-nav-over aria-labelledby="page-title">
       <div className={styles.media}>
-        <SceneImage media={media} priority sizes="100vw" label={mediaLabel} />
+        <SceneImage media={media} priority sizes="100vw" label={mediaLabel} className="scroll-drift" />
         <div className={styles.shade} aria-hidden="true" />
       </div>
       <div className={`container ${styles.content}`}>
@@ -38,8 +38,32 @@ export function PageHero({
   );
 }
 
-/** A quieter opening for pages that are mostly reading. */
-export function PageHeader({ kicker, title, lede }: { kicker: string; title: ReactNode; lede?: string }) {
+/**
+ * A quieter opening for pages that are mostly reading. `bold` sets the kicker
+ * as the big title and drops the CMS title to a small line beneath it.
+ */
+export function PageHeader({
+  kicker,
+  title,
+  lede,
+  bold = false,
+}: {
+  kicker: string;
+  title: ReactNode;
+  lede?: string;
+  bold?: boolean;
+}) {
+  if (bold) {
+    return (
+      <header className={`container ${styles.header} ${styles.headerBold}`}>
+        <h1 id="page-title" className={`display ${styles.boldTitle}`}>
+          {kicker}
+        </h1>
+        <p className={`small ${styles.boldSub}`}>{title}</p>
+        {lede && <p className="lead">{lede}</p>}
+      </header>
+    );
+  }
   return (
     <header className={`container ${styles.header}`}>
       {kicker && <p className={`mark ${styles.kicker}`}>{kicker}</p>}

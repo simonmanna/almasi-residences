@@ -7,12 +7,14 @@ import { telHref, whatsappHref } from '../../lib/contact';
 import { useContact } from '../providers/ContactProvider';
 import { useEnquiry } from '../enquiry/EnquiryProvider';
 import { useLenis } from './SmoothScroll';
+import { ThemeSwitcher, useTheme } from './ThemeSwitcher';
 import { Wordmark } from './Wordmark';
 import styles from './SiteNav.module.css';
 
 export const NAV_LINKS = [
   { href: '/residences', label: 'Residences' },
   { href: '/tour', label: '3D tour' },
+  { href: '/3d-design', label: '3D Design' },
   { href: '/amenities', label: 'Amenities' },
   { href: '/location', label: 'Location' },
   { href: '/gallery', label: 'Gallery' },
@@ -74,8 +76,10 @@ export function SiteNav() {
     menuRef.current?.close();
   }, [pathname]);
 
+  const theme = useTheme();
   const mode: Mode = overMedia ? 'over' : scrolled ? 'solid' : 'clear';
-  const ground = mode === 'over' ? 'night' : pageGround;
+  // Wooden's reference sets the moving nav as a walnut band over pale oak.
+  const ground = mode === 'over' || (mode === 'solid' && theme === 'wooden') ? 'night' : pageGround;
 
   const openMenu = () => {
     menuRef.current?.showModal();
@@ -115,6 +119,7 @@ export function SiteNav() {
         </nav>
 
         <div className={styles.actions}>
+          <ThemeSwitcher />
           <button
             type="button"
             className={`btn btn--solid btn--sm ${styles.enquire}`}

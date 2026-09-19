@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { BarChart3, CircleDollarSign, Inbox, PieChart, Tag, TrendingUp } from 'lucide-react';
-import { ENQUIRY_STATUSES, humanise, STATUS_LABEL, UNIT_STATUSES, type UnitStatus } from '@avida/types';
+import { ENQUIRY_STATUSES, humanise, STATUS_LABEL, UNIT_STATUSES, VISIBLE_UNIT_STATUSES, type UnitStatus } from '@avida/types';
 import { get } from '../lib/api';
 import { money, STATUS_TONE } from '../lib/format';
 import { useQuery } from '../lib/query';
@@ -34,14 +34,14 @@ export default function SalesOverview() {
         groups.set(key, g);
       }
     }
-    return [...groups.entries()].map(([label, v]) => ({ label, parts: UNIT_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: v[s], color: COLOR[STATUS_TONE[s]]! })) }));
+    return [...groups.entries()].map(([label, v]) => ({ label, parts: VISIBLE_UNIT_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: v[s], color: COLOR[STATUS_TONE[s]]! })) }));
   }, [d]);
 
   const byFloor = useMemo(
     () =>
       (d?.building ?? [])
         .filter((f) => f.units.length)
-        .map((f) => ({ label: f.displayName ?? f.label, parts: UNIT_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: f.stats[s], color: COLOR[STATUS_TONE[s]]! })) })),
+        .map((f) => ({ label: f.displayName ?? f.label, parts: VISIBLE_UNIT_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: f.stats[s], color: COLOR[STATUS_TONE[s]]! })) })),
     [d],
   );
 
@@ -49,7 +49,7 @@ export default function SalesOverview() {
   if (!d) return <LoadingPage />;
   const c = d.currency;
   const slices = (key: 'count' | 'value') =>
-    UNIT_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: key === 'count' ? d.stats.byStatus[s] : d.sales.valueByStatus[s], color: COLOR[STATUS_TONE[s]]! })).filter((x) => x.value > 0);
+    VISIBLE_UNIT_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: key === 'count' ? d.stats.byStatus[s] : d.sales.valueByStatus[s], color: COLOR[STATUS_TONE[s]]! })).filter((x) => x.value > 0);
 
   return (
     <>
@@ -69,7 +69,7 @@ export default function SalesOverview() {
           <div className="card-body donut-wrap">
             <Donut slices={slices('count')} size={170} centre={<div><strong style={{ fontSize: 26, fontFamily: 'var(--display)' }}>{d.stats.residences}</strong><div className="muted small">residences</div></div>} />
             <div className="stack-sm" style={{ flex: 1 }}>
-              {UNIT_STATUSES.map((s) => (
+              {VISIBLE_UNIT_STATUSES.map((s) => (
                 <div key={s} className="row small">
                   <i style={{ width: 10, height: 10, borderRadius: '50%', background: COLOR[STATUS_TONE[s]] }} />
                   <span style={{ flex: 1 }}>{STATUS_LABEL[s]}</span>

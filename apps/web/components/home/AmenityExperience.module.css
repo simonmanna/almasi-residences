@@ -1,5 +1,5 @@
 .section {
-  background: var(--surface);
+  background-color: var(--surface);
 }
 
 .head {
@@ -33,100 +33,133 @@
   text-overflow: ellipsis;
 }
 
-.layout {
+/* An editorial grid rather than a row of equals: the first amenity takes a
+   double square, the rest fall in beside and beneath it. */
+.grid {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  align-items: start;
-  gap: clamp(32px, 5vw, 96px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: clamp(220px, 21vw, 340px);
+  gap: var(--gutter);
 }
 
-.list {
+.card {
+  /* The photograph is the card; the caption sits on the image's own shade. */
+  --ink: rgb(var(--on-media));
+  --ink-muted: rgb(var(--on-media) / 0.8);
+  grid-template: 1fr / 1fr;
+  background-color: rgb(var(--shade));
+  grid-column: span var(--span, 1);
+}
+
+.card:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.cardButton {
+  grid-area: 1 / 1;
   display: grid;
-}
-
-.entry {
-  border-top: 1px solid var(--line);
-}
-
-.entry:last-child {
-  border-bottom: 1px solid var(--line);
-}
-
-.item {
-  display: flex;
-  align-items: baseline;
+  grid-template: 1fr / 1fr;
   width: 100%;
-  padding: clamp(14px, 1.6vw, 22px) 0;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
   text-align: left;
+  cursor: pointer;
+}
+
+.cardButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+}
+
+.media,
+.caption {
+  grid-area: 1 / 1;
+}
+
+.media {
+  position: relative;
+  overflow: hidden;
+}
+
+.media img {
+  transition: transform 1.6s var(--ease-out);
+}
+
+.caption {
+  position: relative;
+  z-index: 1;
+  align-self: end;
+  display: grid;
+  gap: 6px;
+  padding: clamp(18px, 2vw, 28px);
+  padding-top: 72px;
+  background: linear-gradient(to top, rgb(var(--shade) / 0.86) 0%, rgb(var(--shade) / 0.45) 55%, rgb(var(--shade) / 0) 100%);
+  color: var(--ink);
 }
 
 .name {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 1.2rem + 2.6vw, 4rem);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--ink-muted);
-  transition:
-    color 0.5s var(--ease-out),
-    transform 0.7s var(--ease-out);
+  font-size: clamp(1.375rem, 1.1rem + 0.8vw, 1.875rem);
+  line-height: 1.1;
+  letter-spacing: calc(-0.015em * var(--display-tracking));
 }
 
-.entry[data-active='true'] .name {
-  color: var(--ink);
-  transform: translateX(14px);
+.card:first-child .name {
+  font-size: clamp(1.75rem, 1.2rem + 1.8vw, 3rem);
 }
 
 .desc {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.6s var(--ease-out);
-}
-
-.desc > div {
-  min-height: 0;
-  overflow: hidden;
-}
-
-.desc p {
-  max-width: 44ch;
-  padding: 0 0 24px 14px;
+  max-width: 40ch;
+  font-size: var(--fs-sm);
   color: var(--ink-muted);
-}
-
-.entry[data-active='true'] .desc {
-  grid-template-rows: 1fr;
-}
-
-.frame {
-  position: sticky;
-  top: calc(var(--nav-h) + 32px);
-  aspect-ratio: 5 / 6;
-  max-height: calc(100svh - var(--nav-h) - 64px);
-  width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  background: var(--surface-sunk);
 }
 
-.slide {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  clip-path: inset(0 0 0 100%);
-  transition: clip-path 1s var(--ease-in-out);
+.note {
+  color: rgb(var(--on-media) / 0.7);
 }
 
-.slide[data-active='true'] {
-  z-index: 1;
-  clip-path: inset(0 0 0 0);
+.dialog {
+  width: min(1080px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 0;
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: 0 30px 100px rgb(var(--shade) / 0.45);
 }
 
-.slide img {
-  transform: scale(1.1);
-  transition: transform 2.4s var(--ease-out) !important;
-}
+.dialog::backdrop { background: rgb(var(--shade) / 0.72); backdrop-filter: blur(5px); }
 
-.slide[data-active='true'] img {
-  transform: scale(1);
+.dialogPanel { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr); min-height: min(680px, calc(100dvh - 32px)); }
+.dialogMedia { position: relative; min-height: 420px; background: rgb(var(--shade)); }
+.dialogCopy { align-self: center; display: grid; gap: 18px; padding: clamp(32px, 5vw, 72px); }
+.dialogTitle { font-family: var(--font-display); font-size: clamp(2.5rem, 2rem + 2vw, 4.5rem); line-height: 0.95; letter-spacing: -0.03em; }
+.dialogDescription { font-size: var(--fs-lead); line-height: 1.55; color: var(--ink-muted); white-space: pre-line; }
+.location { font-size: var(--fs-sm); color: var(--ink-muted); }
+.close { position: absolute; z-index: 3; top: 16px; right: 16px; display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--surface-raised); color: var(--ink); font: 300 2rem/1 sans-serif; cursor: pointer; }
+.close:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.specifications { display: grid; margin-top: 8px; border-top: 1px solid var(--line); }
+.specifications div { display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.specifications dt { color: var(--ink-muted); }
+.specifications dd { margin: 0; }
+
+@media (hover: hover) {
+  .card:hover {
+    transform: translate3d(0, var(--card-lift), 0);
+    box-shadow: var(--card-frame), var(--card-shadow-hover);
+  }
+  .card:hover .media img {
+    transform: scale(1.04);
+  }
 }
 
 /* An amenity with no photograph yet: an empty frame that says so, rather than
@@ -135,73 +168,67 @@
   position: absolute;
   inset: 0;
   display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 10px;
+  align-content: start;
+  justify-items: start;
+  gap: 6px;
   padding: 24px;
-  text-align: center;
-  background: var(--surface-sunk);
-  color: var(--ink-muted);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 14px, rgb(var(--on-media) / 0.05) 14px 15px),
+    rgb(var(--shade) / 0.6);
+  color: rgb(var(--on-media) / 0.7);
 }
 
-.placeholder p:last-child {
-  font-size: 0.9375rem;
-}
-
-.note {
-  position: absolute;
-  left: 16px;
-  bottom: 14px;
-  z-index: 2;
-  color: rgba(239, 235, 227, 0.8);
-}
-
-.mobileMedia {
-  position: relative;
+.placeholder p:first-child {
   display: none;
 }
 
+.placeholder p:last-child {
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: clamp(220px, 34vw, 320px);
+  }
+  .card:not(:first-child) {
+    grid-column: auto;
+  }
+  .card:last-child:nth-child(even) {
+    grid-column: span 2;
+  }
+}
+
 @media (max-width: 900px) {
-  .head,
-  .layout {
+  .head {
     grid-template-columns: 1fr;
   }
-  .frame {
-    display: none;
+  .title {
+    white-space: normal;
   }
-  .list {
+  .grid {
+    grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: 82%;
-    gap: 16px;
+    grid-auto-columns: 78%;
+    grid-auto-rows: auto;
+    gap: 14px;
     margin-inline: calc(var(--page-margin) * -1);
-    padding-inline: var(--page-margin);
+    padding: 4px var(--page-margin) 24px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--page-margin);
     scrollbar-width: none;
   }
-  .entry,
-  .entry:last-child {
-    display: flex;
-    flex-direction: column;
-    border: 0;
+  .card,
+  .card:first-child,
+  .card:last-child:nth-child(even) {
+    grid-column: auto;
+    grid-row: auto;
+    aspect-ratio: 4 / 5;
     scroll-snap-align: start;
   }
-  .mobileMedia {
-    display: block;
-    position: relative;
-    aspect-ratio: 4 / 5;
-    overflow: hidden;
-  }
-  .name,
-  .entry[data-active='true'] .name {
-    color: var(--ink);
-    transform: none;
-    font-size: 2rem;
-  }
-  .desc {
-    grid-template-rows: 1fr;
-  }
-  .desc p {
-    padding-left: 0;
-  }
+  .dialog { width: 100vw; max-height: 100dvh; margin: auto 0 0; }
+  .dialogPanel { grid-template-columns: 1fr; min-height: auto; }
+  .dialogMedia { min-height: min(52vh, 480px); }
+  .dialogCopy { padding: 28px var(--page-margin) 40px; }
 }

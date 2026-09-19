@@ -3,11 +3,7 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { INTENT_LABEL, isProbablyEmail, VIEWING_SLOTS, type EnquiryIntent } from '@avida/types';
 import { track } from '../../lib/analytics';
-import { Turnstile, type TurnstileHandle } from './Turnstile';
 import styles from './EnquiryForm.module.css';
-
-/** Empty in development and in the e2e suite, where the API accepts unverified enquiries. */
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
 export type ContactChannel = 'email' | 'phone' | 'whatsapp';
 
@@ -68,12 +64,6 @@ export function EnquiryForm({
   const [chosen, setChosen] = useState<EnquiryIntent>(intent);
   const [viewingDay, setViewingDay] = useState('');
   const today = new Date().toISOString().slice(0, 10);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  // Cloudflare unreachable or blocked: §6.7 says an outage must not cost a lead,
-  // so the form submits without a token and the API flags it for manual review.
-  const [turnstileDown, setTurnstileDown] = useState(false);
-  const turnstileRef = useRef<TurnstileHandle>(null);
-  const needsTurnstile = Boolean(TURNSTILE_SITE_KEY) && !turnstileDown;
 
   // Without a start event there is no abandonment rate, and the forms sitting
   // in the page — /enquire, the residence page — are where most people begin.
@@ -95,12 +85,6 @@ export function EnquiryForm({
     setErrors(found);
     if (Object.keys(found).length > 0) {
       requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
-      return;
-    }
-
-    if (needsTurnstile && !turnstileToken) {
-      setState('error');
-      setServerError('Please complete the "I am human" check just below, then send again.');
       return;
     }
 
@@ -126,7 +110,6 @@ export function EnquiryForm({
           ...(chosenIntent === 'VIEWING' && fd.get('viewingSlot') ? { viewingSlot: String(fd.get('viewingSlot')) } : {}),
           unitIds: residence ? [residence.id] : [],
           source,
-          ...(turnstileToken ? { turnstileToken } : {}),
           company: String(fd.get('company') ?? ''), // §5.7 honeypot
           utm: {
             source: params.get('utm_source') ?? undefined,
@@ -141,8 +124,6 @@ export function EnquiryForm({
       if (!res.ok) {
         setState('error');
         setServerError(json.detail ?? 'Something went wrong on our side. Please try again.');
-        // A Turnstile token may only be redeemed once.
-        turnstileRef.current?.reset();
         return;
       }
       setFirstName(name.split(/\s+/)[0] ?? name);
@@ -152,7 +133,6 @@ export function EnquiryForm({
     } catch {
       setState('error');
       setServerError('We could not reach the sales team just now. Please try again in a moment.');
-      turnstileRef.current?.reset();
     }
   }
 
@@ -290,18 +270,6 @@ export function EnquiryForm({
         <label htmlFor={`${uid}-company`}>Company</label>
         <input id={`${uid}-company`} name="company" tabIndex={-1} autoComplete="off" />
       </div>
-
-      {TURNSTILE_SITE_KEY && !turnstileDown && (
-        <Turnstile
-          ref={turnstileRef}
-          siteKey={TURNSTILE_SITE_KEY}
-          onToken={setTurnstileToken}
-          onUnavailable={() => {
-            setTurnstileDown(true);
-            setTurnstileToken(null);
-          }}
-        />
-      )}
 
       {state === 'error' && serverError && (
         <p className="field-error" role="alert">

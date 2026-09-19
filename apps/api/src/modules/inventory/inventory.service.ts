@@ -116,7 +116,7 @@ export class InventoryService {
         byStatus,
         available: available.length,
         percentSold: units.length
-          ? Math.round((((byStatus.SOLD ?? 0) + (byStatus.OCCUPIED ?? 0)) / units.length) * 100)
+          ? Math.round(((byStatus.SOLD ?? 0) / units.length) * 100)
           : 0,
         priceMinorMin: available.length ? Math.min(...available.map((u) => u.priceMinor)) : null,
         priceMinorMax: available.length ? Math.max(...available.map((u) => u.priceMinor)) : null,

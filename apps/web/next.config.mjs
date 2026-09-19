@@ -18,15 +18,11 @@ if (existsSync(rootEnv)) {
 const API_URL =
   process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-// Where uploaded media is served from in production (Cloudflare R2). Empty in
-// development, where everything is same-origin through the rewrite below.
+// Where uploaded media is served from in production (the S3-compatible bucket).
+// Empty in development, where everything is same-origin through the rewrite below.
 const MEDIA_ORIGIN = process.env.NEXT_PUBLIC_MEDIA_URL
   ? new URL(process.env.NEXT_PUBLIC_MEDIA_URL).origin
   : '';
-
-// §5.7 — Cloudflare Turnstile serves its script, its iframe and its verification
-// traffic from one origin; all three CSP directives below name it.
-const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 
 /**
  * §5.9 — the site's Content-Security-Policy.
@@ -56,11 +52,11 @@ const contentSecurityPolicy = [
   // CSS modules are files; Next still injects a little inline style.
   "style-src 'self' 'unsafe-inline'",
   // 'unsafe-eval' is React Refresh in development only.
-  `script-src 'self' 'unsafe-inline' ${TURNSTILE_ORIGIN}${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
-  `connect-src 'self' ${TURNSTILE_ORIGIN}${MEDIA_ORIGIN ? ` ${MEDIA_ORIGIN}` : ''}`,
-  // §5.7 — Turnstile solves the challenge inside its own iframe. This governs
-  // what this site may embed; frame-ancestors above still forbids embedding it.
-  `frame-src ${TURNSTILE_ORIGIN}`,
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+  // GLTFLoader decodes embedded GLB textures through local blob URLs.
+  `connect-src 'self' blob:${MEDIA_ORIGIN ? ` ${MEDIA_ORIGIN}` : ''}`,
+  // Nothing is embedded: the site frames no third-party content at all.
+  "frame-src 'none'",
   "worker-src 'self' blob:",
   'upgrade-insecure-requests',
 ].join('; ');
@@ -68,6 +64,8 @@ const contentSecurityPolicy = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Keep the development-only Next.js badge out of the public UI.
+  devIndicators: false,
   // Lets a second server (preview, e2e) run beside `pnpm dev` without both
   // writing into the same .next directory.
   distDir: process.env.NEXT_DIST_DIR || '.next',

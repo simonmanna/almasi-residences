@@ -19,14 +19,15 @@ export type ResidenceType = 'one-bedroom' | 'two-bedroom' | 'three-bedroom' | 'p
 export type PublicStatus = PublicUnitStatus;
 
 export const RESIDENCE_TYPES: readonly ResidenceType[] = ['one-bedroom', 'two-bedroom', 'three-bedroom', 'penthouse'];
-export const PUBLIC_STATUSES: readonly PublicStatus[] = ['available', 'reserved', 'sold', 'unavailable'];
+export const PUBLIC_STATUSES: readonly PublicStatus[] = ['available', 'reserved', 'booked', 'sold'];
 
-/** ON_HOLD reads "reserved"; OCCUPIED reads "sold"; UNAVAILABLE is held back by the developer. */
+/** UNAVAILABLE is held back by the developer and is never offered as a filter. */
 export const PUBLIC_STATUS: Record<UnitStatus, PublicStatus> = PUBLIC_UNIT_STATUS;
 
 export const STATUS_TEXT: Record<PublicStatus, string> = {
   available: 'Available',
   reserved: 'Reserved',
+  booked: 'Booked',
   sold: 'Sold',
   unavailable: 'Unavailable',
 };
@@ -219,7 +220,7 @@ export interface ResidenceSummary {
 }
 
 export function summarise(residences: readonly Residence[]): ResidenceSummary {
-  const byStatus: Record<PublicStatus, number> = { available: 0, reserved: 0, sold: 0, unavailable: 0 };
+  const byStatus: Record<PublicStatus, number> = { available: 0, reserved: 0, booked: 0, sold: 0, unavailable: 0 };
   const byType = Object.fromEntries(
     RESIDENCE_TYPES.map((t) => [
       t,

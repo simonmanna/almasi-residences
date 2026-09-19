@@ -2,7 +2,7 @@
   position: relative;
   padding-top: var(--section-y);
   background:
-    radial-gradient(120% 70% at 45% 38%, #20221d 0%, rgba(21, 22, 19, 0) 62%),
+    radial-gradient(120% 70% at 45% 38%, var(--surface-raised) 0%, transparent 62%),
     var(--surface);
 }
 
@@ -16,13 +16,14 @@
 
 .kicker {
   margin-bottom: 18px;
-  color: var(--accent);
 }
 
 .lede {
   max-width: 46ch;
   color: var(--ink-muted);
 }
+
+.designLink { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; color: var(--accent); border-bottom: 1px solid var(--accent-weak); font-size: 13px; }
 
 .switch {
   display: inline-flex;
@@ -80,9 +81,9 @@
   justify-items: center;
   gap: 2px;
   padding: 5px 10px;
-  border: 1px solid rgba(239, 235, 227, 0.18);
+  border: 1px solid rgb(var(--on-media) / 0.18);
   border-radius: var(--radius-1);
-  background: rgba(21, 22, 19, 0.86);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
   color: var(--ink);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
@@ -130,7 +131,7 @@
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-1);
-  background: rgba(21, 22, 19, 0.72);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   font-size: 1.125rem;

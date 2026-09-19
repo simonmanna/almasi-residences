@@ -12,13 +12,8 @@ import { parseEnv } from 'node:util';
 
 const file = process.argv[2] ?? '.env.production';
 
-/** Cloudflare's published dummy keys. Fine for development, never for launch. */
-const TEST_KEYS = new Set(['1x00000000000000000000AA', '1x0000000000000000000000000000000AA']);
-
 const REQUIRED = [
   { key: 'DOMAIN', why: 'every absolute URL — sitemap, canonicals, JSON-LD, OG tags' },
-  { key: 'TURNSTILE_SITE_KEY', why: 'the enquiry form cannot render its human check', noTestKey: true },
-  { key: 'TURNSTILE_SECRET_KEY', why: 'the API refuses to start without it', noTestKey: true },
   { key: 'RESEND_API_KEY', why: 'no enquiry notification or confirmation email is sent' },
   { key: 'ENQUIRY_NOTIFY_EMAILS', why: 'nobody is told when a lead arrives' },
   { key: 'ENQUIRY_FROM_EMAIL', why: 'confirmation emails have no sender' },
@@ -41,13 +36,10 @@ if (!existsSync(file)) {
 
 const env = parseEnv(readFileSync(file, 'utf8'));
 const missing = [];
-const testKeys = [];
 const advisories = [];
 
-for (const { key, why, noTestKey } of REQUIRED) {
-  const value = (env[key] ?? '').trim();
-  if (!value) missing.push({ key, why });
-  else if (noTestKey && TEST_KEYS.has(value)) testKeys.push({ key, why });
+for (const { key, why } of REQUIRED) {
+  if (!(env[key] ?? '').trim()) missing.push({ key, why });
 }
 for (const { key, why } of ADVISORY) {
   if (!(env[key] ?? '').trim()) advisories.push({ key, why });
@@ -55,15 +47,12 @@ for (const { key, why } of ADVISORY) {
 
 for (const { key, why } of advisories) console.warn(`  ! ${key} is empty — ${why}`);
 
-if (missing.length === 0 && testKeys.length === 0) {
+if (missing.length === 0) {
   console.log(`✓ ${file}: every launch-critical value is set.`);
   process.exit(0);
 }
 
 console.error(`\n✗ ${file} is not ready to deploy.\n`);
 for (const { key, why } of missing) console.error(`  ${key} is empty — ${why}`);
-for (const { key, why } of testKeys) {
-  console.error(`  ${key} still holds a Cloudflare test key — ${why}`);
-}
 console.error('');
 process.exit(1);

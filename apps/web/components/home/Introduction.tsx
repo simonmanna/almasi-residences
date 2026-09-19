@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { typesPresent } from '../../lib/residences';
 import { useInventory } from '../providers/InventoryProvider';
 import { RevealText } from '../ui/RevealText';
 import styles from './Introduction.module.css';
@@ -18,6 +19,7 @@ export function Introduction({
   title,
   body,
   developmentName,
+  buildingConfig,
   primary,
   secondary,
 }: {
@@ -32,6 +34,15 @@ export function Introduction({
 }) {
   const { summary } = useInventory();
 
+  const areas = typesPresent(summary).map((t) => summary.byType[t]);
+  const stats = [
+    { value: String(summary.total), label: 'Private residences' },
+    buildingConfig ? { value: buildingConfig, label: 'Floors' } : null,
+    areas.length
+      ? { value: `${Math.min(...areas.map((a) => a.areaMin))}–${Math.max(...areas.map((a) => a.areaMax))} m²`, label: 'Residence sizes' }
+      : null,
+  ].filter((x): x is { value: string; label: string } => x !== null);
+
   const name = developmentName.split(' ')[0] ?? '';
   const lead =
     name && body.startsWith(`${name} `) ? (
@@ -43,10 +54,6 @@ export function Introduction({
       body
     );
 
-  const statementLines = [
-    `${summary.total} private residences.`,
-    ...(title ? [title] : []),
-  ];
 
   return (
     <section className={styles.intro} data-ground="night" aria-labelledby="intro-title">
@@ -59,17 +66,17 @@ export function Introduction({
           quality={82}
           className={styles.image}
         />
-        <div className={styles.scrim} />
       </div>
+      <div className={styles.scrim} aria-hidden="true" />
 
       <div className={`container ${styles.inner}`}>
         <div className={styles.statement}>
           <RevealText
-            as="h2"
-            id="intro-title"
-            className={`display ${styles.statementHead}`}
-            lines={statementLines}
+            as="p"
+            className="kicker-lg"
+            lines={[`${summary.total} private residences.`]}
           />
+          {title && <RevealText as="h2" id="intro-title" className="title-sm" lines={[title]} />}
           {body && <p className={styles.lead}>{lead}</p>}
           {(primary || secondary) && (
             <div className={styles.ctas}>
@@ -87,6 +94,16 @@ export function Introduction({
                 </Link>
               )}
             </div>
+          )}
+          {stats.length > 0 && (
+            <dl className={styles.stats}>
+              {stats.map((st, i) => (
+                <div key={st.label} className={`stat ${styles.stat}`} data-reveal style={{ '--reveal-i': i } as React.CSSProperties}>
+                  <dt className="stat__label">{st.label}</dt>
+                  <dd className="stat__value">{st.value}</dd>
+                </div>
+              ))}
+            </dl>
           )}
         </div>
       </div>

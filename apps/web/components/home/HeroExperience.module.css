@@ -4,7 +4,7 @@
   height: 100svh;
   min-height: 620px;
   overflow: hidden;
-  background: #0c0d0b;
+  background: rgb(var(--shade));
 }
 
 .media {
@@ -25,17 +25,156 @@
   position: absolute;
   inset: 0;
   transform: scale(1.04);
+  /* Every push in grows down from the name board, never over it. */
+  transform-origin: 50% 12%;
   will-change: transform;
 }
 
-/* Legibility only: the bottom third and the nav strip, nothing decorative. */
+/* Never quite still: a slow push in and out across half a minute. */
+.drift {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 12%;
+  animation: drift 32s var(--ease-in-out) infinite alternate;
+  will-change: transform;
+}
+
+/* Overscanned so the pointer offset never shows an edge. */
+.parallax {
+  position: absolute;
+  inset: -24px;
+  will-change: transform;
+}
+
+.image {
+  object-fit: cover;
+  /* Keep the name board and the lobby in frame as the viewport narrows. */
+  object-position: 50% 30%;
+}
+
+/* The film sits over the poster and the glows, and appears only once it plays. */
+.film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 45%;
+  opacity: 0;
+  transition: opacity 1.2s var(--ease-in-out);
+  pointer-events: none;
+}
+
+.film[data-playing] {
+  opacity: 1;
+}
+
+.filmToggle {
+  min-height: 44px;
+  padding: 0 4px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.16em;
+}
+
+@media (hover: hover) {
+  .filmToggle:hover { color: var(--ink); }
+}
+
+/* Light over nothing looks like a stain: the glows wait for the render. */
+.parallax:not([data-loaded]) .windows,
+.parallax:not([data-loaded]) .sun {
+  visibility: hidden;
+}
+
+/* The interiors breathing: warm light over the glass, lifted in soft-light. */
+.windows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  background:
+    radial-gradient(38% 34% at 50% 48%, rgba(255, 196, 120, 0.75), rgba(255, 196, 120, 0) 70%),
+    radial-gradient(20% 16% at 50% 80%, rgba(255, 180, 100, 0.8), rgba(255, 180, 100, 0) 70%);
+  animation: breathe 7s var(--ease-in-out) infinite alternate;
+}
+
+/* The low sun, bottom right of the render; only where the frame still holds it. */
+.sun {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: radial-gradient(16% 22% at 91.5% 61%, rgba(255, 170, 90, 0.55), rgba(255, 140, 60, 0.12) 45%, rgba(255, 140, 60, 0) 72%);
+  animation: flare 9s var(--ease-in-out) infinite alternate;
+}
+
+/* One band of evening light across the facade as the frame opens. */
+.sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    105deg,
+    rgba(255, 236, 205, 0) 30%,
+    rgba(255, 236, 205, 0.5) 47%,
+    rgba(255, 250, 240, 0.75) 50%,
+    rgba(255, 236, 205, 0.5) 53%,
+    rgba(255, 236, 205, 0) 70%
+  );
+}
+
+/* Legibility: the bottom third and the nav strip, then a soft vignette so the
+   bright sky never competes with the headline. */
 .scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(to top, rgba(12, 13, 11, 0.8) 0%, rgba(12, 13, 11, 0.34) 34%, rgba(12, 13, 11, 0) 60%),
-    linear-gradient(to bottom, rgba(12, 13, 11, 0.5) 0%, rgba(12, 13, 11, 0) 20%);
+    linear-gradient(to top, rgb(var(--shade) / 0.88) 0%, rgb(var(--shade) / 0.5) 30%, rgb(var(--shade) / 0.12) 52%, rgb(var(--shade) / 0) 66%),
+    linear-gradient(to right, rgb(var(--shade) / 0.42) 0%, rgb(var(--shade) / 0) 48%),
+    linear-gradient(to left, rgb(var(--shade) / 0.38) 0%, rgb(var(--shade) / 0) 34%),
+    linear-gradient(to bottom, rgb(var(--shade) / 0.55) 0%, rgb(var(--shade) / 0) 22%),
+    radial-gradient(120% 90% at 50% 45%, rgb(var(--shade) / 0) 55%, rgb(var(--shade) / 0.45) 100%);
+}
+
+/* Film grain, so the CGI sits like a photograph. */
+.grain {
+  position: absolute;
+  inset: -50%;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 1.2s steps(6) infinite;
+}
+
+@keyframes drift {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to { transform: scale(1.06) translate3d(-0.8%, 0.6%, 0); }
+}
+
+@keyframes breathe {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@keyframes flare {
+  from { opacity: 0.6; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3%, 2%); }
+  40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -1%); }
+  80% { transform: translate(3%, 3%); }
+  100% { transform: translate(0, 0); }
 }
 
 .intro {
@@ -146,7 +285,7 @@
   width: 1px;
   height: 44px;
   overflow: hidden;
-  background: rgba(239, 235, 227, 0.22);
+  background: rgb(var(--on-media) / 0.22);
 }
 
 .cue span {
@@ -205,6 +344,19 @@
   to { opacity: 1; }
 }
 
+/* On a tall screen the cover crop loses the sun; don't paint a glow over sky. */
+@media (max-aspect-ratio: 4/3) {
+  .sun { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drift,
+  .windows,
+  .sun,
+  .grain { animation: none; }
+  .sheen { display: none; }
+}
+
 @media (max-width: 860px) {
   .content {
     grid-template-columns: 1fr;
@@ -212,5 +364,7 @@
     padding-bottom: 96px;
   }
   .aside { padding-bottom: 0; margin-left: 0; }
+  /* Centre on the name board, which sits a little left of the render's middle. */
+  .image { object-position: 46% 30%; }
   .foot :global(.cgi-note) { display: none; }
 }

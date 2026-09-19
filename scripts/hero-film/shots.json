@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "dissolve": 0.6,
+  "loopDissolve": 0.9,
+  "grade": "eq=saturation=0.95:contrast=1.02:gamma=1.0",
+  "posterShot": 6,
+  "posterAt": 1.8,
+  "shots": [
+    {
+      "id": 1,
+      "name": "aerial",
+      "source": "real-estate-resources/building3.png",
+      "prompt": "Slow, stabilised drone push-in and gentle descent toward this exact building at golden hour. Architecture, windows, balconies and signage stay exactly as in the image. Warm low sun, long shadows, soft haze over Kigali hills. Subtle palm movement. No new buildings, no morphing, no text changes.",
+      "in": 0.3,
+      "out": 2.9
+    },
+    {
+      "id": 2,
+      "name": "building-garden",
+      "source": "real-estate-resources/building2.png",
+      "prompt": "Controlled crane shot descending slowly along the facade of this exact building at sunset, interior lights glowing warmly through the glass, palms moving very gently. Geometry and materials unchanged. Real cinema camera, 28mm, no distortion.",
+      "in": 0.3,
+      "out": 2.6
+    },
+    {
+      "id": 3,
+      "name": "entrance",
+      "source": "real-estate-resources/home-realistic.png",
+      "prompt": "Smooth dolly forward at eye level toward the glazed lobby entrance under the curved canopy, dusk, warm lobby light, wet street reflections. The building and sign stay exactly as shown. No cars moving, no people.",
+      "in": 0.3,
+      "out": 2.5
+    },
+    {
+      "id": 4,
+      "name": "penthouse-living",
+      "source": "scripts/hero-film/stills/ph-living.png",
+      "prompt": "Slow lateral interior dolly across this penthouse living and dining room at sunset, warm 2700K lamps, sheer curtains moving slightly, view to Kigali hills through floor-to-ceiling glass. Furniture and room architecture exactly as shown. 35mm, subtle depth of field.",
+      "in": 0.3,
+      "out": 3.0
+    },
+    {
+      "id": 5,
+      "name": "penthouse-kitchen",
+      "source": "scripts/hero-film/stills/ph-kitchen.png",
+      "prompt": "Slow push past the marble kitchen island toward the glazing at golden hour, pendant lights on, under-cabinet lighting on. Everything in the room stays exactly as shown. Steady cinema dolly.",
+      "in": 0.3,
+      "out": 2.3
+    },
+    {
+      "id": 6,
+      "name": "terrace-sunset",
+      "source": "scripts/hero-film/stills/ph-terrace.png",
+      "prompt": "Camera glides slowly out onto the penthouse terrace toward the glass railing and pool, sunset over the Kigali hills, pool water rippling gently, terrace lights warming up. Architecture unchanged. Emotional, calm, realistic.",
+      "in": 0.3,
+      "out": 2.8
+    },
+    {
+      "id": 7,
+      "name": "final",
+      "source": "real-estate-resources/building3.png",
+      "prompt": "Slow drone pull-back and rise away from this exact building as golden hour turns to early evening; every window and the garden and balcony lights glow warmly. Building, sign and landscaping exactly as shown. Stable, cinematic.",
+      "in": 0.3,
+      "out": 2.9
+    }
+  ]
+}

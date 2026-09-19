@@ -1,9 +1,9 @@
 /* ─── 02 — The statement ─────────────────────────────────────────────
    A single column on the left with a display headline, a short body, and a
-   pair of CTAs.  The render sits on the right, contained within the section,
-   and keeps only a gentle left scrim so the headline always reads on flat
-   charcoal.  The padding-block mirrors the standard section rhythm (like the
-   Amenities block) for a modest line or two of breathing room. */
+   pair of CTAs.  The render sits on the right, whole and uncropped, against an
+   evening sky that climbs from near-black at the road to blue-hour at the top.
+   The padding-block mirrors the standard section rhythm (like the Amenities
+   block) for a modest line or two of breathing room. */
 
 .intro {
   position: relative;
@@ -13,31 +13,58 @@
   min-height: clamp(640px, 92vh, 1080px);
   padding-block: var(--section-y);
   overflow: hidden;
+
+  /* Dusk, bottom to top. The render's own sky lands inside this range, so the
+     contained image reads as part of the section rather than a pasted photo. */
+  --sky-base: var(--dusk-base);
+  --sky-low: var(--dusk-low);
+  --sky-mid: var(--dusk-mid);
+  --sky-high: var(--dusk-high);
+
+  background:
+    radial-gradient(128% 86% at 72% 4%, color-mix(in srgb, var(--sky-high) 62%, transparent) 0%, transparent 64%),
+    linear-gradient(to top, var(--sky-base) 0%, var(--sky-low) 32%, var(--sky-mid) 66%, var(--sky-high) 100%);
 }
 
-/* The render fills the section on the right; generous width so the building
-   takes most of the frame, but it never bleeds beyond the section bounds. */
+/* The render sits on the right and is never cropped: `contain` keeps the whole
+   building in frame, and the box is inset from the section edges so there is
+   open sky above and beside it rather than a render pushed against the bezel. */
 .media {
   position: absolute;
-  inset: 0 0 0 auto;
-  width: min(82%, 1380px);
-  z-index: -1;
+  inset: 7% 0 8% auto;
+  width: min(74%, 1240px);
+  z-index: -2;
 }
 
+/* Feathered on the two edges that meet open sky, so the render dissolves into
+   the gradient instead of ending on a visible photo seam. */
 .image {
-  object-fit: cover;
-  object-position: 55% 50%;
+  object-fit: contain;
+  object-position: 100% 100%;
   opacity: 1;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, #000 24%),
+    linear-gradient(to bottom, transparent 0%, #000 18%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0%, #000 24%),
+    linear-gradient(to bottom, transparent 0%, #000 18%, #000 88%, transparent 100%);
+  mask-composite: intersect;
 }
 
+/* Spans the whole section, not the render's box, so the sky stays continuous
+   past the render's edges instead of ending on a rectangle. */
 .scrim {
   position: absolute;
   inset: 0;
+  z-index: -1;
   background:
-    /* left fade — keeps the headline on flat charcoal, building reads right */
-    linear-gradient(to right, var(--surface) 0%, color-mix(in srgb, var(--surface) 55%, transparent) 16%, transparent 42%),
-    /* base fade — the building's foot settles onto the charcoal ground */
-    linear-gradient(to top, color-mix(in srgb, var(--surface) 60%, transparent) 0%, transparent 38%);
+    /* left fade — keeps the headline on unbroken sky, building reads right */
+    linear-gradient(to right, var(--sky-base) 0%, color-mix(in srgb, var(--sky-low) 72%, transparent) 18%, transparent 46%),
+    /* base fade — the building's foot settles onto the dark ground */
+    linear-gradient(to top, color-mix(in srgb, var(--sky-base) 78%, transparent) 0%, transparent 34%),
+    /* crown fade — the render's own sky dissolves into the section's */
+    linear-gradient(to bottom, color-mix(in srgb, var(--sky-high) 66%, transparent) 0%, transparent 26%);
 }
 
 .inner {
@@ -51,17 +78,6 @@
   flex-direction: column;
   gap: clamp(18px, 2.2vw, 26px);
   max-width: 36rem;
-}
-
-.statementHead {
-  font-size: clamp(2.4rem, 1.4rem + 3.2vw, 4.4rem);
-  line-height: 1.02;
-}
-
-/* The second line is the promise, not the count — bronze carries it. */
-.statementHead :global(.reveal-line:last-child) {
-  color: var(--accent);
-  font-style: italic;
 }
 
 .lead {
@@ -100,47 +116,80 @@
   transform: translateX(4px);
 }
 
+/* Three figures on a glass strip — the reference's "28 exclusive units ·
+   B+G+4 building" row, set as cards so each number has its own frame. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: clamp(16px, 2.4vw, 32px) 0 0;
+  max-width: 36rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  padding: 16px 18px 18px;
+  border: 1px solid rgb(var(--on-media) / 0.14);
+  border-radius: var(--radius-card);
+  background: rgb(var(--shade) / 0.35);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.stat dd {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.1rem + 1.1vw, 2.25rem);
+  white-space: nowrap;
+}
+
 /* ─── Tablet ──────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
+  /* Narrow enough that copy over the façade stops being readable, so the two
+     stack: words on open sky, the whole render in a band beneath them. */
   .intro {
-    min-height: clamp(500px, 84vh, 800px);
-    padding-block: var(--section-y);
+    min-height: 0;
+    align-items: flex-start;
+    padding-bottom: calc(var(--section-y) + 66.7vw);
   }
 
+  /* Matched to the render's own 3:2 so `contain` fills the box exactly — the
+     mask below feathers the image's real edges rather than empty letterbox. */
   .media {
-    inset: 0;
+    inset: auto 0 0 0;
     width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
   }
 
   .image {
-    object-position: 58% 50%;
-    opacity: 1;
+    object-position: 50% 100%;
+    -webkit-mask-image:
+      linear-gradient(to bottom, transparent 0%, #000 14%),
+      linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to bottom, transparent 0%, #000 14%),
+      linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    mask-composite: intersect;
   }
 
   .scrim {
     background:
-      linear-gradient(to left, color-mix(in srgb, var(--surface) 42%, transparent) 0%, transparent 60%),
-      linear-gradient(to top, var(--surface) 6%, color-mix(in srgb, var(--surface) 70%, transparent) 46%, color-mix(in srgb, var(--surface) 42%, transparent) 100%);
-  }
-
-  .statementHead {
-    font-size: clamp(2.1rem, 1rem + 3vw, 3.4rem);
+      linear-gradient(to top, var(--sky-base) 2%, color-mix(in srgb, var(--sky-low) 62%, transparent) 26%, transparent 60%);
   }
 }
 
 @media (max-width: 560px) {
-  .intro {
-    min-height: clamp(440px, 80vh, 720px);
-    padding-block: var(--section-y);
-    align-items: flex-start;
-  }
-
-  .statementHead {
-    font-size: clamp(1.9rem, 1rem + 4vw, 2.8rem);
-  }
-
   .lead {
     max-width: 100%;
+  }
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .stat:first-child {
+    grid-column: 1 / -1;
   }
 }
 

@@ -27,8 +27,8 @@ export function FeaturedResidences({ items }: { items: PublicResidenceCardDto[] 
       <div className="container">
         <header className={styles.head}>
           <div>
-            <p className={`mark ${styles.kicker}`}>Selected</p>
-            <RevealText as="h2" id="featured-title" className="h2" lines={['Residences worth', 'a closer look.']} />
+            <p className={`mark kicker-lg ${styles.kicker}`}>Selected</p>
+            <RevealText as="h2" id="featured-title" className="title-sm" lines={['Residences worth a closer look.']} />
           </div>
           <div className={styles.aside}>
             <Link href="/residences" className="link-line">
@@ -40,12 +40,13 @@ export function FeaturedResidences({ items }: { items: PublicResidenceCardDto[] 
           {live.map(({ card, r }) => {
             const price = visiblePriceMinor(r);
             return (
-              <li key={r.id} className={styles.item}>
+              <li key={r.id} className={styles.item} data-reveal>
                 <Link href={`/residences/${r.slug}`} className={styles.card} data-cursor="View">
                   <Reveal className={styles.media}>
                     <SceneImage media={card.cover} sizes="(max-width: 900px) 100vw, 55vw" label={`Residence ${r.label}`} />
                   </Reveal>
                   <div className={styles.text}>
+                    <p className="eyebrow">{TYPE_TEXT[r.type]}</p>
                     <h3 className="h3">Residence {r.label}</h3>
                     <p className={styles.size}>
                       {r.areaSqm} m² · {r.floorLabel}
@@ -69,6 +70,9 @@ export function FeaturedResidences({ items }: { items: PublicResidenceCardDto[] 
                         <dd>{price !== null ? formatMoney({ amountMinor: price, currency: r.currency }) : 'On request'}</dd>
                       </div>
                     </dl>
+                    <span className={`lux-cta ${styles.cta}`}>
+                      View residence <span className="btn-arrow" aria-hidden="true">→</span>
+                    </span>
                   </div>
                 </Link>
               </li>

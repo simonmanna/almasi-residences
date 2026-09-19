@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Building } from 'lucide-react';
-import { STATUS_LABEL, UNIT_STATUSES, type UnitStatus } from '@avida/types';
+import { STATUS_LABEL, UNIT_STATUSES, VISIBLE_UNIT_STATUSES, type UnitStatus } from '@avida/types';
 import { get } from '../lib/api';
 import { area, code as fmtCode, money, STATUS_TONE } from '../lib/format';
 import { useQuery } from '../lib/query';
@@ -50,7 +50,7 @@ export default function Availability() {
       </PageHead>
 
       <div className="grid-3" style={{ gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
-        {UNIT_STATUSES.map((st) => (
+        {VISIBLE_UNIT_STATUSES.map((st) => (
           <button key={st} type="button" className="card stat" style={{ padding: 16, outline: statuses.includes(st) ? '2px solid var(--sky-400)' : undefined }} onClick={() => toggleStatus(st)} aria-pressed={statuses.includes(st)}>
             <span className={`stat-icon tone-${STATUS_TONE[st]}`} style={{ width: 38, height: 38 }}><Building size={17} /></span>
             <div>

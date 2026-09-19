@@ -9,9 +9,10 @@ import { CATEGORY_LABEL, KigaliMap } from './KigaliMap';
 import styles from './LocationExperience.module.css';
 
 /**
- * 07 — In the heart of Kigali. Distances are computed by PostGIS from the
- * site's coordinates (never typed in); drive times are the API's modelled
- * estimates, and the page says so.
+ * 07 — In the heart of Kigali. The words come from the CMS (Homepage
+ * location); the places from Website → Location in the admin. Distances are
+ * computed by PostGIS from the coordinates unless the admin typed them; drive
+ * times are modelled estimates, and the footnote says so.
  *
  * The list and the map are one instrument: hovering either highlights the
  * other, clicking either pins a card open, and the category filter thins
@@ -21,11 +22,19 @@ export function LocationExperience({
   landmarks,
   latitude,
   longitude,
+  kicker,
+  title,
+  lede,
+  note,
   id = 'location',
 }: {
   landmarks: LandmarkDto[];
   latitude: number;
   longitude: number;
+  kicker: string;
+  title: string;
+  lede: string;
+  note: string;
   id?: string;
 }) {
   const [active, setActive] = useState<string | null>(null);
@@ -58,13 +67,9 @@ export function LocationExperience({
     <section id={id} className={`section ${styles.section}`} aria-labelledby={`${id}-title`}>
       <div className={`container ${styles.layout}`}>
         <div className={styles.text}>
-          <p className={styles.kicker}>Location</p>
-          <RevealText as="h2" id={`${id}-title`} className={styles.title} lines={['In the heart of Kigali']} />
-          <p className="lead">
-            Kimihurura rises just east of the city centre: embassies, restaurants and the Convention
-            Centre on one side, the golf course and the airport road on the other, and quiet,
-            tree-lined streets in between.
-          </p>
+          {kicker && <p id={title ? undefined : `${id}-title`} className={`kicker-lg ${styles.kicker}`}>{kicker}</p>}
+          {title && <RevealText as="h2" id={`${id}-title`} className="title-sm" lines={[title]} />}
+          {lede && <p className="lead">{lede}</p>}
 
           {categories.length > 1 && (
             <div className={styles.filters} role="group" aria-label="Filter nearby places by kind">
@@ -121,9 +126,7 @@ export function LocationExperience({
             ))}
           </ul>
 
-          <p className="caption">
-            Straight-line distances from the site. Drive times are estimates at an average city speed.
-          </p>
+          {note && <p className="caption">{note}</p>}
           <a
             className={`link-line ${styles.maps}`}
             href={`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`}

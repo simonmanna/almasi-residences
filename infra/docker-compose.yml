@@ -1,4 +1,4 @@
-# Local development services. Production uses managed Postgres + Cloudflare R2.
+# Local development services. Production uses managed Postgres + MinIO.
 name: avida
 
 services:
@@ -31,7 +31,7 @@ services:
       timeout: 3s
       retries: 20
 
-  # Stands in for Cloudflare R2 locally — same S3 API.
+  # The S3-compatible object store, same API as in production.
   minio:
     image: minio/minio:latest
     container_name: avida-minio

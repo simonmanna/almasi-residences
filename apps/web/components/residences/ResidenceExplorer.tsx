@@ -138,15 +138,45 @@ export function ResidenceExplorer({
   const floorOptions = floors.filter((f) => f.total > 0).sort((a, b) => a.level - b.level);
   const statusCount = (s: string) => residences.filter((r) => r.publicStatus === s).length;
 
+  const resultCount = (
+    <p aria-live="polite" className={styles.resultCount}>
+      <span className="tabular">{matches.length}</span> of <span className="tabular">{summary.total}</span>{' '}
+      residences {filtering ? 'match' : 'shown'}
+    </p>
+  );
+
+  const statusRow = (
+    <div className={styles.status}>
+      {resultCount}
+      {filtering && (
+        <button type="button" className="link-line" onClick={() => setFilter(EMPTY_FILTER)}>
+          Clear filters
+        </button>
+      )}
+      {(shortlist.favorites.length > 0 || shortlist.compare.length > 0) && (
+        <p className={styles.savedSummary} aria-live="polite">
+          {shortlist.favorites.length} saved · {shortlist.compare.length}/3 comparing
+        </p>
+      )}
+      <div className={styles.views} role="group" aria-label="View">
+        <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
+          List
+        </button>
+        <button type="button" aria-pressed={view === 'building'} onClick={() => setView('building')}>
+          3D building
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <header className={`container ${styles.header}`}>
-        <p className={`mark ${styles.kicker}`}>Residences</p>
-        <h1 className="display">
-          {summary.total} residences.
-          <br />
-          <span className="italic">{summary.available} available.</span>
-        </h1>
+        <h1 className={`display ${styles.title}`}>Residences</h1>
+        <p className={`small ${styles.tally}`}>
+          <span className="tabular">{summary.total}</span> residences ·{' '}
+          <span className={`tabular ${styles.kicker}`}>{summary.available}</span> available
+        </p>
         <p className="lead">
           {typesPresent(summary).map((t) => `${summary.byType[t].total} ${t === 'penthouse' ? 'penthouses' : `${TYPE_TEXT[t].toLowerCase()} apartments`}`).join(', ')}
           {place ? ` for sale in ${place}` : ' for sale'}
@@ -256,33 +286,11 @@ export function ResidenceExplorer({
                   </select>
                 </label>
               </div>
+              {filtersOpen && statusRow}
             </div>
           </details>
 
-          <div className={styles.status}>
-            <p aria-live="polite" className={styles.resultCount}>
-              <span className="tabular">{matches.length}</span> of <span className="tabular">{summary.total}</span>{' '}
-              residences {filtering ? 'match' : 'shown'}
-            </p>
-            {filtering && (
-              <button type="button" className="link-line" onClick={() => setFilter(EMPTY_FILTER)}>
-                Clear filters
-              </button>
-            )}
-            {(shortlist.favorites.length > 0 || shortlist.compare.length > 0) && (
-              <p className={styles.savedSummary} aria-live="polite">
-                {shortlist.favorites.length} saved · {shortlist.compare.length}/3 comparing
-              </p>
-            )}
-            <div className={styles.views} role="group" aria-label="View">
-              <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
-                List
-              </button>
-              <button type="button" aria-pressed={view === 'building'} onClick={() => setView('building')}>
-                3D building
-              </button>
-            </div>
-          </div>
+          {!filtersOpen && statusRow}
         </div>
       </div>
 
@@ -305,13 +313,25 @@ export function ResidenceExplorer({
                 </button>
               </div>
             ) : (
-              <ol className={styles.rows}>
-                {sorted.map((r) => (
-                  <li key={r.id}>
-                    <ResidenceRow r={r} cover={coverFor(r.typologySlug)} hovered={hoveredId === r.id} onHover={setHoveredId} shortlist={shortlist} />
-                  </li>
-                ))}
-              </ol>
+              <table className={styles.table}>
+                <caption className="visually-hidden">Residences matching your filters</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" colSpan={2}>Residence</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Size</th>
+                    <th scope="col" className={styles.colAspect}>Aspect</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" className={styles.colPrice}>Price</th>
+                    <th scope="col"><span className="visually-hidden">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((r) => (
+                    <ResidenceRow key={r.id} r={r} cover={coverFor(r.typologySlug)} hovered={hoveredId === r.id} onHover={setHoveredId} />
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
 
@@ -400,17 +420,15 @@ function ResidenceRow({
   cover,
   hovered,
   onHover,
-  shortlist,
 }: {
   r: Residence;
   cover: PublicMediaDto | null;
   hovered: boolean;
   onHover: (id: string | null) => void;
-  shortlist: ReturnType<typeof useResidenceShortlist>;
 }) {
   const price = visiblePriceMinor(r);
   return (
-    <article
+    <tr
       className={styles.row}
       data-hovered={hovered ? 'true' : 'false'}
       onMouseEnter={() => onHover(r.id)}
@@ -418,38 +436,47 @@ function ResidenceRow({
       onFocus={() => onHover(r.id)}
       onBlur={() => onHover(null)}
     >
-      <Link href={`/residences/${r.slug}`} className={styles.thumb} tabIndex={-1} aria-hidden="true">
-        <SceneImage media={cover} sizes="(max-width: 820px) 120px, 160px" label={TYPE_TEXT[r.type]} />
-      </Link>
-      <span className={styles.code}>{r.label}</span>
-      <span className={`${styles.cell} ${styles.cellType}`}>
+      <td className={styles.thumbCell}>
+        <Link href={`/residences/${r.slug}`} className={styles.thumb} tabIndex={-1} aria-hidden="true">
+          <SceneImage media={cover} sizes="(max-width: 820px) 120px, 112px" label={TYPE_TEXT[r.type]} />
+        </Link>
+      </td>
+      <th scope="row" className={styles.code}>{r.label}</th>
+      <td className={`${styles.cell} ${styles.cellType}`}>
         {TYPE_TEXT[r.type]}
         <small>
-          {r.bedrooms} bedroom{r.bedrooms > 1 ? 's' : ''}
-          {r.bathrooms !== null ? `, ${r.bathrooms} bathroom${r.bathrooms > 1 ? 's' : ''}` : ''}
+          {r.bedrooms} bed{r.bedrooms > 1 ? 's' : ''}
+          {r.bathrooms !== null ? ` · ${r.bathrooms} bath${r.bathrooms > 1 ? 's' : ''}` : ''}
         </small>
-      </span>
-      <span className={`${styles.cell} ${styles.cellSize} tabular`}>
+      </td>
+      <td className={`${styles.cell} ${styles.cellSize} tabular`}>
         {r.areaSqm} m²
         <small>{r.floorLabel}</small>
-      </span>
-      <span className={`${styles.cell} ${styles.cellAspect}`}>
+      </td>
+      <td className={`${styles.cell} ${styles.cellAspect}`}>
         Faces {ORIENTATION_TEXT[r.orientation].toLowerCase()}
         <small>{viewText(r.viewTags)}</small>
-      </span>
-      <span className={`${styles.cell} ${styles.cellStatus}`}>
-        <span className="status" data-status={r.publicStatus}>
+      </td>
+      <td className={styles.cellStatus}>
+        <span className={styles.statusBadge} data-status={r.publicStatus}>
           {STATUS_TEXT[r.publicStatus]}
         </span>
-      </span>
-      <span className={`${styles.price} tabular`}>
+      </td>
+      <td className={`${styles.price} tabular`}>
         {price !== null ? formatMoney({ amountMinor: price, currency: r.currency }) : '—'}
-      </span>
-      <span className={styles.rowActions}>
-        <button type="button" aria-pressed={shortlist.favorites.includes(r.id)} onClick={() => { const added = shortlist.toggleFavorite(r.id); if (added) track('favorite_added', { residence: r.code }); }}>{shortlist.favorites.includes(r.id) ? 'Saved' : 'Save'}</button>
-        <button type="button" aria-pressed={shortlist.compare.includes(r.id)} onClick={() => { const added = shortlist.toggleCompare(r.id); if (added) track('compare_added', { residence: r.code }); }}>{shortlist.compare.includes(r.id) ? 'Comparing' : 'Compare'}</button>
+      </td>
+      <td className={styles.rowActions}>
         <Link href={`/residences/${r.slug}`} className={styles.go}>View</Link>
-      </span>
-    </article>
+        <Link
+          href={`/3d-design?residence=${r.slug}&tour=1`}
+          className={styles.tour3d}
+          aria-label={`3D tour of residence ${r.label}`}
+          onClick={() => track('tour_started', { residence: r.code, source: 'residences-3d' })}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z M2 5l6 3.5L14 5 M8 8.5v6" /></svg>
+          3D Tour
+        </Link>
+      </td>
+    </tr>
   );
 }

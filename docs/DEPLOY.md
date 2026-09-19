@@ -1,9 +1,9 @@
 # Deploying to a single VPS
 
 Everything runs on one server: the public site, the API, the admin, the media
-worker, Postgres (PostGIS), Redis, and media storage. MinIO takes the place of
-Cloudflare R2 behind the same S3 API, so moving media to R2 later only means
-changing environment values (see the end of this page).
+worker, Postgres (PostGIS), Redis, and media storage. MinIO provides the S3 API,
+so moving media to any other S3-compatible host later only means changing
+environment values (see the end of this page).
 
 ```
                     ┌──────────────── VPS (Docker) ────────────────┐
@@ -105,20 +105,22 @@ dc restart web
 dc exec postgres psql -U avida avida
 ```
 
-## Moving media to Cloudflare R2 later
+## Moving media to a hosted object store later
 
 Once media grows past a few GB, or you want a CDN in front of it:
 
-1. Create R2 buckets `avida-media` (public) and `avida-originals` (private).
-2. Copy the objects across (`rclone sync` from MinIO to R2).
-3. In `infra/docker-compose.prod.yml` point `R2_ENDPOINT`, `R2_PUBLIC_URL`,
-   the R2 keys and `NEXT_PUBLIC_MEDIA_URL` at R2, then run `deploy.sh`.
+1. Create buckets `avida-media` (public) and `avida-originals` (private) on any
+   S3-compatible host.
+2. Copy the objects across (`rclone sync` from MinIO).
+3. In `infra/docker-compose.prod.yml` point `S3_ENDPOINT`, `S3_PUBLIC_URL`,
+   the S3 keys and `NEXT_PUBLIC_MEDIA_URL` at the new host, then run `deploy.sh`.
 4. Remove the `minio`, `minio-init` and storage site entries.
 
 ## Notes
 
 - MinIO no longer publishes community Docker images. The stack pins the last
   release (`RELEASE.2025-09-07T16-13-09Z`). That's fine for a private bucket
-  behind Caddy, but it's one more reason to move to R2 when media grows.
+  behind Caddy, but it's one more reason to move to a hosted bucket when media
+  grows.
 - The web build reads live inventory from the API (§6.7), so `deploy.sh`
   always starts the API before it builds the web image.

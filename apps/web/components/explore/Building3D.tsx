@@ -10,6 +10,7 @@ import {
   type MutableRefObject,
 } from 'react';
 import * as THREE from 'three';
+import { useTheme } from '../layout/ThemeSwitcher';
 import {
   FLOOR_H,
   LEVELS,
@@ -228,12 +229,14 @@ function ParkingCars({ count }: { count: number }) {
 // ─── Residences ──────────────────────────────────────────────────────────
 
 /**
- * Status reads as light: available homes glow as if lived in, reserved ones
- * are striped, sold ones are dark. The side panel repeats every status in words.
+ * Status reads as light: available homes glow as if lived in, reserved and
+ * booked ones are striped, sold ones are dark. The side panel repeats every
+ * status in words.
  */
 const STATUS_STYLE: Record<PublicStatus, { color: string; emissive: string; glow: number; opacity: number }> = {
   available: { color: '#F1D9B5', emissive: '#D69A57', glow: 0.62, opacity: 1 },
   reserved: { color: '#FFFFFF', emissive: '#6E5638', glow: 0.16, opacity: 1 },
+  booked: { color: '#C9B48E', emissive: '#5A4527', glow: 0.1, opacity: 1 },
   sold: { color: '#5D5A53', emissive: '#000000', glow: 0, opacity: 1 },
   unavailable: { color: '#3E3C37', emissive: '#000000', glow: 0, opacity: 0.7 },
 };
@@ -283,7 +286,7 @@ function useUnitLooks(residences: Residence[]) {
           emissive: s.emissive,
           emissiveIntensity: s.glow,
           roughness: 0.6,
-          map: r.publicStatus === 'reserved' ? stripeTexture() : null,
+          map: r.publicStatus === 'reserved' || r.publicStatus === 'booked' ? stripeTexture() : null,
           transparent: s.opacity < 1,
           opacity: s.opacity,
         }),
@@ -756,6 +759,18 @@ function Scene(props: Building3DProps) {
   );
 }
 
+/** The distance fades into the section's own ground, whichever theme paints it. */
+function ThemeFog() {
+  const theme = useTheme();
+  const { scene, gl, invalidate } = useThree();
+  useEffect(() => {
+    const surface = getComputedStyle(gl.domElement).getPropertyValue('--surface').trim();
+    if (surface && scene.fog instanceof THREE.Fog) scene.fog.color.set(surface);
+    invalidate();
+  }, [theme, scene, gl, invalidate]);
+  return null;
+}
+
 /** Loaded on demand (next/dynamic, no SSR) the first time the explorer nears the viewport. */
 export default function Building3D(props: Building3DProps) {
   return (
@@ -773,6 +788,7 @@ export default function Building3D(props: Building3DProps) {
       style={{ touchAction: 'pan-y' }}
       aria-hidden="true"
     >
+      <ThemeFog />
       <Scene {...props} />
     </Canvas>
   );

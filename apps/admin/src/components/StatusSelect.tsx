@@ -1,4 +1,4 @@
-import { isSaleReversal, STATUS_LABEL, UNIT_STATUSES, type UnitStatus } from '@avida/types';
+import { isSaleReversal, STATUS_LABEL, VISIBLE_UNIT_STATUSES, type UnitStatus } from '@avida/types';
 import { post } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { STATUS_TONE } from '../lib/format';
@@ -17,6 +17,11 @@ export function StatusSelect({ id, code, status, onChanged, disabled }: { id: st
   const confirm = useConfirm();
   if (!can('residence.status') || disabled) return <StatusBadge status={status} />;
   const reverse = can('residence.reverse-sale');
+  // A withheld residence is never offered, but has to stay listed while it holds
+  // that value or the select would render blank.
+  const options: UnitStatus[] = VISIBLE_UNIT_STATUSES.includes(status as (typeof VISIBLE_UNIT_STATUSES)[number])
+    ? [...VISIBLE_UNIT_STATUSES]
+    : [status, ...VISIBLE_UNIT_STATUSES];
 
   const change = async (to: UnitStatus) => {
     if (to === status) return;
@@ -50,7 +55,7 @@ export function StatusSelect({ id, code, status, onChanged, disabled }: { id: st
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => void change(e.target.value as UnitStatus)}
     >
-      {UNIT_STATUSES.map((s) => (
+      {options.map((s) => (
         <option key={s} value={s} disabled={!reverse && isSaleReversal(status, s)}>
           {STATUS_LABEL[s]}
         </option>

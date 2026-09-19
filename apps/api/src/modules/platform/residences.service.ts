@@ -66,8 +66,8 @@ const PRICING_KEYS = [
 
 /** Parking follows the residence it belongs to (§20). */
 function bayStatusFor(status: UnitStatus): 'SOLD' | 'RESERVED' | 'ASSIGNED' | null {
-  if (status === 'SOLD' || status === 'OCCUPIED') return 'SOLD';
-  if (status === 'RESERVED' || status === 'ON_HOLD') return 'RESERVED';
+  if (status === 'SOLD') return 'SOLD';
+  if (status === 'RESERVED' || status === 'BOOKED') return 'RESERVED';
   if (status === 'AVAILABLE') return 'ASSIGNED';
   return null;
 }
@@ -696,11 +696,11 @@ export class ResidencesService {
     const developmentId = await this.dev.id();
     const unit = await this.prisma.client.unit.findFirst({
       where: { id, developmentId },
-      include: { _count: { select: { enquiries: true, residents: true, residencies: true } }, statusLog: { where: { to: { in: ['SOLD', 'OCCUPIED'] } }, take: 1 } },
+      include: { _count: { select: { enquiries: true, residents: true, residencies: true } }, statusLog: { where: { to: 'SOLD' }, take: 1 } },
     });
     if (!unit) throw new NotFoundException('No such residence');
     if (!unit.archivedAt) throw new ConflictException(`Archive ${unit.code} first. Archiving hides it from the website and keeps its history.`);
-    if (unit.statusLog.length || unit.status === 'SOLD' || unit.status === 'OCCUPIED') throw new ConflictException(`${unit.code} has a sale on record. Keep it archived.`);
+    if (unit.statusLog.length || unit.status === 'SOLD') throw new ConflictException(`${unit.code} has a sale on record. Keep it archived.`);
     if (unit._count.enquiries || unit.buyerId || unit._count.residents || unit._count.residencies) {
       throw new ConflictException(`${unit.code} has enquiries, a buyer or residents on record. Keep it archived.`);
     }

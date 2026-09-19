@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { getObject, ORIGINALS_BUCKET, PUBLIC_BUCKET, putObject } from '../storage/r2.js';
+import { getObject, ORIGINALS_BUCKET, PUBLIC_BUCKET, putObject } from '../storage/s3.js';
 
 /**
  * §5.8 `media:tile` and §7.5 — equirectangular panorama to cube faces to tiles.

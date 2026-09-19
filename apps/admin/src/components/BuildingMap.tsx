@@ -1,20 +1,19 @@
-import { STATUS_LABEL, UNIT_STATUSES, type UnitStatus } from '@avida/types';
+import { STATUS_LABEL, VISIBLE_UNIT_STATUSES, type UnitStatus } from '@avida/types';
 import { code as fmtCode } from '../lib/format';
 import type { BuildingFloor, BuildingUnit } from '../lib/types';
 
 const DOT: Record<UnitStatus, string> = {
   AVAILABLE: 'var(--green)',
   RESERVED: 'var(--blue)',
-  ON_HOLD: 'var(--orange)',
+  BOOKED: 'var(--orange)',
   SOLD: 'var(--red)',
-  OCCUPIED: 'var(--purple)',
   UNAVAILABLE: 'var(--grey)',
 };
 
 export function StatusLegend({ counts }: { counts?: Partial<Record<UnitStatus, number>> }) {
   return (
     <div className="legend">
-      {UNIT_STATUSES.map((s) => (
+      {VISIBLE_UNIT_STATUSES.map((s) => (
         <span key={s}>
           <i style={{ background: DOT[s] }} />
           {STATUS_LABEL[s]}
@@ -77,7 +76,7 @@ export function BuildingMap({
             <div className="floor-count">
               <strong className="tabular">{f.stats.AVAILABLE}</strong> available
               <br />
-              {f.stats.RESERVED + f.stats.ON_HOLD} held · {f.stats.SOLD + f.stats.OCCUPIED} sold
+              {f.stats.RESERVED + f.stats.BOOKED} held · {f.stats.SOLD} sold
             </div>
           )}
         </div>

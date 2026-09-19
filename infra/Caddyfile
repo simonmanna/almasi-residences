@@ -39,7 +39,7 @@
 	file_server
 }
 
-# MinIO's S3 API stands in for Cloudflare R2. Public media is read from here,
+# MinIO's S3 API is the object store. Public media is read from here,
 # and the admin uploads originals here with presigned PUTs. Host is passed
 # through unchanged, which the S3 signature depends on.
 {$SCHEME}://storage.{$DOMAIN} {

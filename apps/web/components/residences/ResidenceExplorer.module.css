@@ -1,8 +1,8 @@
 .header {
   display: grid;
-  gap: 24px;
-  padding-top: calc(var(--nav-h) + clamp(56px, 8vw, 120px));
-  padding-bottom: clamp(40px, 5vw, 72px);
+  gap: 16px;
+  padding-top: calc(var(--nav-h) + clamp(16px, 2.5vw, 40px));
+  padding-bottom: clamp(24px, 3vw, 40px);
 }
 
 .kicker {
@@ -133,8 +133,16 @@
 }
 
 .resultCount {
+  margin: 0;
   font-size: var(--fs-sm);
 }
+
+.groups > .status {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+.groups > .status .resultCount { color: var(--ink-muted); }
+.groups > .status .views { margin-left: 0; }
 
 .views {
   display: inline-flex;
@@ -161,93 +169,142 @@
   grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
   align-items: start;
   gap: clamp(32px, 4vw, 72px);
-  padding-top: 40px;
+  padding-top: 24px;
   padding-bottom: var(--section-y);
 }
 
-.rows {
-  display: grid;
+.table {
+  width: 100%;
+  border-collapse: collapse;
   border-top: 1px solid var(--line);
+  font-size: var(--fs-sm);
 }
 
-.row {
-  display: grid;
-  grid-template-columns:
-    148px 84px minmax(0, 1.1fr) minmax(0, 0.8fr)
-    minmax(0, 1.05fr) minmax(0, 0.85fr) minmax(0, 0.9fr) minmax(168px, auto);
-  grid-template-areas: 'thumb code type size aspect status price actions';
-  align-items: center;
-  gap: 16px;
-  padding: 14px 10px;
+.table thead th {
+  padding: 12px 8px;
   border-bottom: 1px solid var(--line);
-  transition: background-color var(--dur-2) var(--ease-standard);
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.thumb { grid-area: thumb; }
-.code { grid-area: code; }
-.cellType { grid-area: type; }
-.cellSize { grid-area: size; }
-.cellAspect { grid-area: aspect; }
-.cellStatus { grid-area: status; }
-.price { grid-area: price; }
-.rowActions { grid-area: actions; }
+.table thead th.colPrice { text-align: right; }
+
+.row td,
+.row th {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  text-align: left;
+}
+
+.row { transition: background-color var(--dur-2) var(--ease-standard); }
+.row[data-hovered='true'] { background: var(--surface-raised); }
+
+.thumbCell { width: 96px; padding-right: 0 !important; }
 
 /* The artwork belongs to the residence's type; the inventory carries none. */
 .thumb {
   position: relative;
+  display: block;
+  width: 96px;
   overflow: hidden;
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-1);
-  background: var(--surface-sunk);
+  background-color: var(--surface-sunk);
 }
 
-.thumb img {
-  transition: transform var(--dur-3) var(--ease-out);
-}
-
-.row[data-hovered='true'] .thumb img {
-  transform: scale(1.05);
-}
-
-.row[data-hovered='true'] {
-  background: var(--surface-raised);
-}
+.thumb img { transition: transform var(--dur-3) var(--ease-out); }
+.row[data-hovered='true'] .thumb img { transform: scale(1.05); }
 
 .code {
   font-family: var(--font-display);
-  font-size: 2.125rem;
+  font-size: 1.625rem;
+  font-weight: 400;
   line-height: 1;
   letter-spacing: -0.02em;
-}
-
-.cell {
-  display: grid;
-  gap: 2px;
-  font-size: var(--fs-sm);
+  white-space: nowrap;
+  width: 1%;
 }
 
 .cell small {
+  display: block;
+  margin-top: 2px;
   color: var(--ink-muted);
   font-size: var(--fs-xs);
 }
 
+.cellType, .cellSize { white-space: nowrap; }
+.cellAspect { min-width: 0; }
+
 .price {
-  font-size: var(--fs-sm);
-  text-align: right;
+  font-weight: 500;
+  text-align: right !important;
+  white-space: nowrap;
 }
+
+/* Same palette as the elevation board tiles beside the list. */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin-right: 12px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--b1), var(--b2));
+  color: var(--b-ink);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.statusBadge[data-status='available'] { --b1: #22A565; --b2: #137A43; --b-ink: #fff; }
+.statusBadge[data-status='reserved'] { --b1: #F7A928; --b2: #D97F06; --b-ink: #2A1602; }
+.statusBadge[data-status='booked'] { --b1: #FBD23C; --b2: #E3AE0A; --b-ink: #332400; }
+.statusBadge[data-status='sold'] { --b1: #D93636; --b2: #A91D1D; --b-ink: #fff; }
+.statusBadge[data-status='unavailable'] { --b1: #5E1424; --b2: #4A0D19; --b-ink: #EBC3CC; }
 
 .go {
-  color: var(--accent);
-  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 0.8125rem;
   font-weight: 500;
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.16em;
-  transition: color var(--dur-2) var(--ease-out);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  transition: background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
 }
+.go:hover, .go:focus-visible { background: transparent; color: var(--accent); }
 
-.rowActions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
-.rowActions button { min-height: 44px; color: var(--ink-muted); font-size: var(--fs-xs); }
-.rowActions button[aria-pressed='true'] { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+.rowActions { width: 1%; }
+.rowActions > a { display: flex; justify-content: center; width: 100%; min-width: 92px; }
+.rowActions > a + a { margin-top: 6px; }
+.tour3d {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  transition: background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+}
+.tour3d svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linejoin: round; }
+.tour3d:hover, .tour3d:focus-visible { background: var(--accent); color: var(--surface); }
 .savedSummary { margin-left: auto; color: var(--accent); font-size: var(--fs-xs); }
 .compare { padding-block: clamp(64px, 9vw, 128px); background: var(--ink); color: var(--surface); }
 .compareHead { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 32px; }
@@ -277,7 +334,11 @@
   padding: 64px 0;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1100px) {
+  .colAspect, .cellAspect { display: none; }
+}
+
+@media (max-width: 1400px) {
   .results {
     grid-template-columns: 1fr;
   }
@@ -302,9 +363,11 @@
   .group > button {
     white-space: nowrap;
   }
-  /* Price stays on the phone: it is the field a buyer scans for, and hiding it
-     cost a page load per residence. Aspect is the one cell that gives way. */
+  /* Phones get one card per residence; the table header gives way. */
+  .table, .table tbody { display: block; }
+  .table thead { display: none; }
   .row {
+    display: grid;
     grid-template-columns: 108px minmax(0, 1fr) auto;
     grid-template-areas:
       'thumb code    status'
@@ -314,19 +377,31 @@
     align-items: start;
     gap: 4px 14px;
     padding: 14px 4px;
+    border-bottom: 1px solid var(--line);
   }
+  .row td, .row th { padding: 0; border: 0; }
+  .thumbCell { grid-area: thumb; width: auto; }
+  .thumb { width: 100%; }
+  .code { grid-area: code; font-size: 1.75rem; }
+  .cellType { grid-area: type; }
+  .cellSize { grid-area: size; }
   .cellAspect { display: none; }
-  .code { font-size: 1.75rem; }
-  .cellStatus { justify-self: end; }
+  .cellStatus { grid-area: status; justify-self: end; }
+  .statusBadge { margin-right: 0; }
   .price {
+    grid-area: price;
     align-self: center;
     font-size: var(--fs-base);
-    font-weight: 500;
   }
   .rowActions {
-    justify-content: flex-start;
+    grid-area: actions;
+    display: flex;
+    gap: 8px;
+    width: auto;
     margin-top: 8px;
   }
+  .rowActions > a { width: auto; }
+  .rowActions > a + a { margin-top: 0; }
 }
 
 @media (max-width: 400px) {
@@ -352,7 +427,7 @@
   padding: var(--space-3) var(--space-5);
   border: 1px solid var(--line);
   border-radius: var(--radius-2);
-  background: var(--surface);
+  background-color: var(--surface);
   color: var(--ink);
   box-shadow: var(--elev);
 }

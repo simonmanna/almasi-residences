@@ -15,7 +15,8 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--surface);
+  background-color: var(--surface);
+  background-image: var(--ambient), var(--texture);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--fs-base);
@@ -41,7 +42,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 table { border-collapse: collapse; }
 
 /* A section that declares a ground paints it; everything inside reads the tokens. */
-:where([data-ground]) { background-color: var(--surface); color: var(--ink); }
+:where([data-ground]) { background-color: var(--surface); background-image: var(--ambient), var(--texture); color: var(--ink); }
 
 ::selection { background: var(--accent); color: var(--surface); }
 
@@ -57,27 +58,28 @@ html.lenis, html.lenis body { height: auto; }
 /* ─── Type roles ────────────────────────────────────────────────────── */
 .display {
   font-family: var(--font-display);
+  font-weight: var(--display-weight);
   font-size: var(--fs-display);
   line-height: 0.92;
-  letter-spacing: -0.035em;
+  letter-spacing: calc(-0.035em * var(--display-tracking));
 }
 .mega {
   font-family: var(--font-display);
   font-size: var(--fs-mega);
   line-height: 0.86;
-  letter-spacing: -0.045em;
+  letter-spacing: calc(-0.045em * var(--display-tracking));
 }
 .h2 {
   font-family: var(--font-display);
   font-size: var(--fs-h2);
   line-height: 0.98;
-  letter-spacing: -0.028em;
+  letter-spacing: calc(-0.028em * var(--display-tracking));
 }
 .h3 {
   font-family: var(--font-display);
   font-size: var(--fs-h3);
   line-height: 1.08;
-  letter-spacing: -0.015em;
+  letter-spacing: calc(-0.015em * var(--display-tracking));
 }
 .lead { font-size: var(--fs-lead); line-height: 1.5; color: var(--ink-muted); max-width: 44ch; }
 .body { max-width: 62ch; }
@@ -101,6 +103,27 @@ html.lenis, html.lenis body { height: auto; }
   line-height: 1.2;
 }
 
+/* Section header pair: a large display kicker over a one-line compact title.
+   Declared after .mark so it wins where both apply (the section index still
+   reads .mark for chapter names). */
+.kicker-lg {
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  font-weight: 400;
+  font-variant-caps: normal;
+  line-height: 0.98;
+  letter-spacing: calc(-0.028em * var(--display-tracking));
+  color: var(--accent);
+}
+.title-sm {
+  font-family: var(--font-display);
+  font-size: clamp(1.375rem, 1.2rem + 0.6vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: calc(-0.01em * var(--display-tracking));
+  color: var(--ink);
+}
+
 /* ─── Layout ────────────────────────────────────────────────────────── */
 .container {
   width: 100%;
@@ -108,7 +131,7 @@ html.lenis, html.lenis body { height: auto; }
   margin-inline: auto;
   padding-inline: var(--page-margin);
 }
-.section { position: relative; padding-block: var(--section-y); }
+.section { position: relative; padding-block: var(--section-y); background-image: var(--ambient), var(--texture); }
 .rule { height: 1px; background: var(--line); border: 0; margin: 0; }
 
 .visually-hidden {
@@ -143,23 +166,24 @@ html.lenis, html.lenis body { height: auto; }
   align-items: center;
   justify-content: center;
   gap: 14px;
-  min-height: 52px;
+  min-height: var(--btn-h);
   padding: 0 30px;
   border: 1px solid var(--btn-border);
-  border-radius: var(--radius-1);
+  border-radius: var(--radius-btn);
   background: var(--btn-bg);
   color: var(--btn-ink);
   font-family: var(--font-ui);
   font-size: 0.9375rem;
-  font-weight: 500;
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.16em;
+  font-weight: var(--btn-weight);
+  font-variant-caps: var(--btn-caps);
+  letter-spacing: var(--btn-tracking);
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
   transition:
     color var(--dur-3) var(--ease-out),
-    border-color var(--dur-3) var(--ease-out);
+    border-color var(--dur-3) var(--ease-out),
+    box-shadow var(--dur-3) var(--ease-out);
 }
 .btn::before {
   content: '';
@@ -186,7 +210,20 @@ html.lenis, html.lenis body { height: auto; }
   --btn-fill: var(--accent);
   --btn-fill-ink: var(--surface);
 }
+.btn--solid { box-shadow: var(--btn-shadow); }
+/* Blue and Sky Blue lead with their light: the solid button is the accent,
+   exactly as in their references; Wooden keeps walnut on oak, ivory on walnut. */
+:root[data-theme="blue"] .btn--solid,
+:root[data-theme="sky"] .btn--solid {
+  --btn-bg: var(--accent);
+  --btn-ink: var(--on-accent);
+  --btn-border: var(--accent);
+  --btn-fill: var(--ink);
+  --btn-fill-ink: var(--surface);
+}
 .btn--ghost { --btn-border: var(--line); }
+.btn-arrow { display: inline-block; transition: transform var(--dur-3) var(--ease-out); }
+@media (hover: hover) { .btn:hover .btn-arrow, a:hover .btn-arrow { transform: translateX(4px); } }
 .btn--sm { min-height: 44px; padding: 0 20px; font-size: 0.875rem; }
 .btn--block { width: 100%; }
 
@@ -208,7 +245,7 @@ html.lenis, html.lenis body { height: auto; }
   min-height: 44px;
   padding: 0 16px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-1);
+  border-radius: min(var(--radius-btn), 22px);
   background: transparent;
   font-size: var(--fs-xs);
   letter-spacing: 0.02em;
@@ -283,6 +320,124 @@ html.lenis, html.lenis body { height: auto; }
 .field-error { font-size: var(--fs-xs); color: #9B3B2E; }
 [data-ground='night'] .field-error, [data-ground='night'] .field [aria-invalid='true'] { color: #E3A08F; border-bottom-color: #E3A08F; }
 .field-hint { font-size: var(--fs-xs); color: var(--ink-muted); }
+
+/* ─── Cards — one system, dressed by the theme ──────────────────────
+   A card carries its own small palette (--card-*), so Wooden's walnut panel
+   on pale oak, Blue's glass on navy and Sky Blue's white on daylight all come
+   from the same markup. Inside a card, --ink and friends mean the card's. */
+.lux-card {
+  --ink: var(--card-ink);
+  --ink-muted: var(--card-muted);
+  --accent: var(--card-accent);
+  --line: var(--card-line);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-content: start;
+  overflow: hidden;
+  border: var(--card-border);
+  border-radius: var(--radius-card);
+  background-color: var(--card-surface);
+  background-image: var(--texture);
+  color: var(--ink);
+  box-shadow: var(--card-frame), var(--card-shadow);
+  transition:
+    transform 0.8s var(--ease-out),
+    box-shadow 0.8s var(--ease-out),
+    opacity 0.9s var(--ease-out);
+}
+@media (hover: hover) {
+  a.lux-card:hover,
+  .lux-card:has(a:hover) {
+    transform: translate3d(0, var(--card-lift), 0);
+    box-shadow: var(--card-frame), var(--card-shadow-hover);
+  }
+  a.lux-card:hover .lux-card__media img,
+  .lux-card:has(a:hover) .lux-card__media img { transform: scale(1.04); }
+}
+.lux-card__media {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-sunk);
+}
+.lux-card__media img { transition: transform 1.4s var(--ease-out); }
+.lux-card__body { display: grid; gap: 10px; padding: clamp(18px, 1.8vw, 26px); }
+.lux-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+/* The small label above a heading: Our units, The residence. */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.24em;
+  line-height: 1.2;
+  color: var(--accent);
+}
+.eyebrow::before { content: ''; width: 28px; height: 1px; background: currentColor; opacity: 0.7; }
+
+/* A figure and what it counts: 31 · Private residences. */
+.stat { display: grid; align-content: start; gap: 8px; }
+.stat__value {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 3.25rem);
+  line-height: 1;
+  letter-spacing: calc(-0.02em * var(--display-tracking));
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.stat__label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.18em;
+  color: var(--ink-muted);
+}
+
+/* ─── Scroll reveal (RevealObserver) ────────────────────────────────
+   Opt in with data-reveal; stagger with style="--reveal-i: n". Content is
+   hidden only once script has confirmed motion is welcome (html[data-motion]),
+   so no-JS and reduced motion both see everything at once. */
+html[data-motion] [data-reveal]:not([data-revealed]) {
+  opacity: 0;
+  transform: translate3d(0, 32px, 0);
+}
+html[data-motion] [data-reveal]:not([data-revealed]),
+html[data-motion] [data-reveal][data-revealed='in'] {
+  transition:
+    opacity 0.9s var(--ease-out) calc(var(--reveal-i, 0) * 90ms),
+    transform 1.2s var(--ease-out) calc(var(--reveal-i, 0) * 90ms);
+}
+
+/* ─── Scroll-linked image motion — CSS only, compositor only ─────────
+   .scroll-settle: a large image arrives slightly too close and settles.
+   .scroll-drift: a very small parallax while the image crosses the screen. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-settle {
+      animation: scroll-settle linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+    .scroll-drift {
+      animation: scroll-drift linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+@keyframes scroll-settle { from { transform: scale(1.12); } to { transform: scale(1); } }
+@keyframes scroll-drift { from { transform: translate3d(0, -4%, 0) scale(1.1); } to { transform: translate3d(0, 4%, 0) scale(1.1); } }
 
 /* ─── Media ─────────────────────────────────────────────────────────── */
 .media { position: relative; overflow: hidden; background: var(--surface-sunk); }

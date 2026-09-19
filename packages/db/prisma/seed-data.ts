@@ -197,10 +197,9 @@ export const typologies: TypologySeed[] = [
  */
 export const statusDistribution: Record<UnitStatus, number> = {
   SOLD: 3,
-  ON_HOLD: 3,
+  BOOKED: 3,
   RESERVED: 4,
   AVAILABLE: 18,
-  OCCUPIED: 0,
   UNAVAILABLE: 0,
 };
 

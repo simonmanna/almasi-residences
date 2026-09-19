@@ -17,8 +17,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to top, rgba(12, 13, 11, 0.82) 0%, rgba(12, 13, 11, 0.3) 42%, rgba(12, 13, 11, 0) 68%),
-    linear-gradient(to bottom, rgba(12, 13, 11, 0.5) 0%, rgba(12, 13, 11, 0) 20%);
+    linear-gradient(to top, rgb(var(--shade) / 0.82) 0%, rgb(var(--shade) / 0.3) 42%, rgb(var(--shade) / 0) 68%),
+    linear-gradient(to bottom, rgb(var(--shade) / 0.5) 0%, rgb(var(--shade) / 0) 20%);
 }
 
 .content {
@@ -59,4 +59,33 @@
   gap: 24px;
   padding-top: calc(var(--nav-h) + clamp(56px, 8vw, 120px));
   padding-bottom: clamp(40px, 5vw, 72px);
+}
+
+/* Bold variant: short page name as the title, CMS headline as a small line. */
+.headerBold {
+  gap: 16px;
+  padding-top: calc(var(--nav-h) + clamp(16px, 2.5vw, 32px));
+  padding-bottom: clamp(24px, 3vw, 40px);
+}
+
+.boldTitle {
+  font-size: clamp(3.25rem, 9vw, 7.5rem);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+}
+
+.boldSub {
+  margin: -4px 0 0;
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+}
+
+/* The CMS title's line break reads as one line at this size. */
+.boldSub br {
+  display: none;
+}
+
+.boldSub br + * {
+  margin-left: 0.3em;
 }

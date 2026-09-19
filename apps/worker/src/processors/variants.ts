@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { rgbaToThumbHash } from 'thumbhash';
-import { getObject, ORIGINALS_BUCKET, PUBLIC_BUCKET, putObject, exists } from '../storage/r2.js';
+import { getObject, ORIGINALS_BUCKET, PUBLIC_BUCKET, putObject, exists } from '../storage/s3.js';
 
 /**
  * §5.8 `media:variants` — AVIF and WebP at six widths, plus a thumbhash and the

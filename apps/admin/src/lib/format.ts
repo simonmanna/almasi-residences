@@ -53,13 +53,12 @@ export const code = (c: string) => c.replace(/-/g, ' ');
 export const toMinor = (major: string | number) => Math.round(Number(major) * 100);
 export const toMajor = (minor: number | null | undefined) => (minor === null || minor === undefined ? '' : String(minor / 100));
 
-/** §3 — the status colours the brief fixes: green, blue, orange, red, purple, grey. */
+/** §3 — the status colours the brief fixes: green, blue, orange, red, grey. */
 export const STATUS_TONE: Record<UnitStatus, string> = {
   AVAILABLE: 'green',
   RESERVED: 'blue',
-  ON_HOLD: 'orange',
+  BOOKED: 'orange',
   SOLD: 'red',
-  OCCUPIED: 'purple',
   UNAVAILABLE: 'grey',
 };
 

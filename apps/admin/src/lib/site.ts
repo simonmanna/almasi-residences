@@ -4,6 +4,7 @@ export const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined) ||
 /** Where each CMS page's words appear on the website. */
 export const PAGE_PATH: Record<string, string> = {
   home: '/',
+  locationSection: '/',
   about: '/buying',
   residences: '/residences',
   amenities: '/amenities',

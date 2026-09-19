@@ -1,4 +1,5 @@
 import { Controller, Get, NotFoundException, Req, Res } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { CONTENT_TYPE, StorageService } from '../../common/storage.service.js';
 
@@ -9,7 +10,13 @@ import { CONTENT_TYPE, StorageService } from '../../common/storage.service.js';
  * Keys are content-addressed (a new upload gets a new key), so responses are
  * immutable. An uploaded SVG or PDF is served under a sandboxing CSP, so a
  * script inside one can never run on the API's origin.
+ *
+ * Exempt from the global 120/min throttle (§5.2): one gallery page asks for
+ * twenty or thirty renditions at once, so a visitor would spend the whole API
+ * budget on their own pictures and watch most of them fail with a 429. These
+ * are immutable static bytes off disk, cached for a year — nothing to protect.
  */
+@SkipThrottle()
 @Controller('files')
 export class FilesController {
   constructor(private readonly storage: StorageService) {}

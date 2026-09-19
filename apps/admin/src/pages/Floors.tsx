@@ -147,8 +147,8 @@ export default function Floors() {
                 {[
                   ['Residences', f.stats.total, 'var(--navy)'],
                   ['Available', f.stats.AVAILABLE, 'var(--green)'],
-                  ['Reserved', f.stats.RESERVED + f.stats.ON_HOLD, 'var(--blue)'],
-                  ['Sold', f.stats.SOLD + f.stats.OCCUPIED, 'var(--red)'],
+                  ['Reserved', f.stats.RESERVED + f.stats.BOOKED, 'var(--blue)'],
+                  ['Sold', f.stats.SOLD, 'var(--red)'],
                 ].map(([l, n, c]) => (
                   <div key={l as string} style={{ textAlign: 'center', minWidth: 64 }}>
                     <div style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 700, color: c as string }} className="tabular">{n}</div>

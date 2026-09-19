@@ -19,7 +19,7 @@ export const revalidate = 60;
 
 function toResidence(r: PublicResidenceDto): Residence {
   const type = residenceType(r.type.isPenthouse, r.bedrooms);
-  const dbStatus = { available: 'AVAILABLE', reserved: 'RESERVED', sold: 'SOLD', unavailable: 'UNAVAILABLE' } as const;
+  const dbStatus = { available: 'AVAILABLE', reserved: 'RESERVED', booked: 'BOOKED', sold: 'SOLD', unavailable: 'UNAVAILABLE' } as const;
   return {
     id: r.id, code: r.code, label: r.label, slug: r.slug,
     floorLevel: r.floor.level, floorLabel: r.floor.label,

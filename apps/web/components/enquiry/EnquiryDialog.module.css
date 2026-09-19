@@ -13,7 +13,7 @@
 }
 
 .dialog::backdrop {
-  background: rgba(15, 16, 14, 0.56);
+  background: rgb(var(--shade) / 0.56);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
@@ -31,7 +31,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: clamp(28px, 4vw, 52px);
-  background: var(--surface);
+  background-color: var(--surface);
   color: var(--ink);
   box-shadow: var(--elev);
   animation: sheet-in var(--dur-4) var(--ease-out) both;

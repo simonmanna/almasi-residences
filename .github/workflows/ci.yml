@@ -92,7 +92,6 @@ jobs:
           # accounts have none. The production-only guards are unit tested.
           API_PORT: 3011
           ADMIN_SESSION_SECRET: ci-session-secret-at-least-32-characters-long
-          TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
           WEB_ORIGIN: http://localhost:3000
           NEXT_PUBLIC_API_URL: http://localhost:3011
 

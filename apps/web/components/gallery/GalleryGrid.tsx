@@ -92,7 +92,7 @@ export function GalleryGrid({ galleries = [] }: { galleries?: PublicGalleryDto[]
 
       <ul className={`container ${styles.grid}`}>
         {list.map((it, i) => (
-          <li key={it.key} className={styles.item}>
+          <li key={it.key} className={styles.item} data-reveal style={{ '--reveal-i': i % 3 } as React.CSSProperties}>
             <button type="button" className={styles.open} onClick={() => {
                 setOpen(i);
                 track('gallery_opened', { gallery: group, item: it.title });

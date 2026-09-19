@@ -58,7 +58,7 @@ const inventory: InventoryDto = {
               id: 'e2',
               code: 'E2',
               areaSqm: 126,
-              status: 'ON_HOLD',
+              status: 'BOOKED',
               positionIndex: 4,
               priceMinor: 177_000_00,
               typology: { slug: 'two-bed-corner', name: 'Two bedroom corner', bedrooms: 2 },
@@ -109,8 +109,8 @@ describe('residence model', () => {
     expect(ph.bathrooms).toBe(2);
   });
 
-  it('shows a unit on hold as reserved and an unavailable unit as unavailable', () => {
-    expect(residences.find((r) => r.code === 'E2')!.publicStatus).toBe('reserved');
+  it('shows a booked unit as booked and an unavailable unit as unavailable', () => {
+    expect(residences.find((r) => r.code === 'E2')!.publicStatus).toBe('booked');
     expect(residences.find((r) => r.code === 'PH-C')!.publicStatus).toBe('unavailable');
   });
 
@@ -124,7 +124,7 @@ describe('derived counts', () => {
   it('counts by public status and by type from the same list', () => {
     const s = summarise(residences);
     expect(s.total).toBe(5);
-    expect(s.byStatus).toEqual({ available: 2, reserved: 1, sold: 1, unavailable: 1 });
+    expect(s.byStatus).toEqual({ available: 2, reserved: 0, booked: 1, sold: 1, unavailable: 1 });
     expect(s.byType['one-bedroom']).toMatchObject({ total: 2, available: 1, areaMin: 69, areaMax: 70 });
     expect(s.byType.penthouse.priceFromMinor).toBe(240_000_00);
     expect(s.byType['two-bedroom'].priceFromMinor).toBeNull();

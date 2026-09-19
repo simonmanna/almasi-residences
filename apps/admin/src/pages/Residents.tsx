@@ -29,7 +29,7 @@ export const OCCUPANCY_TONE: Record<string, string> = { ACTIVE: 'green', UPCOMIN
 
 export function ResidentForm({ resident, onClose, onSaved }: { resident?: ResidentRow; onClose: () => void; onSaved?: (id: string) => void }) {
   const toast = useToast();
-  const { data: units } = useQuery('residences:sold', () => get<Paged<{ id: string; code: string; status: string }>>('/admin/residences?status=SOLD,OCCUPIED&pageSize=500&sort=code'));
+  const { data: units } = useQuery('residences:sold', () => get<Paged<{ id: string; code: string; status: string }>>('/admin/residences?status=SOLD&pageSize=500&sort=code'));
   const [d, setD] = useState({
     fullName: resident?.fullName ?? '',
     email: resident?.email ?? '',

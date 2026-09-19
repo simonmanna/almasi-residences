@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowUp, Eye, EyeOff, MapPin, Plus, Sparkles, Trash2, X } from 'lucide-react';
-import { del, get, patch, post } from '../lib/api';
+import { ArrowDown, ArrowUp, Eye, EyeOff, FileText, MapPin, Plus, Save, Send, Sparkles, Trash2, X } from 'lucide-react';
+import { del, get, patch, post, put } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { invalidate, useQuery } from '../lib/query';
 import { useSearchState } from '../lib/router';
 import type { MediaView } from '../lib/types';
 import { IMAGE_ACCEPT, MediaEditor, MediaGrid, MediaUploader } from '../components/Media';
 import { useToast } from '../components/Toast';
-import { Badge, Button, Card, Drawer, Empty, ErrorBox, Field, Input, LoadingPage, MediaImg, PageHead, Textarea, Toggle, useConfirm } from '../components/ui';
+import { Badge, Button, Card, CardHead, Drawer, Empty, ErrorBox, Field, Input, LoadingPage, MediaImg, PageHead, Textarea, Toggle, useConfirm } from '../components/ui';
 
 interface Amenity {
   id: string;
@@ -23,6 +23,58 @@ interface Amenity {
   mediaCount: number;
   cover: MediaView | null;
   media: MediaView[];
+}
+
+interface AmenitiesPageData {
+  content: Record<string, unknown>;
+  hasDraft: boolean;
+}
+
+function PageIntroductionEditor() {
+  const { can } = useAuth();
+  const toast = useToast();
+  const { data, error, refetch } = useQuery('pages:amenities', () => get<AmenitiesPageData>('/admin/pages/amenities'));
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (data) setValue((data.content.heroLede as string) ?? '');
+  }, [data]);
+  if (error) return <ErrorBox error={error} onRetry={refetch} />;
+  if (!data) return null;
+  const editable = can('content.edit');
+  const canPublish = can('content.publish');
+  const dirty = value !== ((data.content.heroLede as string) ?? '');
+
+  const save = async (publish: boolean) => {
+    setBusy(true);
+    try {
+      if (dirty) await put('/admin/pages/amenities', { content: { ...data.content, heroLede: value } });
+      if (publish) await post('/admin/pages/amenities/publish');
+      toast.success(publish ? 'Amenities page introduction published.' : 'Introduction saved as a draft.');
+      invalidate('pages:amenities', 'pages', 'publishing');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHead title="Page introduction" icon={<FileText size={18} />} sub="The paragraph beneath the main heading on the public amenities page." />
+      <fieldset disabled={!editable} className="card-body stack" style={{ border: 0, margin: 0 }}>
+        <Field label="Introduction">
+          <Textarea rows={4} value={value} onChange={(event) => setValue(event.target.value)} />
+        </Field>
+        {(editable || canPublish) && (
+          <div className="row" style={{ justifyContent: 'flex-end' }}>
+            {editable && <Button icon={<Save size={15} />} busy={busy} disabled={!dirty} onClick={() => void save(false)}>Save draft</Button>}
+            {canPublish && <Button variant="primary" icon={<Send size={15} />} busy={busy} disabled={!dirty && !data.hasDraft} onClick={() => void save(true)}>Publish</Button>}
+          </div>
+        )}
+      </fieldset>
+    </Card>
+  );
 }
 
 function AmenityDrawer({ a, onClose }: { a: Amenity | 'new'; onClose: () => void }) {
@@ -141,6 +193,7 @@ export default function Amenities() {
       <PageHead title="Amenities" sub={`${data.filter((a) => a.published).length} of ${data.length} shown on the website`}>
         {editable && <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEdit('new')}>Add amenity</Button>}
       </PageHead>
+      <PageIntroductionEditor />
       <div className="grid-3">
         {data.map((a, i) => (
           <Card key={a.id}>

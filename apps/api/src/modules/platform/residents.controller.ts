@@ -13,7 +13,6 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
 import type { Prisma } from '@avida/db';
 import { AuditService, diff } from '../../common/audit.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
@@ -21,9 +20,8 @@ import { boolOrUndefined, pageOf, paged } from '../../common/http.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
-import { actorOf, defined, requireNonNull, toDate, type Actor } from './actor.js';
+import { actorOf, defined, requireNonNull, toDate } from './actor.js';
 import { AssignResidentDto, CreateResidentDto, UpdateResidentDto } from './dto.js';
-import { ResidencesService } from './residences.service.js';
 
 /**
  * §12 — residents. PRIVATE: every route needs `resident.view`, and no public
@@ -38,7 +36,6 @@ export class ResidentsController {
     private readonly prisma: PrismaService,
     private readonly dev: CurrentDevelopment,
     private readonly audit: AuditService,
-    private readonly residences: ResidencesService,
   ) {}
 
   @Get()
@@ -129,7 +126,6 @@ export class ResidentsController {
       },
     });
     await this.audit.record({ actorId: actor.id, action: 'resident.create', entity: 'resident', entityId: resident.id, target: resident.fullName, summary: `Added resident ${resident.fullName}`, req });
-    if (resident.unitId) await this.syncOccupancy(resident.unitId, actor, req);
     return resident;
   }
 
@@ -156,7 +152,6 @@ export class ResidentsController {
       // The audit row names the fields, never their private values.
       await this.audit.record({ actorId: actorOf(req).id, action: 'resident.update', entity: 'resident', entityId: id, target: after.fullName, summary: `Updated resident ${after.fullName}: ${changes.keys.join(', ')}`, req });
     }
-    if (after.unitId && dto.occupancyStatus) await this.syncOccupancy(after.unitId, actorOf(req), req);
     return after;
   }
 
@@ -201,8 +196,6 @@ export class ResidentsController {
       summary: target ? `${after.fullName} moved into ${after.unit!.code}` : `${after.fullName} moved out`,
       req,
     });
-    if (previous) await this.syncOccupancy(previous, actor, req);
-    if (target) await this.syncOccupancy(target, actor, req);
     return after;
   }
 
@@ -217,7 +210,6 @@ export class ResidentsController {
       return tx.resident.update({ where: { id }, data: { archivedAt: new Date(), unitId: null, occupancyStatus: 'MOVED_OUT' } });
     });
     await this.audit.record({ actorId: actor.id, action: 'resident.archive', entity: 'resident', entityId: id, target: resident.fullName, summary: `Archived resident ${resident.fullName}`, req });
-    if (resident.unitId) await this.syncOccupancy(resident.unitId, actor, req);
     return after;
   }
 
@@ -231,21 +223,12 @@ export class ResidentsController {
     return after;
   }
 
-  /** SOLD with someone living there is OCCUPIED; OCCUPIED with no one left is SOLD. */
-  private async syncOccupancy(unitId: string, actor: Actor, req: FastifyRequest) {
-    const unit = await this.prisma.client.unit.findUnique({ where: { id: unitId }, select: { status: true } });
-    if (!unit) return;
-    const living = await this.prisma.client.resident.count({ where: { unitId, occupancyStatus: 'ACTIVE', archivedAt: null } });
-    if (unit.status === 'SOLD' && living > 0) await this.residences.changeStatus([unitId], 'OCCUPIED', 'Resident moved in', actor, req);
-    if (unit.status === 'OCCUPIED' && living === 0) await this.residences.changeStatus([unitId], 'SOLD', 'Last resident moved out', actor, req);
-  }
-
   /** §31 — someone can only live in a home that has been sold. */
   private async assignable(unitId: string, developmentId: string) {
     const unit = await this.prisma.client.unit.findFirst({ where: { id: unitId, developmentId }, select: { code: true, status: true, archivedAt: true } });
     if (!unit) throw new BadRequestException('That residence does not belong to this property.');
     if (unit.archivedAt) throw new BadRequestException(`${unit.code} is archived.`);
-    if (unit.status !== 'SOLD' && unit.status !== 'OCCUPIED') {
+    if (unit.status !== 'SOLD') {
       throw new BadRequestException(`${unit.code} is not sold yet. Mark it sold before assigning a resident.`);
     }
   }

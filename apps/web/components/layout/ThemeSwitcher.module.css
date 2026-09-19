@@ -1,0 +1,161 @@
+.root {
+  position: relative;
+  display: inline-flex;
+}
+
+/* A quiet pill: the current look's swatch and its name. */
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px 0 12px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  transition:
+    border-color var(--dur-2) var(--ease-standard),
+    background-color var(--dur-2) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .trigger:hover { border-color: color-mix(in srgb, currentColor 55%, transparent); }
+  .trigger:hover .swatch { transform: rotate(-35deg) scale(1.08); }
+}
+
+.trigger[aria-expanded='true'] {
+  border-color: currentColor;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+@media (max-width: 1280px) {
+  .triggerLabel { display: none; }
+  .trigger { width: 44px; padding: 0; justify-content: center; }
+}
+
+/* Each swatch is the theme itself: its ground, its accent, its night. */
+.swatch {
+  display: block;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: conic-gradient(from 200deg, var(--sw-night) 0 33%, var(--sw-accent) 33% 50%, var(--sw-ground) 50% 100%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent);
+  transition: transform var(--dur-3) var(--ease-out);
+}
+
+.swatchSm { width: 12px; height: 12px; }
+
+.menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: -8px;
+  z-index: var(--z-modal);
+  display: grid;
+  gap: 4px;
+  width: min(340px, calc(100vw - 24px));
+  padding: 14px 10px 10px;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius-card) + 4px);
+  background-color: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: var(--elev);
+  transform-origin: calc(100% - 30px) 0;
+  animation: menu-in var(--dur-3) var(--ease-out) both;
+}
+
+.eyebrow {
+  padding: 0 10px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.2em;
+  color: var(--ink-muted);
+}
+
+.option {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  text-align: left;
+  animation: option-in var(--dur-3) var(--ease-out) both;
+  animation-delay: calc(60ms + var(--i) * 50ms);
+  transition:
+    background-color var(--dur-2) var(--ease-standard),
+    border-color var(--dur-2) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .option:hover { background: var(--surface-sunk); }
+  .option:hover .preview img { transform: scale(1.06); }
+}
+
+.option:focus-visible {
+  outline-offset: -2px;
+  background-color: var(--surface-sunk);
+}
+
+.option[aria-checked='true'] {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.preview {
+  position: relative;
+  display: block;
+  aspect-ratio: 96 / 62;
+  overflow: hidden;
+  border-radius: max(4px, calc(var(--radius-media) - 2px));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--dur-4) var(--ease-out);
+}
+
+.text {
+  display: grid;
+  gap: 4px;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.1;
+}
+
+.note {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+
+.option[aria-checked='true'] .note::after {
+  content: ' · Selected';
+  color: var(--accent);
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); filter: blur(4px); }
+}
+
+@keyframes option-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu, .option { animation: none; }
+  .swatch, .preview img { transition: none; }
+}

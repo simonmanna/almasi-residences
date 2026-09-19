@@ -50,8 +50,8 @@ export const PROVENANCE_LABEL: Record<MediaProvenanceValue, string> = {
  */
 export const PROVENANCE_NOTE: Record<MediaProvenanceValue, string> = {
   PHOTOGRAPH: '',
-  SUPPLIED_RENDER: 'Artist’s impression.',
-  CONCEPT_RENDER: 'Concept visual. Final interior design by the architect.',
+  SUPPLIED_RENDER: '',
+  CONCEPT_RENDER: '',
   DRAWING: 'Indicative drawing, not to scale.',
 };
 

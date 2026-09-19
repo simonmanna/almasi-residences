@@ -15,7 +15,7 @@
   left: 20px;
   bottom: 16px;
   z-index: 2;
-  color: rgba(239, 235, 227, 0.8);
+  color: rgb(var(--on-media) / 0.8);
 }
 
 .text {

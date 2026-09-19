@@ -22,34 +22,29 @@ const unit = {
 describe('D-34 status changes', () => {
   it('lets the sales team move between open statuses freely', () => {
     expect(canTransition('AVAILABLE', 'RESERVED')).toBe(true);
-    expect(canTransition('RESERVED', 'ON_HOLD')).toBe(true);
-    expect(canTransition('ON_HOLD', 'AVAILABLE')).toBe(true);
+    expect(canTransition('RESERVED', 'BOOKED')).toBe(true);
+    expect(canTransition('BOOKED', 'AVAILABLE')).toBe(true);
     expect(canTransition('UNAVAILABLE', 'AVAILABLE')).toBe(true);
     expect(canTransition('AVAILABLE', 'SOLD')).toBe(true);
   });
 
-  it('treats a move-in or move-out as not undoing the sale', () => {
-    expect(canTransition('SOLD', 'OCCUPIED')).toBe(true);
-    expect(canTransition('OCCUPIED', 'SOLD')).toBe(true);
-  });
-
   it('guards undoing a sale behind the reverse-sale permission', () => {
-    for (const to of ['AVAILABLE', 'RESERVED', 'ON_HOLD', 'UNAVAILABLE'] as UnitStatus[]) {
+    for (const to of ['AVAILABLE', 'RESERVED', 'BOOKED', 'UNAVAILABLE'] as UnitStatus[]) {
       expect(isSaleReversal('SOLD', to)).toBe(true);
       expect(canTransition('SOLD', to)).toBe(false);
       expect(canTransition('SOLD', to, true)).toBe(true);
-      expect(canTransition('OCCUPIED', to)).toBe(false);
     }
-    expect(allowedTransitions('SOLD')).toEqual(['OCCUPIED']);
+    expect(allowedTransitions('SOLD')).toEqual([]);
   });
 
   it('treats a no-op as allowed, so re-saving a row is not an error', () => {
     for (const s of UNIT_STATUSES) expect(canTransition(s, s)).toBe(true);
   });
 
-  it('never tells a visitor about a hold or an occupant', () => {
-    expect(PUBLIC_UNIT_STATUS.ON_HOLD).toBe('reserved');
-    expect(PUBLIC_UNIT_STATUS.OCCUPIED).toBe('sold');
+  it('shows a visitor the same four words the sales team uses', () => {
+    expect(PUBLIC_UNIT_STATUS.RESERVED).toBe('reserved');
+    expect(PUBLIC_UNIT_STATUS.BOOKED).toBe('booked');
+    expect(PUBLIC_UNIT_STATUS.SOLD).toBe('sold');
   });
 });
 

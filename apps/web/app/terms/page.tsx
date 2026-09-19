@@ -40,10 +40,8 @@ export default async function TermsPage() {
             Images and drawings
           </h2>
           <p>
-            Photographs of interiors and exteriors on this website are artist’s impressions of a
-            residence type, furnished for illustration. They show intent, not a finished room.
-            Finishes, fittings, furniture and landscaping are indicative. Floor plans are drawn to
-            describe a layout, not to be measured from.
+            Images show design intent rather than a finished room. Finishes, fittings, furniture and
+            landscaping are indicative. Floor plans describe a layout and should not be measured from.
           </p>
         </section>
 

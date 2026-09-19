@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PublicMediaDto } from '../../lib/api';
 import { ApiImage } from '../ui/ApiImage';
 import { RevealText } from '../ui/RevealText';
@@ -14,13 +14,15 @@ export interface AmenityInput {
   shortDescription?: string | null;
   descriptionMd: string | null;
   iconKey: string | null;
+  location?: string | null;
+  specifications?: { label: string; value: string }[];
   images?: PublicMediaDto[];
 }
 
 /**
- * 06 — The art of living. Not a grid of icons: the names are set large, and
- * pointing at one brings its space into the frame beside it. On a phone the
- * same list becomes a row of images to swipe.
+ * 06 — The art of living. Not a grid of icons: each amenity is a large image
+ * card with its name set over the photograph, the first given twice the room.
+ * On a phone the cards become a row to swipe.
  *
  * An amenity with no photograph in the library shows an empty frame that says
  * so — never another room's picture behind the right name (audit §5.3).
@@ -38,7 +40,12 @@ export function AmenityExperience({
   lines: string[];
   lead: string;
 }) {
-  const [active, setActive] = useState(0);
+  const [selected, setSelected] = useState<(AmenityInput & { photo: PublicMediaDto | null }) | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (selected && dialog && !dialog.open) dialog.showModal();
+  }, [selected]);
   // The heading and the lead are CMS fields and may both be empty. When there
   // is no heading the section is named by its kicker instead, so the label
   // never points at an element that was not rendered.
@@ -46,8 +53,9 @@ export function AmenityExperience({
   const labelledBy = lines.length > 0 || kicker ? titleId : undefined;
   const items = amenities.map((a, i) => ({ ...a, key: a.slug ?? a.id ?? String(i), photo: a.images?.find((m) => m.kind === 'IMAGE') ?? null }));
   if (items.length === 0) return null;
-  const current = items[Math.min(active, items.length - 1)]!;
-  const note = (it: (typeof items)[number]) => it.photo?.note || (it.photo?.caption ?? '');
+  // The first card takes four cells of a four-column grid; the last one widens
+  // to close the final row instead of leaving a hole.
+  const fill = (4 - ((items.length + 3) % 4)) % 4;
   const media = (it: (typeof items)[number], sizes: string) => {
     if (it.photo) return <ApiImage m={it.photo} sizes={sizes} focus={it.photo.focus ?? undefined} />;
     return (
@@ -73,41 +81,54 @@ export function AmenityExperience({
           {lead && <p className="lead">{lead}</p>}
         </header>
 
-        <div className={styles.layout}>
-          <ul className={styles.list}>
-            {items.map((it, i) => (
-              <li key={it.key} className={styles.entry} data-active={i === active ? 'true' : 'false'}>
-                <div className={styles.mobileMedia}>{media(it, '82vw')}</div>
-                <button
-                  type="button"
-                  className={styles.item}
-                  aria-expanded={i === active}
-                  aria-controls={`${id}-${it.key}`}
-                  onMouseEnter={() => setActive(i)}
-                  onFocus={() => setActive(i)}
-                  onClick={() => setActive(i)}
-                >
-                  <span className={styles.name}>{it.name}</span>
-                </button>
-                <div id={`${id}-${it.key}`} className={styles.desc}>
-                  <div>
-                    <p>{it.shortDescription ?? it.descriptionMd ?? ''}</p>
-                  </div>
+        <ul className={styles.grid}>
+          {items.map((it, i) => (
+            <li
+              key={it.key}
+              className={`lux-card ${styles.card}`}
+              data-reveal
+              style={{ '--reveal-i': i % 4, '--span': i > 0 && i === items.length - 1 ? 1 + fill : 1 } as React.CSSProperties}
+            >
+              <button type="button" className={styles.cardButton} onClick={() => setSelected(it)} aria-label={`View details for ${it.name}`}>
+                <div className={styles.media}>{media(it, i === 0 ? '(max-width: 900px) 82vw, 50vw' : '(max-width: 900px) 82vw, 25vw')}</div>
+                <div className={styles.caption}>
+                  <h3 className={styles.name}>{it.name}</h3>
+                  {(it.shortDescription ?? it.descriptionMd) && <p className={styles.desc}>{it.shortDescription ?? it.descriptionMd}</p>}
                 </div>
-              </li>
-            ))}
-          </ul>
-
-          <div className={styles.frame} aria-hidden="true">
-            {items.map((it, i) => (
-              <div key={it.key} className={styles.slide} data-active={i === active ? 'true' : 'false'}>
-                {media(it, '(max-width: 900px) 100vw, 56vw')}
-              </div>
-            ))}
-            <p className={`cgi-note ${styles.note}`}>{note(current)}</p>
-          </div>
-        </div>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
+      <dialog
+        ref={dialogRef}
+        className={styles.dialog}
+        aria-labelledby="amenity-dialog-title"
+        onClose={() => setSelected(null)}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) event.currentTarget.close();
+        }}
+      >
+        {selected && (
+          <div className={styles.dialogPanel}>
+            <button type="button" className={styles.close} onClick={() => dialogRef.current?.close()} aria-label="Close amenity details">×</button>
+            {selected.photo && <div className={styles.dialogMedia}><ApiImage m={selected.photo} sizes="(max-width: 800px) 100vw, 62vw" focus={selected.photo.focus ?? undefined} /></div>}
+            <div className={styles.dialogCopy}>
+              <p className="mark">Amenity</p>
+              <h2 id="amenity-dialog-title" className={styles.dialogTitle}>{selected.name}</h2>
+              {selected.location && <p className={styles.location}>{selected.location}</p>}
+              {(selected.descriptionMd ?? selected.shortDescription) && <p className={styles.dialogDescription}>{selected.descriptionMd ?? selected.shortDescription}</p>}
+              {selected.specifications && selected.specifications.length > 0 && (
+                <dl className={styles.specifications}>
+                  {selected.specifications.map((spec) => (
+                    <div key={`${spec.label}-${spec.value}`}><dt>{spec.label}</dt><dd>{spec.value}</dd></div>
+                  ))}
+                </dl>
+              )}
+            </div>
+          </div>
+        )}
+      </dialog>
     </section>
   );
 }

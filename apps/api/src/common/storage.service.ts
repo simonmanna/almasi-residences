@@ -120,14 +120,12 @@ export class StorageService {
 
   private client(): S3Client {
     this.s3 ??= new S3Client({
-      region: process.env.R2_REGION ?? 'auto',
-      endpoint:
-        process.env.R2_ENDPOINT ??
-        (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined),
+      region: process.env.S3_REGION ?? 'auto',
+      endpoint: process.env.S3_ENDPOINT,
       forcePathStyle: true,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
+        accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
       },
     });
     return this.s3;
@@ -195,7 +193,7 @@ export class StorageService {
     for (const key of keys) {
       try {
         if (this.driver === 's3') {
-          await this.client().send(new DeleteObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key }));
+          await this.client().send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }));
         } else {
           await rm(this.localPath(key), { force: true });
         }
@@ -207,7 +205,7 @@ export class StorageService {
   }
 
   publicUrl(key: string): string {
-    if (this.driver === 's3') return `${(process.env.R2_PUBLIC_URL ?? '').replace(/\/$/, '')}/${key}`;
+    if (this.driver === 's3') return `${(process.env.S3_PUBLIC_URL ?? '').replace(/\/$/, '')}/${key}`;
     return `/api/v1/files/${key}`;
   }
 
@@ -263,7 +261,7 @@ export class StorageService {
   async read(key: string): Promise<Buffer | null> {
     try {
       if (this.driver === 's3') {
-        const res = await this.client().send(new GetObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key }));
+        const res = await this.client().send(new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }));
         return res.Body ? Buffer.from(await res.Body.transformToByteArray()) : null;
       }
       const { readFile } = await import('node:fs/promises');
@@ -289,7 +287,7 @@ export class StorageService {
     if (this.driver === 's3') {
       await this.client().send(
         new PutObjectCommand({
-          Bucket: process.env.R2_BUCKET,
+          Bucket: process.env.S3_BUCKET,
           Key: key,
           Body: body,
           ContentType: contentType,

@@ -1,5 +1,5 @@
 .section {
-  background: var(--surface);
+  background-color: var(--surface);
   border-top: 1px solid var(--line);
 }
 
@@ -12,8 +12,9 @@
 
 .kicker {
   margin-bottom: 20px;
-  color: var(--accent);
 }
+
+.text .kicker { margin-bottom: 0; }
 
 .text {
   display: grid;
@@ -46,7 +47,7 @@
 
 .form {
   padding: clamp(24px, 3vw, 44px);
-  background: var(--surface-raised);
+  background-color: var(--surface-raised);
   border: 1px solid var(--line);
   scroll-margin-top: calc(var(--nav-h) + 24px);
 }

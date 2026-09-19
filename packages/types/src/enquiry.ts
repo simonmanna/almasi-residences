@@ -21,7 +21,6 @@ export interface EnquiryInput {
   utm?: { source?: string; medium?: string; campaign?: string };
   referrer?: string;
   landingPath?: string;
-  turnstileToken?: string;
   /** §5.7 step 2 — honeypot. A real visitor never fills this. */
   company?: string;
 }

@@ -294,7 +294,7 @@ export default function Dashboard() {
               <div className="donut-wrap" style={{ justifyContent: 'center', padding: '4px 0 10px' }}>
                 <Donut slices={donut} size={132} thickness={16} centre={<div><div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 24, color: 'var(--navy)' }}>{d.stats.residences}</div><div className="muted small">residences</div></div>} />
               </div>
-              {(['AVAILABLE', 'RESERVED', 'ON_HOLD', 'SOLD', 'OCCUPIED'] as UnitStatus[]).map((s) => (
+              {(['AVAILABLE', 'RESERVED', 'BOOKED', 'SOLD'] as UnitStatus[]).map((s) => (
                 <Link key={s} to={`/residences?status=${s}`} className="row" style={{ padding: '8px 4px', color: 'var(--ink)', borderTop: '1px solid var(--line-2)' }}>
                   <span className={`stat-icon tone-${STATUS_TONE[s]}`} style={{ width: 34, height: 34, borderRadius: 10 }}><Building2 size={16} /></span>
                   <span style={{ flex: 1 }}>

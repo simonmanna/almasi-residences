@@ -191,7 +191,7 @@ export class PublicService {
       where: { developmentId, ...LIVE() },
       select: { status: true, priceMinor: true, discountMinor: true, promoPriceMinor: true, promoEndsAt: true, areaSqm: true, bedrooms: true, typology: { select: { isPenthouse: true } } },
     });
-    const byStatus: Record<PublicUnitStatus, number> = { available: 0, reserved: 0, sold: 0, unavailable: 0 };
+    const byStatus: Record<PublicUnitStatus, number> = { available: 0, reserved: 0, booked: 0, sold: 0, unavailable: 0 };
     for (const u of units) byStatus[PUBLIC_UNIT_STATUS[u.status as UnitStatus]]++;
     const prices = units.filter((u) => u.status === 'AVAILABLE').map((u) => effectivePriceMinor(u));
     const { logoMedia, heroMedia, mainMedia, videoMedia, contactPhone, contactEmail, whatsappNumber, whatsappIconVisible, officeAddress, officeHours, socials, ...rest } = d;

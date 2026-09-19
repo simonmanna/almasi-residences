@@ -6,7 +6,6 @@ import type { TypologyCardDto } from '../../lib/api';
 import { fillCopy } from '../../lib/copy-tokens';
 import { residenceType, TYPE_TEXT, typesPresent, type ResidenceType } from '../../lib/residences';
 import { useInventory } from '../providers/InventoryProvider';
-import { Reveal } from '../ui/Reveal';
 import { RevealText } from '../ui/RevealText';
 import { SceneImage } from '../ui/SceneImage';
 import styles from './ResidencesPreview.module.css';
@@ -31,8 +30,9 @@ export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCar
       <div className="container">
         <header className={styles.head}>
           <div>
-            {kicker && <p className={`mark ${styles.kicker}`}>{kicker}</p>}
-            {lines.length > 0 && <RevealText as="h2" id="residences-title" className="h2" lines={lines} />}
+            <p className={`eyebrow ${styles.eyebrow}`}>Our residences</p>
+            {kicker && <p className={`mark kicker-lg ${styles.kicker}`}>{kicker}</p>}
+            {lines.length > 0 && <RevealText as="h2" id="residences-title" className="title-sm" lines={[lines.join(' ')]} />}
           </div>
           <div className={styles.aside}>
             <p className="lead">
@@ -45,17 +45,20 @@ export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCar
         </header>
 
         <ul className={styles.grid}>
-          {types.map((t) => {
+          {types.map((t, i) => {
             const s = summary.byType[t];
             const words = summaryFor(t);
             return (
-              <li key={t} className={styles.item}>
-                <Link href={`/residences?type=${t}`} className={styles.card} data-cursor="Explore">
-                  <Reveal className={styles.media}>
+              <li key={t} className={styles.item} data-reveal style={{ '--reveal-i': i } as React.CSSProperties}>
+                <Link href={`/residences?type=${t}`} className={`lux-card ${styles.card}`} data-cursor="Explore">
+                  <div className={`lux-card__media ${styles.media}`}>
                     <SceneImage media={coverFor(t)} sizes="(max-width: 900px) 100vw, 33vw" label={TYPE_TEXT[t]} />
-                  </Reveal>
-                  <div className={styles.text}>
-                    <h3 className="h3">{TYPE_TEXT[t]}</h3>
+                    <span className={styles.badge} data-none={s.available === 0 ? 'true' : undefined}>
+                      {s.available > 0 ? `${s.available} available` : 'Fully reserved'}
+                    </span>
+                  </div>
+                  <div className={`lux-card__body ${styles.text}`}>
+                    <h3 className={styles.name}>{TYPE_TEXT[t]}</h3>
                     <p className={styles.size}>
                       {s.areaMin === s.areaMax ? s.areaMin : `${s.areaMin}–${s.areaMax}`} m²
                     </p>
@@ -78,6 +81,9 @@ export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCar
                         </dd>
                       </div>
                     </dl>
+                    <span className={`lux-cta ${styles.cta}`}>
+                      View residences <span className="btn-arrow" aria-hidden="true">→</span>
+                    </span>
                   </div>
                 </Link>
               </li>

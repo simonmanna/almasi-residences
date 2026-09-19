@@ -24,11 +24,12 @@
 }
 
 .frame {
+  border-radius: var(--radius-media);
   position: relative;
   display: block;
   width: 100%;
   overflow: hidden;
-  background: var(--surface-sunk);
+  background-color: var(--surface-sunk);
 }
 
 .frame img {

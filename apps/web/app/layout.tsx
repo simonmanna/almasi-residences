@@ -17,7 +17,10 @@ import { CursorLabel } from '../components/layout/CursorLabel';
 import { PreviewBanner } from '../components/layout/PreviewBanner';
 import { AnalyticsTracker } from '../components/layout/AnalyticsTracker';
 import { WhatsAppLauncher } from '../components/layout/WhatsAppLauncher';
+import { MOTION_SCRIPT, THEME_SCRIPT } from '../lib/theme';
+import { RevealObserver } from '../components/ui/RevealObserver';
 import '../styles/tokens.css';
+import '../styles/themes.css';
 import '../styles/app.css';
 
 // Self-hosted through next/font: preloaded, and a metric-matched fallback so
@@ -41,6 +44,43 @@ const ui = localFont({
   ],
   variable: '--font-ui-face',
   display: 'swap',
+  fallback: ['system-ui', 'Segoe UI', 'sans-serif'],
+});
+
+// Theme faces load only when a theme sets them (preload off): Blue sets
+// Cormorant Garamond over Manrope, Sky Blue sets DM Serif Display over Manrope.
+const cormorant = localFont({
+  src: [
+    { path: '../public/fonts/cormorant-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/cormorant-400-italic.woff2', weight: '400', style: 'italic' },
+    { path: '../public/fonts/cormorant-500.woff2', weight: '500', style: 'normal' },
+  ],
+  variable: '--font-cormorant',
+  display: 'swap',
+  preload: false,
+  fallback: ['Iowan Old Style', 'Georgia', 'serif'],
+});
+
+const dmSerif = localFont({
+  src: [
+    { path: '../public/fonts/dm-serif-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/dm-serif-400-italic.woff2', weight: '400', style: 'italic' },
+  ],
+  variable: '--font-dmserif',
+  display: 'swap',
+  preload: false,
+  fallback: ['Georgia', 'serif'],
+});
+
+const manrope = localFont({
+  src: [
+    { path: '../public/fonts/manrope-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/manrope-500.woff2', weight: '500', style: 'normal' },
+    { path: '../public/fonts/manrope-600.woff2', weight: '600', style: 'normal' },
+  ],
+  variable: '--font-manrope',
+  display: 'swap',
+  preload: false,
   fallback: ['system-ui', 'Segoe UI', 'sans-serif'],
 });
 
@@ -79,7 +119,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#151613',
+  themeColor: '#3A281B',
 };
 
 /**
@@ -104,10 +144,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const contact = contactFrom(dev?.contact, dev?.name);
 
   return (
-    <html lang="en-GB" className={`${display.variable} ${ui.variable}`} suppressHydrationWarning>
+    <html lang="en-GB" className={`${display.variable} ${ui.variable} ${cormorant.variable} ${dmSerif.variable} ${manrope.variable}`} suppressHydrationWarning>
       <head>
         {/* Before first paint: decide whether the home page opens with its intro. */}
-        <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_SCRIPT + MOTION_SCRIPT }} />
         <noscript>
           <style>{NOSCRIPT_CSS}</style>
         </noscript>
@@ -138,6 +179,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <PreviewBanner />
         <WhatsAppLauncher contact={contact} />
         <AnalyticsTracker />
+        <RevealObserver />
       </body>
     </html>
   );

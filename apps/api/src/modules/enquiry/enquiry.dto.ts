@@ -45,7 +45,6 @@ export class CreateEnquiryDto {
 
   @IsOptional() @IsString() @MaxLength(500) landingPath?: string;
 
-  @IsOptional() @IsString() @MaxLength(4000) turnstileToken?: string;
 
   /**
    * §5.7 step 2 — honeypot. Declared so the global ValidationPipe's

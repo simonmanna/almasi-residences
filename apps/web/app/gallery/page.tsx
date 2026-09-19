@@ -18,6 +18,7 @@ export default async function GalleryPage() {
   return (
     <main id="main">
       <PageHeader
+        bold
         kicker={copy(pages, 'gallery', 'heroKicker')}
         title={<TitleLines lines={copyLines(pages, 'gallery', 'heroTitle')} />}
         lede={copy(pages, 'gallery', 'heroLede')}

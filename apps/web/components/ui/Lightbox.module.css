@@ -6,12 +6,12 @@
   margin: 0;
   padding: 0;
   border: 0;
-  background: var(--surface);
+  background-color: var(--surface);
   color: var(--ink);
 }
 
 .dialog::backdrop {
-  background: rgba(8, 8, 7, 0.88);
+  background: rgb(var(--shade) / 0.88);
 }
 
 .shell {
@@ -61,7 +61,7 @@
   gap: var(--space-4);
   padding: var(--space-4) var(--page-margin);
   border-top: 1px solid var(--line);
-  background: var(--surface-raised);
+  background-color: var(--surface-raised);
 }
 
 .caption {

@@ -1,0 +1,228 @@
+/**
+ * Visitor-chosen themes, layered over the Wooden base in tokens.css.
+ *
+ * <html data-theme="blue|wooden|sky"> — Wooden is the base, so its attribute
+ * changes nothing here. Each theme re-authors both grounds (colour) and the
+ * personality tokens (type, shape, depth, material). Every value is sampled
+ * from theme-reference/<theme>-theme.png; the sampled figure sits beside it.
+ * tests/tokens.contrast.test.ts holds every theme to the same floors as the
+ * base grounds. Keep selectors as `[data-theme="x"] [data-ground="y"]`: the
+ * test parses that exact shape.
+ */
+
+/* ─── Blue — architectural night: ink-navy, glass, a cool sky-blue light ─── */
+:root[data-theme="blue"],
+[data-theme="blue"] [data-ground="stone"] {
+  --surface:            #11202E;  /* page, sampled #12212E */
+  --surface-raised:     #162A3C;  /* card, sampled #13273A */
+  --surface-sunk:       #0C1823;  /* about band, sampled #0D1A26 */
+  --ink:                #E4ECF2;  /* headline, sampled #DEE8ED */
+  --ink-muted:          #9CB0C1;  /* body, sampled #8D9DAA */
+  --line:               #243A4F;
+  --accent:             #8ECDF4;  /* button light, sampled #95CFF7 / #88CAEF */
+  --accent-weak:        #396F91;  /* eyebrow, sampled #396F91 */
+  --on-accent:          #0C1823;
+  --foliage:            #7FA59A;
+  --scrim:              rgba(5, 12, 20, 0.55);
+  --elev:               0 1px 2px rgba(0, 0, 0, 0.45), 0 22px 60px rgba(2, 8, 16, 0.6);
+  --status-available:   #E2B985;
+  --status-reserved:    #D2873A;
+  --status-sold:        #62C2D8;
+  --status-unavailable: #8C8C8A;
+  --cat-business:       #8ECDF4;
+  --cat-shopping:       #E0995A;
+  --cat-health:         #6FC0B2;
+  --cat-school:         #A3BD8C;
+  --cat-airport:        #CF9BC0;
+  --cat-leisure:        #D1C46E;
+  --cat-embassy:        #E88E7C;
+  --map-ground:         #0F1D2A;
+}
+
+[data-theme="blue"] [data-ground="night"] {
+  --surface:            #0A1520;  /* hero shadow, sampled #0B1622 */
+  --surface-raised:     #10202F;
+  --surface-sunk:       #060E17;
+  --ink:                #E8EFF5;
+  --ink-muted:          #95AABB;
+  --line:               #1D3144;
+  --accent:             #8ECDF4;
+  --accent-weak:        #2F5E7E;
+  --on-accent:          #0A1520;
+  --foliage:            #7FA59A;
+  --scrim:              rgba(3, 8, 14, 0.6);
+  --elev:               0 1px 2px rgba(0, 0, 0, 0.5), 0 22px 60px rgba(0, 4, 10, 0.65);
+  --status-available:   #E2B985;
+  --status-reserved:    #D2873A;
+  --status-sold:        #62C2D8;
+  --status-unavailable: #858583;
+  --cat-business:       #8ECDF4;
+  --cat-shopping:       #E0995A;
+  --cat-health:         #6FC0B2;
+  --cat-school:         #A3BD8C;
+  --cat-airport:        #CF9BC0;
+  --cat-leisure:        #D1C46E;
+  --cat-embassy:        #E88E7C;
+  --map-ground:         #0C1824;
+}
+
+/* Blue's personality: a hairline, high-contrast Garamond over a precise
+   grotesk; near-square glass panels lit from within by a cool rim. */
+:root[data-theme="blue"] {
+  --font-display: var(--font-cormorant, 'Cormorant Garamond'), 'Iowan Old Style', Georgia, serif;
+  --font-ui: var(--font-manrope, 'Manrope'), ui-sans-serif, system-ui, sans-serif;
+  --display-tracking: 0.25;
+  --display-weight: 400;
+  --radius-card: 6px;
+  --radius-media: 4px;
+  --radius-btn: 999px;
+  --btn-caps: normal;
+  --btn-tracking: 0.02em;
+  --btn-weight: 600;
+  --btn-shadow: 0 0 0 1px rgba(142, 205, 244, 0.25), 0 10px 30px -8px rgba(142, 205, 244, 0.45);
+  --card-surface:       #132638;
+  --card-ink:           #E4ECF2;
+  --card-muted:         #9CB0C1;
+  --card-accent:        #8ECDF4;
+  --card-line:          rgba(142, 205, 244, 0.14);
+  --card-border:        1px solid rgba(142, 205, 244, 0.2);
+  --card-frame:         inset 0 1px 0 rgba(228, 236, 242, 0.06);
+  --card-shadow:        0 1px 2px rgba(0, 0, 0, 0.4), 0 24px 60px -18px rgba(1, 6, 14, 0.8);
+  --card-shadow-hover:  0 0 0 1px rgba(142, 205, 244, 0.35), 0 30px 70px -18px rgba(1, 6, 14, 0.85), 0 0 48px -8px rgba(142, 205, 244, 0.22);
+  --card-lift:          -3px;
+  --texture: none;
+  /* A cool light that falls from the upper right of every section, the way
+     the reference's blue hour sky lights the façade. */
+  --ambient: radial-gradient(70% 55% at 88% 0%, rgba(80, 150, 205, 0.12), transparent 70%);
+  --shade: 7 18 30;
+  --on-media: 232 239 245;
+  --dusk-base: #05101A;
+  --dusk-low:  #0B1A28;
+  --dusk-mid:  #14293C;
+  --dusk-high: #1D4468;
+  --nav-blur: 20px;
+  --nav-shadow: 0 1px 0 rgba(142, 205, 244, 0.1), 0 14px 40px -16px rgba(0, 0, 0, 0.7);
+  --section-y: clamp(56px, 7vw, 112px);
+}
+
+/* ─── Sky Blue — daylight: paper white, a clear azure, deep marine ink ─── */
+:root[data-theme="sky"],
+[data-theme="sky"] [data-ground="stone"] {
+  --surface:            #F4F9FE;  /* page, sampled #F6FAFE / #F3F8FD */
+  --surface-raised:     #FFFFFF;
+  --surface-sunk:       #E6F1FB;  /* amenity strip, sampled #E8F3FD */
+  --ink:                #15375E;  /* headline, sampled #1A3F6A */
+  --ink-muted:          #48647F;
+  --line:               #C8DBEC;
+  --accent:             #1D6DB0;  /* button, sampled #308CD1, deepened to read as text */
+  --accent-weak:        #8CBFE6;
+  --on-accent:          #FFFFFF;
+  --foliage:            #3F6E5E;
+  --scrim:              rgba(21, 55, 94, 0.3);
+  --elev:               0 1px 2px rgba(21, 55, 94, 0.06), 0 20px 50px rgba(29, 109, 176, 0.14);
+  --status-available:   #6B4A22;
+  --status-reserved:    #A06818;
+  --status-sold:        #2F6474;
+  --status-unavailable: #7D766C;
+  --cat-business:       #1D6DB0;
+  --cat-shopping:       #A4571F;
+  --cat-health:         #2F7A77;
+  --cat-school:         #4B6A3A;
+  --cat-airport:        #7A4A72;
+  --cat-leisure:        #6E6A1F;
+  --cat-embassy:        #A0412F;
+  --map-ground:         #EAF3FB;
+}
+
+[data-theme="sky"] [data-ground="night"] {
+  --surface:            #173656;  /* card overlay, sampled #365B7D, taken to dusk */
+  --surface-raised:     #1F4266;
+  --surface-sunk:       #112A45;
+  --ink:                #F4F9FE;
+  --ink-muted:          #C3D6E8;
+  --line:               #33597E;
+  --accent:             #A6D8FA;
+  --accent-weak:        #4D88B7;  /* sampled #4D88B7 */
+  --on-accent:          #112A45;
+  --foliage:            #8FB5A4;
+  --scrim:              rgba(10, 30, 52, 0.5);
+  --elev:               0 1px 2px rgba(0, 0, 0, 0.3), 0 20px 56px rgba(6, 22, 40, 0.5);
+  --status-available:   #EBC690;
+  --status-reserved:    #E7A152;
+  --status-sold:        #9ED3E0;
+  --status-unavailable: #B0A89D;
+  --cat-business:       #A6D8FA;
+  --cat-shopping:       #EFA869;
+  --cat-health:         #7FD1C3;
+  --cat-school:         #B7D19D;
+  --cat-airport:        #E3ACD1;
+  --cat-leisure:        #DDD37F;
+  --cat-embassy:        #F2A08E;
+  --map-ground:         #15324F;
+}
+
+/* Sky Blue's personality: a confident display serif, open spacing, white
+   cards on soft daylight shadows — the brightest and most generous of the three. */
+:root[data-theme="sky"] {
+  --font-display: var(--font-dmserif, 'DM Serif Display'), 'Iowan Old Style', Georgia, serif;
+  --font-ui: var(--font-manrope, 'Manrope'), ui-sans-serif, system-ui, sans-serif;
+  --display-tracking: 0.55;
+  --display-weight: 400;
+  --radius-card: 14px;
+  --radius-media: 12px;
+  --radius-btn: 999px;
+  --btn-caps: normal;
+  --btn-tracking: 0.01em;
+  --btn-weight: 600;
+  --btn-shadow: 0 10px 24px -10px rgba(29, 109, 176, 0.55);
+  --card-surface:       #FFFFFF;
+  --card-ink:           #15375E;
+  --card-muted:         #48647F;
+  --card-accent:        #1D6DB0;
+  --card-line:          #DCE8F3;
+  --card-border:        1px solid #DCE8F3;
+  --card-frame:         inset 0 1px 0 #FFFFFF;
+  --card-shadow:        0 1px 2px rgba(21, 55, 94, 0.05), 0 18px 44px -18px rgba(29, 109, 176, 0.28);
+  --card-shadow-hover:  0 2px 4px rgba(21, 55, 94, 0.06), 0 30px 60px -20px rgba(29, 109, 176, 0.38);
+  --card-lift:          -6px;
+  --texture: none;
+  --ambient: linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent 320px);
+  --shade: 16 44 76;
+  --on-media: 255 255 255;
+  --dusk-base: #0E2640;
+  --dusk-low:  #173A5E;
+  --dusk-mid:  #2C5E8C;
+  --dusk-high: #6E9FCB;
+  --nav-blur: 18px;
+  --nav-shadow: 0 12px 34px -18px rgba(29, 109, 176, 0.35);
+  --section-y: clamp(64px, 8vw, 128px);
+}
+
+/* Theme swaps cross-fade through the View Transitions API; slow and quiet. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 700ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Where view transitions are missing, colours glide instead (see ThemeSwitcher). */
+html[data-theme-shift] *,
+html[data-theme-shift] *::before,
+html[data-theme-shift] *::after {
+  transition:
+    background-color 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 600ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+@media print {
+  :root[data-theme], [data-theme] [data-ground] { --surface: #fff; --ink: #111; --ink-muted: #555; --line: #ccc; --accent: #555; }
+}
+
+/* Cormorant sets old-style figures by default; prices and areas need lining ones. */
+:root[data-theme="blue"] { font-variant-numeric: lining-nums; }
+
+/* Sky Blue's daylight wash belongs to the paper ground only; its dusk sections
+   stay clean. (Selector shape kept out of the contrast test's theme parser.) */
+[data-ground="night"]:where([data-theme="sky"] *) { --ambient: none; }

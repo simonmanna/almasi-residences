@@ -28,9 +28,9 @@
   place-items: center;
   width: 104px;
   height: 104px;
-  border: 1px solid rgba(239, 235, 227, 0.6);
+  border: 1px solid rgb(var(--on-media) / 0.6);
   border-radius: 50%;
-  background: rgba(12, 13, 11, 0.35);
+  background: rgb(var(--shade) / 0.35);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   transition: background-color var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
@@ -40,12 +40,12 @@
   margin-left: 6px;
   border-style: solid;
   border-width: 12px 0 12px 20px;
-  border-color: transparent transparent transparent #efebe3;
+  border-color: transparent transparent transparent rgb(var(--on-media));
 }
 
 @media (hover: hover) {
   .bigPlay:hover {
-    background: rgba(239, 235, 227, 0.15);
+    background: rgb(var(--on-media) / 0.15);
     transform: scale(1.04);
   }
 }
@@ -80,11 +80,11 @@
   font-weight: 500;
   font-variant-caps: all-small-caps;
   letter-spacing: 0.16em;
-  color: #efebe3;
+  color: rgb(var(--on-media));
 }
 
 .time {
-  color: rgba(239, 235, 227, 0.75);
+  color: rgb(var(--on-media) / 0.75);
   font-size: var(--fs-xs);
 }
 
@@ -108,12 +108,12 @@
 
 .scrub input::-webkit-slider-runnable-track {
   height: 2px;
-  background: linear-gradient(to right, #c9a27a var(--pos), rgba(239, 235, 227, 0.25) var(--pos));
+  background: linear-gradient(to right, var(--accent) var(--pos), rgb(var(--on-media) / 0.25) var(--pos));
 }
 
 .scrub input::-moz-range-track {
   height: 2px;
-  background: linear-gradient(to right, #c9a27a var(--pos), rgba(239, 235, 227, 0.25) var(--pos));
+  background: linear-gradient(to right, var(--accent) var(--pos), rgb(var(--on-media) / 0.25) var(--pos));
 }
 
 .scrub input::-webkit-slider-thumb {
@@ -122,7 +122,7 @@
   margin-top: -6px;
   border: 0;
   border-radius: 50%;
-  background: #efebe3;
+  background: rgb(var(--on-media));
   -webkit-appearance: none;
 }
 
@@ -131,7 +131,7 @@
   height: 14px;
   border: 0;
   border-radius: 50%;
-  background: #efebe3;
+  background: rgb(var(--on-media));
 }
 
 .tick {
@@ -140,7 +140,7 @@
   width: 1px;
   height: 10px;
   margin-top: -5px;
-  background: rgba(239, 235, 227, 0.55);
+  background: rgb(var(--on-media) / 0.55);
   pointer-events: none;
 }
 

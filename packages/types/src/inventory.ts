@@ -1,27 +1,27 @@
 /** §5.5 — residence status rules. Encoded here, enforced by the API, never by the UI. */
 
-export const UNIT_STATUSES = [
-  'AVAILABLE',
-  'RESERVED',
-  'ON_HOLD',
-  'SOLD',
-  'OCCUPIED',
-  'UNAVAILABLE',
-] as const;
+export const UNIT_STATUSES = ['AVAILABLE', 'RESERVED', 'BOOKED', 'SOLD', 'UNAVAILABLE'] as const;
 export type UnitStatus = (typeof UNIT_STATUSES)[number];
+
+/**
+ * The sales pipeline as the business talks about it. UNAVAILABLE is a residence
+ * the developer has withheld and is deliberately absent: it stays a valid stored
+ * value but is never offered in a picker or shown as a legend entry.
+ */
+export const VISIBLE_UNIT_STATUSES = ['AVAILABLE', 'RESERVED', 'BOOKED', 'SOLD'] as const;
 
 export const ORIENTATIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
 export type Orientation = (typeof ORIENTATIONS)[number];
 
 /** A residence that has changed hands. Leaving this set undoes a sale. */
-const CLOSED: ReadonlySet<UnitStatus> = new Set(['SOLD', 'OCCUPIED']);
+const CLOSED: ReadonlySet<UnitStatus> = new Set(['SOLD']);
 
 /**
  * D-34 — the sales team moves a residence between the open statuses freely
  * (availability changes daily; a rigid pipeline made the admin fight them).
- * The one guarded edge is undoing a sale: SOLD or OCCUPIED back to an open
- * status needs the `residence.reverse-sale` permission, so a sold home cannot
- * become available by accident. SOLD ↔ OCCUPIED is a move-in/out, not a reversal.
+ * The one guarded edge is undoing a sale: SOLD back to an open status needs the
+ * `residence.reverse-sale` permission, so a sold home cannot become available
+ * by accident.
  */
 export function isSaleReversal(from: UnitStatus, to: UnitStatus): boolean {
   return CLOSED.has(from) && !CLOSED.has(to);
@@ -46,9 +46,8 @@ export type StatusFill = 'solid' | 'hatch' | 'outline' | 'faint';
 export const STATUS_FILL: Record<UnitStatus, StatusFill> = {
   AVAILABLE: 'solid',
   RESERVED: 'hatch',
-  ON_HOLD: 'hatch',
+  BOOKED: 'hatch',
   SOLD: 'outline',
-  OCCUPIED: 'outline',
   UNAVAILABLE: 'faint',
 };
 
@@ -56,24 +55,22 @@ export const STATUS_FILL: Record<UnitStatus, StatusFill> = {
 export const STATUS_LABEL: Record<UnitStatus, string> = {
   AVAILABLE: 'Available',
   RESERVED: 'Reserved',
-  ON_HOLD: 'On hold',
+  BOOKED: 'Booked',
   SOLD: 'Sold',
-  OCCUPIED: 'Occupied',
   UNAVAILABLE: 'Unavailable',
 };
 
 /**
- * What a visitor is told. ON_HOLD is a sale being negotiated — not buyable, not
- * final — so it reads "reserved". OCCUPIED is a sold home someone lives in.
+ * What a visitor is told. RESERVED is a short hold, BOOKED is a sale being
+ * negotiated — neither is buyable and both read as their own word.
  */
-export type PublicUnitStatus = 'available' | 'reserved' | 'sold' | 'unavailable';
+export type PublicUnitStatus = 'available' | 'reserved' | 'booked' | 'sold' | 'unavailable';
 
 export const PUBLIC_UNIT_STATUS: Record<UnitStatus, PublicUnitStatus> = {
   AVAILABLE: 'available',
   RESERVED: 'reserved',
-  ON_HOLD: 'reserved',
+  BOOKED: 'booked',
   SOLD: 'sold',
-  OCCUPIED: 'sold',
   UNAVAILABLE: 'unavailable',
 };
 

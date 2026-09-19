@@ -242,7 +242,7 @@ function PeopleTab({ u, refetch }: { u: Detail; refetch: () => void }) {
   const { data: residents } = useQuery(assign === 'resident' ? 'residents:picker' : null, () => get<Paged<{ id: string; fullName: string; unit: { code: string } | null }>>('/admin/residents?pageSize=200'));
   const canBuyers = can('buyer.view');
   const canResidents = can('resident.view');
-  const sold = u.status === 'SOLD' || u.status === 'OCCUPIED';
+  const sold = u.status === 'SOLD';
 
   const doAssign = async () => {
     try {

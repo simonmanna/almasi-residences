@@ -3,7 +3,7 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
-import { getObject, ORIGINALS_BUCKET, PUBLIC_BUCKET, putObject } from '../storage/r2.js';
+import { getObject, ORIGINALS_BUCKET, PUBLIC_BUCKET, putObject } from '../storage/s3.js';
 
 const run = promisify(execFile);
 

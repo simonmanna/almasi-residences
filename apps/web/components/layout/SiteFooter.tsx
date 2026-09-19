@@ -47,15 +47,6 @@ export async function SiteFooter() {
   return (
     <footer className={styles.footer} data-ground="night" data-hide-sticky-cta>
       <div className="container">
-        <div className={styles.top}>
-          <p className={styles.statement}>
-            <span className="italic">Private residences.</span>
-            <br />
-            Distinctly Kigali.
-          </p>
-          <EnquireButton request={{ source: 'footer' }}>Enquire</EnquireButton>
-        </div>
-
         <div className={styles.grid}>
           <div>
             <Link href="/" aria-label={name ? `${name}, home` : "Home"}>
@@ -67,6 +58,7 @@ export async function SiteFooter() {
               ))}
               {contact.officeHours && <span>{contact.officeHours}</span>}
             </address>
+
           </div>
 
           <nav aria-label="Residences">
@@ -125,6 +117,8 @@ export async function SiteFooter() {
                 </li>
               ))}
             </ul>
+            <EnquireButton request={{ source: 'footer' }}>Enquire</EnquireButton>
+
           </div>
         </div>
 
@@ -148,10 +142,6 @@ export async function SiteFooter() {
         )}
 
         <div className={styles.legal}>
-          <p>
-            Images are artist&rsquo;s impressions. Layouts, specification and prices are indicative and may
-            change before contract.
-          </p>
           <ul className={styles.legalLinks}>
             {LEGAL_LINKS.map((l) => (
               <li key={l.href}>

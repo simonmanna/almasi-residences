@@ -82,14 +82,6 @@ export default async function PrivacyPage() {
           </h2>
           <dl>
             <div>
-              <dt>Cloudflare</dt>
-              <dd>
-                The “I am human” check on the enquiry form sends a challenge result and your IP
-                address to Cloudflare so we can tell a person from a bot. Cloudflare does not
-                receive the rest of your enquiry.
-              </dd>
-            </div>
-            <div>
               <dt>Our email provider</dt>
               <dd>
                 Your confirmation email and the notification to the sales team are delivered by a

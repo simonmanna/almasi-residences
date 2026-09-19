@@ -7,26 +7,25 @@ import {
 } from '@aws-sdk/client-s3';
 
 /**
- * §3.1 — Cloudflare R2 in production, MinIO locally. Both speak S3, so one
- * client covers both; `R2_ENDPOINT` is what switches between them.
+ * §3.1 — any S3-compatible object store; MinIO is what we run. `S3_ENDPOINT`
+ * points at it.
  *
  * §5.9 — originals live in a private bucket, derivatives in the public one.
  * Nothing here ever writes an original to the public bucket.
  */
-const endpoint = process.env.R2_ENDPOINT;
-const accountId = process.env.R2_ACCOUNT_ID;
+const endpoint = process.env.S3_ENDPOINT;
 
-export const PUBLIC_BUCKET = process.env.R2_BUCKET ?? 'avida-media';
-export const ORIGINALS_BUCKET = process.env.R2_ORIGINALS_BUCKET ?? 'avida-originals';
+export const PUBLIC_BUCKET = process.env.S3_BUCKET ?? 'avida-media';
+export const ORIGINALS_BUCKET = process.env.S3_ORIGINALS_BUCKET ?? 'avida-originals';
 
 export const s3 = new S3Client({
-  region: process.env.R2_REGION ?? 'auto',
-  endpoint: endpoint ?? (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : undefined),
-  // MinIO serves path-style URLs; R2 accepts them too.
+  region: process.env.S3_REGION ?? 'auto',
+  endpoint,
+  // MinIO serves path-style URLs.
   forcePathStyle: true,
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
   },
 });
 

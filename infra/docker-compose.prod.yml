@@ -19,18 +19,16 @@ x-app-env: &app-env
   # MinIO stands in for R2. The endpoint is the public storage host so that
   # presigned upload URLs work in the browser; inside the network that host
   # resolves to Caddy (see the alias below).
-  R2_ACCOUNT_ID: ''
-  R2_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?}
-  R2_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?}
-  R2_BUCKET: avida-media
-  R2_ORIGINALS_BUCKET: avida-originals
-  R2_REGION: us-east-1
-  R2_ENDPOINT: ${SCHEME}://storage.${DOMAIN}
-  R2_PUBLIC_URL: ${SCHEME}://storage.${DOMAIN}/avida-media
+  S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?}
+  S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?}
+  S3_BUCKET: avida-media
+  S3_ORIGINALS_BUCKET: avida-originals
+  S3_REGION: us-east-1
+  S3_ENDPOINT: ${SCHEME}://storage.${DOMAIN}
+  S3_PUBLIC_URL: ${SCHEME}://storage.${DOMAIN}/avida-media
   RESEND_API_KEY: ${RESEND_API_KEY:-}
   ENQUIRY_NOTIFY_EMAILS: ${ENQUIRY_NOTIFY_EMAILS:-}
   ENQUIRY_FROM_EMAIL: ${ENQUIRY_FROM_EMAIL:-}
-  TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
   WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-}
   SENTRY_DSN: ${SENTRY_DSN:-}
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -150,7 +148,6 @@ services:
         NEXT_PUBLIC_SITE_URL: ${SCHEME}://${DOMAIN}
         NEXT_PUBLIC_WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-}
         NEXT_PUBLIC_UMAMI_ID: ${UMAMI_ID:-}
-        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
         NEXT_PUBLIC_MAP_STYLE_URL: ${MAP_STYLE_URL:-}
         API_INTERNAL_URL: http://127.0.0.1:${API_HOST_PORT:-3001}
     image: avida-web

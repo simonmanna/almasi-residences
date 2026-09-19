@@ -137,12 +137,12 @@ export function ExploreAlmasi({
     <section id={id} className={styles.explore} data-ground="night" aria-labelledby={`${id}-title`}>
       <div className={`container ${styles.head}`}>
         <div>
-          <p className={`mark ${styles.kicker}`}>The building</p>
-          <h2 id={`${id}-title`} className="h2">
+          <p className={`mark kicker-lg ${styles.kicker}`}>The building</p>
+          <h2 id={`${id}-title`} className="title-sm">
             {heading}
           </h2>
         </div>
-        <p className={styles.lede}>{lede}</p>
+        <div className={styles.lede}><p>{lede}</p><Link href="/3d-design" className={styles.designLink}>Enter the 3D Design experience ↗</Link></div>
         <div className={styles.switch} role="group" aria-label="How to show the building">
           <button
             type="button"
@@ -395,6 +395,9 @@ function ResidenceSummary({ r, onBack, onEnquire }: { r: Residence; onBack: () =
       <div className={styles.summaryActions}>
         <Link href={`/residences/${r.slug}`} className="btn btn--solid">
           View residence
+        </Link>
+        <Link href={`/3d-design?residence=${r.slug}`} className="btn btn--ghost">
+          Explore in 3D
         </Link>
         {r.publicStatus === 'available' && (
           <button type="button" className="btn btn--ghost" onClick={onEnquire}>

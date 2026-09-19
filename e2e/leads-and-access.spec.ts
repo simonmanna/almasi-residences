@@ -40,9 +40,6 @@ test.describe('the lead loop and who may see what', () => {
           source: 'e2e',
           unitIds: [unit!.id],
           company: '',
-          // The API rejects a tokenless enquiry once a secret is configured;
-          // 6c is the test that proves the rendered form supplies a real one.
-          turnstileToken: 'e2e',
         },
       });
       expect(submitted.ok(), `enquiry POST returned ${submitted.status()} ${await submitted.text()}`).toBeTruthy();
@@ -65,25 +62,11 @@ test.describe('the lead loop and who may see what', () => {
 
   /**
    * The regression guard for the bug this suite could not see: every test above
-   * posts straight to the API, so a form that never sends a Turnstile token
-   * passed CI and failed for every real visitor. This one drives the rendered
-   * form and asserts the token reaches the request body.
-   *
-   * The widget is stubbed rather than loaded, so the test proves our contract
-   * instead of Cloudflare's uptime, and runs the same offline.
+   * posts straight to the API, so a form that sent the wrong body still passed
+   * CI and failed for every real visitor. This one drives the rendered form and
+   * asserts what actually reaches the request body.
    */
-  test('6c. the rendered enquiry form sends a Turnstile token', async ({ page }) => {
-    await page.addInitScript(() => {
-      (window as unknown as { turnstile: unknown }).turnstile = {
-        render: (_el: HTMLElement, opts: { callback: (t: string) => void }) => {
-          setTimeout(() => opts.callback('e2e-dummy-token'), 0);
-          return 'e2e-widget';
-        },
-        reset: () => {},
-        remove: () => {},
-      };
-    });
-
+  test('6c. the rendered enquiry form posts what the visitor typed', async ({ page }) => {
     let posted: Record<string, unknown> | null = null;
     await page.route('**/api/v1/enquiry', async (route) => {
       posted = route.request().postDataJSON() as Record<string, unknown>;
@@ -102,7 +85,10 @@ test.describe('the lead loop and who may see what', () => {
 
     await expect(page.getByText(/thank you/i)).toBeVisible();
     expect(posted, 'the form never posted to the API').not.toBeNull();
-    expect(posted!.turnstileToken, 'the form posted no Turnstile token').toBe('e2e-dummy-token');
+    expect(posted!.name, 'the form posted the wrong name').toBe(`E2E Form ${stamp}`);
+    expect(posted!.email, 'the form posted the wrong email').toBe(`e2e-form-${stamp}@example.invalid`);
+    // The honeypot must go out empty, or the API would silently discard the lead.
+    expect(posted!.company, 'the form posted a filled honeypot').toBe('');
   });
 
   test('6b. the honeypot swallows a bot without persisting anything', async () => {
@@ -116,7 +102,6 @@ test.describe('the lead loop and who may see what', () => {
           intent: 'INFORMATION',
           unitIds: [],
           company: 'filled in by a bot',
-          turnstileToken: 'e2e',
         },
       });
       expect(res.ok()).toBeTruthy();

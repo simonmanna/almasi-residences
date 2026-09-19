@@ -25,16 +25,12 @@ export class MediaService {
 
   constructor(private readonly prisma: PrismaService) {
     this.s3 = new S3Client({
-      region: process.env.R2_REGION ?? 'auto',
-      endpoint:
-        process.env.R2_ENDPOINT ??
-        (process.env.R2_ACCOUNT_ID
-          ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
-          : undefined),
+      region: process.env.S3_REGION ?? 'auto',
+      endpoint: process.env.S3_ENDPOINT,
       forcePathStyle: true,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
+        accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
       },
     });
 
@@ -98,7 +94,7 @@ export class MediaService {
     const url = await getSignedUrl(
       this.s3,
       new PutObjectCommand({
-        Bucket: process.env.R2_ORIGINALS_BUCKET ?? 'avida-originals',
+        Bucket: process.env.S3_ORIGINALS_BUCKET ?? 'avida-originals',
         Key: originalKey,
         ContentType: dto.contentType,
         ContentLength: dto.contentLength,

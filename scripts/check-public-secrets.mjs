@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const FORBIDDEN = /(SECRET|PASSWORD|PRIVATE|TOKEN|_KEY$|ACCESS_KEY)/i;
 /** Public identifiers that legitimately carry a "key"-shaped name. */
-const ALLOW = new Set(['NEXT_PUBLIC_TURNSTILE_SITE_KEY']);
+const ALLOW = new Set([]);
 
 const lines = readFileSync(`${ROOT}.env.example`, 'utf8').split('\n');
 const offenders = lines

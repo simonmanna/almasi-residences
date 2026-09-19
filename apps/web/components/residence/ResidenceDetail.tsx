@@ -217,10 +217,6 @@ export function ResidenceDetail({
               </figure>
             )}
           </div>
-          <p className="caption">
-            Images are artist’s impressions of the residence type, furnished for illustration. Finishes
-            and layouts are confirmed in the sale contract.
-          </p>
         </div>
       </section>
 
