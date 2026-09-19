@@ -122,7 +122,7 @@ export default async function BuyingPage() {
         </section>
       )}
 
-      <EnquireSection source="buying" heading={['Talk to', 'the sales team.']} ground="quiet" />
+      <EnquireSection source="buying" heading={['Talk to', 'the sales team.']} compact ground="quiet" />
       <SiteFooter />
     </main>
   );
