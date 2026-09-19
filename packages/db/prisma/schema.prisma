@@ -2022,40 +2022,165 @@ enum JobStatus {
 }
 
 model AdminUser {
-  id                 String    @id @default(cuid())
-  email              String    @unique
+  id                 String      @id @default(cuid())
+  email              String      @unique
   passwordHash       String
   name               String
-  role               AdminRole @default(VIEWER)
-  active             Boolean   @default(true)
+  /// The one role that decides what this person may do (see Role).
+  roleId             String
+  role               Role        @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  /// Kept equal to `status` ∈ {ACTIVE, INVITED}: the sign-in gate every guard reads.
+  active             Boolean     @default(true)
+  status             UserStatus  @default(ACTIVE)
+  phone              String?
+  department         String?
+  jobTitle           String?
+  /// Who they report to. Defines a TEAM data scope: a manager and their direct reports.
+  managerId          String?
+  manager            AdminUser?  @relation("ReportsTo", fields: [managerId], references: [id], onDelete: SetNull)
+  reports            AdminUser[] @relation("ReportsTo")
+  /// Last authenticated request (written at most every few minutes).
+  lastActiveAt       DateTime?
+  deactivatedAt      DateTime?
   totpSecret         String?
   // §5.9 — issued once at enrolment, stored hashed, single use.
   totpEnrolledAt     DateTime?
-  recoveryCodeHashes String[]  @default([])
+  recoveryCodeHashes String[]    @default([])
   /// Bumped by a password change or "sign out everywhere": every session issued
   /// before the new value stops verifying, without a session store.
-  tokenVersion       Int       @default(0)
+  tokenVersion       Int         @default(0)
   // §5.9 — login throttle state, per account (the per-IP limit is in the gateway).
-  failedLoginCount   Int       @default(0)
+  failedLoginCount   Int         @default(0)
   lockedUntil        DateTime?
   lastLoginAt        DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @default(now()) @updatedAt
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @default(now()) @updatedAt
 
-  auditLogs    AdminAuditLog[]
-  buyers       Buyer[]             @relation("BuyerAgent")
-  enquiries    Enquiry[]           @relation("EnquiryAgent")
-  leadNotes    LeadNote[]          @relation("LeadNoteAuthor")
-  viewings     Viewing[]           @relation("ViewingAgent")
-  reservations Reservation[]       @relation("ReservationAgent")
-  leadsCreated Enquiry[]           @relation("LeadCreator")
-  tasks        LeadTask[]          @relation("TaskAssignee")
-  tasksCreated LeadTask[]          @relation("TaskCreator")
-  deals        Deal[]              @relation("DealAgent")
-  dealsCreated Deal[]              @relation("DealCreator")
-  documents    LeadDocument[]      @relation("DocumentUploader")
-  inbox        AdminNotification[]
-  savedViews   SavedView[]
+  auditLogs          AdminAuditLog[]
+  buyers             Buyer[]                  @relation("BuyerAgent")
+  enquiries          Enquiry[]                @relation("EnquiryAgent")
+  leadNotes          LeadNote[]               @relation("LeadNoteAuthor")
+  viewings           Viewing[]                @relation("ViewingAgent")
+  reservations       Reservation[]            @relation("ReservationAgent")
+  leadsCreated       Enquiry[]                @relation("LeadCreator")
+  tasks              LeadTask[]               @relation("TaskAssignee")
+  tasksCreated       LeadTask[]               @relation("TaskCreator")
+  deals              Deal[]                   @relation("DealAgent")
+  dealsCreated       Deal[]                   @relation("DealCreator")
+  documents          LeadDocument[]           @relation("DocumentUploader")
+  inbox              AdminNotification[]
+  savedViews         SavedView[]
+  overrides          UserPermissionOverride[] @relation("OverrideUser")
+  overridesGranted   UserPermissionOverride[] @relation("OverrideGrantor")
+  approvalsRequested ApprovalRequest[]        @relation("ApprovalRequester")
+  approvalsDecided   ApprovalRequest[]        @relation("ApprovalDecider")
+
+  @@index([roleId])
+  @@index([status])
+  @@index([managerId])
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+/// A reusable bundle of permissions. System roles are created from
+/// DEFAULT_ROLES in @avida/types; after that the business owns their contents.
+model Role {
+  id          String           @id @default(cuid())
+  /// Stable handle for code and seeds: "SALES_AGENT". Custom roles get "CUSTOM_…".
+  key         String           @unique
+  name        String
+  description String?
+  /// Created by the platform: can be edited and deactivated, never deleted.
+  system      Boolean          @default(false)
+  active      Boolean          @default(true)
+  position    Int              @default(100)
+  /// When the default grants were written. Null on a system role means "write them on next start".
+  seededAt    DateTime?
+  updatedById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  users       AdminUser[]
+}
+
+/// One permission a role holds, and how far it reaches (its data scope).
+/// Action permissions are stored as ALL; an absent row means not granted.
+model RolePermission {
+  roleId     String
+  role       Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission String
+  scope      PermissionScope @default(ALL)
+
+  @@id([roleId, permission])
+}
+
+enum PermissionScope {
+  NONE
+  OWN
+  ASSIGNED
+  TEAM
+  DEPARTMENT
+  ALL
+}
+
+/// A per-person exception to their role, shown apart from it. It replaces the
+/// role's value for that one permission (NONE revokes), optionally until a date.
+model UserPermissionOverride {
+  id          String          @id @default(cuid())
+  userId      String
+  user        AdminUser       @relation("OverrideUser", fields: [userId], references: [id], onDelete: Cascade)
+  permission  String
+  scope       PermissionScope
+  reason      String?
+  expiresAt   DateTime?
+  grantedById String?
+  grantedBy   AdminUser?      @relation("OverrideGrantor", fields: [grantedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime        @default(now())
+
+  @@unique([userId, permission])
+}
+
+/// A change someone may not make themselves, waiting for someone who may.
+/// Approving replays the stored change as the approver, through the same
+/// endpoint and checks as if they had made it directly.
+model ApprovalRequest {
+  id            String         @id @default(cuid())
+  developmentId String
+  /// DISCOUNT | PRICE_CHANGE | RESERVATION | DEAL_CLOSE | CANCELLATION
+  kind          String
+  entity        String
+  entityId      String
+  /// "update" (a field change) or "action" (a status transition).
+  operation     String
+  payload       Json
+  summary       String
+  note          String?
+  status        ApprovalStatus @default(PENDING)
+  requestedById String
+  requestedBy   AdminUser      @relation("ApprovalRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  decidedById   String?
+  decidedBy     AdminUser?     @relation("ApprovalDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decisionNote  String?
+  decidedAt     DateTime?
+  error         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([status, createdAt])
+  @@index([entity, entityId])
+  @@index([requestedById])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 // §5.9 — every consequential admin action writes one row: who, what, which
@@ -2080,14 +2205,4 @@ model AdminAuditLog {
   @@index([action, createdAt])
   @@index([entity, entityId])
   @@index([createdAt])
-}
-
-enum AdminRole {
-  SUPER_ADMIN
-  PROPERTY_MANAGER
-  SALES_MANAGER
-  SALES_AGENT
-  MARKETING
-  CONTENT_MANAGER
-  VIEWER
 }

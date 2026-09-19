@@ -316,5 +316,10 @@ export interface FloorRow {
 export interface TeamMember {
   id: string;
   name: string;
+  /** Role key; show `roleName`. */
   role: string;
+  roleName?: string;
+  department?: string | null;
+  /** Whether their effective access lets them work leads. */
+  worksLeads?: boolean;
 }

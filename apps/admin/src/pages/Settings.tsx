@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Check, Globe, KeyRound, ShieldCheck, User } from 'lucide-react';
-import { PERMISSION_LABEL, ROLE_DESCRIPTION, ROLE_LABEL, type AdminRole } from '@avida/types';
+import { PERMISSION_LABEL } from '@avida/types';
 import { API_ORIGIN, post } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { dateTime } from '../lib/format';
@@ -46,11 +46,11 @@ export default function Settings() {
             <KV items={[
               ['Name', user.name],
               ['Email', user.email],
-              ['Role', <Badge tone="sky" plain>{ROLE_LABEL[user.role as AdminRole] ?? user.role}</Badge>],
+              ['Role', <Badge tone="sky" plain>{user.roleName}</Badge>],
               ['Last sign-in', dateTime(user.lastLoginAt)],
               ['Two-factor sign-in', user.twoFactor ? <Badge tone="green" plain>Enrolled</Badge> : <Badge tone="grey" plain>Not set up</Badge>],
             ]} />
-            <p className="muted small" style={{ margin: 0 }}>{ROLE_DESCRIPTION[user.role as AdminRole]}</p>
+            <p className="muted small" style={{ margin: 0 }}>{user.roleDescription}{user.overrides ? ` Plus ${user.overrides} individual ${user.overrides === 1 ? 'permission' : 'permissions'}.` : ''} <a href={`/users/${user.id}?tab=access`}>See exactly what you can do</a>.</p>
           </div>
         </Card>
         <Card>

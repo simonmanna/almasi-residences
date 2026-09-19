@@ -23,12 +23,12 @@ export function FeaturedResidences({ items }: { items: PublicResidenceCardDto[] 
   if (live.length === 0) return null;
 
   return (
-    <section className={`section ${styles.section}`} data-ground="quiet" aria-labelledby="featured-title">
+    <section className={`section ${styles.section}`} data-ground="night" aria-labelledby="featured-title">
       <div className="container">
         <header className={styles.head}>
           <div>
             <p className={`mark kicker-lg ${styles.kicker}`}>Selected</p>
-            <RevealText as="h2" id="featured-title" className="title-sm" lines={['Residences worth a closer look.']} />
+            <RevealText as="h2" id="featured-title" className="title-sm" lines={['Residences Worth A Closer Look.']} />
           </div>
           <div className={styles.aside}>
             <Link href="/residences" className="link-line">

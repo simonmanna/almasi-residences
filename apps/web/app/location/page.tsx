@@ -36,7 +36,7 @@ export default async function LocationPage() {
           ground="quiet"
         />
       )}
-      <EnquireSection source="location" heading={['Come and', 'see the site.']} compact ground="stone" />
+      <EnquireSection source="location" heading={['Come and', 'see the site.']} compact ground="night" />
       <SiteFooter />
     </main>
   );

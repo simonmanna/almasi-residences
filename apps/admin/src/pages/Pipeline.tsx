@@ -109,7 +109,7 @@ export default function Pipeline() {
 
       <div className="board-toolbar" aria-label="Pipeline filters">
         <label className="crm-search"><Search size={16} aria-hidden="true" /><span className="sr-only">Search the board</span><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone, residence, tag" /></label>
-        {can('enquiry.view-all') && <Select className="sm" value={s.assignedTo ?? ''} onChange={(e) => set({ assignedTo: e.target.value })} placeholder="Everyone" options={[{ value: 'me', label: 'Mine' }, { value: 'none', label: 'Unassigned' }, ...(team ?? []).map((m) => ({ value: m.id, label: m.name }))]} />}
+        {can('enquiry.view', 'TEAM') && <Select className="sm" value={s.assignedTo ?? ''} onChange={(e) => set({ assignedTo: e.target.value })} placeholder="Everyone" options={[{ value: 'me', label: 'Mine' }, { value: 'none', label: 'Unassigned' }, ...(team ?? []).map((m) => ({ value: m.id, label: m.name }))]} />}
         <Select className="sm" value={s.leadSource ?? ''} onChange={(e) => set({ leadSource: e.target.value })} placeholder="All sources" options={LEAD_SOURCES.map((x) => ({ value: x, label: LEAD_SOURCE_LABEL[x] }))} />
         <Select className="sm" value={s.temperature ?? ''} onChange={(e) => set({ temperature: e.target.value })} placeholder="Any temperature" options={(['HOT', 'WARM', 'COLD'] as const).map((t) => ({ value: t, label: TEMPERATURE_LABEL[t] }))} />
         <Button size="sm" variant={s.overdue ? 'primary' : 'default'} icon={<AlarmClock size={14} />} onClick={() => set({ overdue: s.overdue ? null : '1' })}>Overdue</Button>

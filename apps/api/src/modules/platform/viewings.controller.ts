@@ -16,7 +16,7 @@ import {
 import type { Prisma, TaskType, ViewingInterest, ViewingStatus } from '@avida/db';
 import { can, emailViewingConfirmation, isBookedViewing, VIEWING_INTEREST_LABEL, VIEWING_STATUS_LABEL, type ViewingStatusValue } from '@avida/types';
 import { AuditService } from '../../common/audit.service.js';
-import { CrmService } from '../../common/crm.service.js';
+import { CrmService, type RecordPermission } from '../../common/crm.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { NotificationService } from '../../common/notification.service.js';
@@ -56,8 +56,10 @@ export class ViewingsController {
   ) {}
 
   /** Agents see viewings they run and viewings on leads they can see. */
-  private scope(actor: Actor): Prisma.ViewingWhereInput {
-    return can(actor.role, 'enquiry.view-all') ? {} : { OR: [{ agentId: actor.id }, { enquiry: this.crm.leadScope(actor) }, { enquiryId: null, agentId: null }] };
+  private scope(actor: Actor, p: RecordPermission = 'enquiry.view'): Prisma.ViewingWhereInput {
+    const ids = this.crm.ownerIds(actor, p);
+    if (ids === null) return {};
+    return { OR: [{ agentId: { in: ids } }, { enquiry: this.crm.leadScope(actor, p) }, { enquiryId: null, agentId: null }] };
   }
 
   /** The calendar: booked viewings in a date range, plus every request still waiting for a time. */
@@ -85,7 +87,7 @@ export class ViewingsController {
 
   @Get(':id')
   async get(@Param('id') id: string, @Req() req: AdminRequest) {
-    const v = await this.owned(id, actorOf(req));
+    const v = await this.owned(id, actorOf(req), 'enquiry.view');
     const notifications = await this.prisma.client.notification.findMany({ where: { viewingId: id }, orderBy: { createdAt: 'desc' }, select: { id: true, kind: true, status: true, recipient: true, sentAt: true, lastError: true } });
     return { ...v, units: v.units.map((u) => u.unit), notifications };
   }
@@ -97,7 +99,7 @@ export class ViewingsController {
     const developmentId = await this.dev.id();
     let person: { name?: string; email?: string | null; phone?: string | null } = { name: dto.name, email: dto.email, phone: dto.phone };
     if (dto.enquiryId) {
-      const lead = await this.prisma.client.enquiry.findFirst({ where: { AND: [{ id: dto.enquiryId, developmentId }, this.crm.leadScope(actor)] }, include: { units: true } });
+      const lead = await this.prisma.client.enquiry.findFirst({ where: { AND: [{ id: dto.enquiryId, developmentId }, this.crm.leadScope(actor, 'enquiry.edit')] }, include: { units: true } });
       if (!lead) throw new BadRequestException('That lead does not belong to this property.');
       person = { name: lead.name, email: lead.email, phone: lead.phone ?? lead.whatsapp };
       if (!dto.unitIds?.length) dto.unitIds = [...new Set([...(lead.primaryUnitId ? [lead.primaryUnitId] : []), ...lead.units.map((u) => u.unitId)])];
@@ -272,8 +274,8 @@ export class ViewingsController {
     return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ || 'Africa/Kigali' }).format(d);
   }
 
-  private async owned(id: string, actor: Actor) {
-    const v = await this.prisma.client.viewing.findFirst({ where: { AND: [{ id, developmentId: await this.dev.id() }, this.scope(actor)] }, include });
+  private async owned(id: string, actor: Actor, p: RecordPermission = 'enquiry.edit') {
+    const v = await this.prisma.client.viewing.findFirst({ where: { AND: [{ id, developmentId: await this.dev.id() }, this.scope(actor, p)] }, include });
     if (!v) throw new NotFoundException('No such viewing');
     return v;
   }

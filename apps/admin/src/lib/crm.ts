@@ -1,4 +1,5 @@
 import { invalidate } from './query';
+import { post } from './api';
 
 /** Shapes the CRM endpoints return. The API is the source of truth; these only describe it. */
 
@@ -120,6 +121,36 @@ export interface Deal {
   paymentPlan: { id: string; name: string } | null;
   paymentPlanId?: string | null;
   reservation?: { id: string; status: string; heldUntil: string; depositMinor: number | null; depositReceivedAt: string | null } | null;
+  /** Set when the API withheld deposits and reservation amounts (no `finance.view`). */
+  financeHidden?: boolean;
+  approvals?: Approval[];
+}
+
+/** A change someone asked for and someone else may approve (discount, reservation, closing…). */
+export interface Approval {
+  id: string;
+  kind: string;
+  kindLabel: string;
+  entityId: string;
+  operation: 'update' | 'action';
+  payload: Record<string, unknown>;
+  summary: string;
+  note: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  requestedBy: { id: string; name: string };
+  decidedBy: { id: string; name: string } | null;
+  decisionNote: string | null;
+  decidedAt: string | null;
+  error: string | null;
+  createdAt: string;
+  mine: boolean;
+  canDecide: boolean;
+  deal?: { id: string; listPriceMinor: number; agreedPriceMinor: number | null; currency: string; status: string; unit: { code: string }; enquiry: { id: string; name: string } | null } | null;
+}
+
+/** Ask for something the person may not do themselves. The API decides whether it is needed. */
+export async function requestApproval(dealId: string, body: { operation: 'update' | 'action'; fields?: Record<string, unknown>; action?: Record<string, unknown>; note?: string }) {
+  return post<Approval>(`/admin/crm/deals/${dealId}/approvals`, body);
 }
 
 export interface Activity {
@@ -134,7 +165,7 @@ export interface Activity {
   meta?: Record<string, unknown> | null;
 }
 
-export const LEAD_KEYS = ['enquiries', 'crm:', 'dashboard', 'sales-desk', 'viewings', 'reservations', 'search'];
+export const LEAD_KEYS = ['enquiries', 'crm:', 'dashboard', 'sales-desk', 'viewings', 'reservations', 'search', 'approvals'];
 /** Every screen that reads CRM data refetches after a write. */
 export const refreshCrm = () => invalidate(...LEAD_KEYS);
 

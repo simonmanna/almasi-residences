@@ -165,7 +165,7 @@ export class ResidencesService {
       effectivePriceMinor: effectivePriceMinor(u),
       pricePerSqmMinor: pricePerSqmMinor(u.priceMinor, u.areaSqm),
       cover: media[0] ? this.storage.present(media[0]) : null,
-      buyer: can(actor.role, 'buyer.view') ? buyer : buyer ? { id: buyer.id, fullName: 'Assigned', stage: buyer.stage } : null,
+      buyer: can(actor, 'buyer.view') ? buyer : buyer ? { id: buyer.id, fullName: 'Assigned', stage: buyer.stage } : null,
       // Roadmap §40.1 — a residence the 3D maquette cannot place is flagged, not dropped.
       placedInModel: isPlacedInModel(u.code, u.floor.level, u.modelSlot),
       enquiryCount: _count.enquiries,
@@ -252,10 +252,10 @@ export class ResidencesService {
 
     // §24.10 — `notes` is marked PRIVATE in the schema. It used to be returned
     // to every signed-in role, including VIEWER and CONTENT_MANAGER.
-    const canNotes = can(actor.role, 'residence.notes');
-    const canBuyers = can(actor.role, 'buyer.view');
-    const canResidents = can(actor.role, 'resident.view');
-    const canEnquiries = can(actor.role, 'enquiry.view');
+    const canNotes = can(actor, 'residence.notes');
+    const canBuyers = can(actor, 'buyer.view');
+    const canResidents = can(actor, 'resident.view');
+    const canEnquiries = can(actor, 'enquiry.view');
 
     return {
       ...unit,
@@ -487,7 +487,7 @@ export class ResidencesService {
 
     const archived = units.find((u) => u.archivedAt);
     if (archived) throw new ConflictException(`${archived.code} is archived. Restore it before changing its status.`);
-    if (!can(actor.role, 'residence.reverse-sale')) {
+    if (!can(actor, 'residence.reverse-sale')) {
       const reversal = units.find((u) => isSaleReversal(u.status, status));
       if (reversal) {
         throw new ForbiddenException(

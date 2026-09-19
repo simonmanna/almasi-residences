@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUp, Gauge, Plus, Shuffle, Trash2 } from 'lucide-react';
-import { ASSIGNMENT_MODE_LABEL, ASSIGNMENT_MODES, can as roleCan, CRM_TONES, ENQUIRY_STATUSES, STAGE_LABEL } from '@avida/types';
+import { ASSIGNMENT_MODE_LABEL, ASSIGNMENT_MODES, CRM_TONES, ENQUIRY_STATUSES, STAGE_LABEL } from '@avida/types';
 import { del, get, patch, post, put } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { refreshCrm, type Stage } from '../lib/crm';
@@ -190,7 +190,7 @@ function AssignmentEditor() {
   if (error) return <ErrorBox error={error} onRetry={refetch} />;
   if (!data) return <Skeleton h={200} />;
   const editable = can('crm.configure');
-  const sellers = (team ?? []).filter((t) => roleCan(t.role, 'enquiry.edit'));
+  const sellers = (team ?? []).filter((t) => t.worksLeads);
   const save = async () => {
     try {
       await put('/admin/crm/settings', { assignmentMode: mode, assignmentPool: pool });

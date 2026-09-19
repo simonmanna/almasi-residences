@@ -2,7 +2,7 @@ import { BadRequestException, Body, Controller, ForbiddenException, Get, HttpCod
 import type { LeadNoteKind, Prisma, TaskType } from '@avida/db';
 import { can, TASK_TYPE_LABEL, type TaskTypeValue } from '@avida/types';
 import { AuditService } from '../../common/audit.service.js';
-import { CrmService } from '../../common/crm.service.js';
+import { CrmService, type RecordPermission } from '../../common/crm.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
@@ -38,9 +38,11 @@ export class TasksController {
     private readonly crm: CrmService,
   ) {}
 
-  private scope(actor: Actor): Prisma.LeadTaskWhereInput {
-    if (can(actor.role, 'enquiry.view-all')) return {};
-    return { OR: [{ assignedToId: actor.id }, { createdById: actor.id }, { enquiry: this.crm.leadScope(actor) }] };
+  /** Tasks the person reaches: their own and their scope's, and those on leads their scope reaches. */
+  private scope(actor: Actor, p: RecordPermission = 'enquiry.view'): Prisma.LeadTaskWhereInput {
+    const ids = this.crm.ownerIds(actor, p);
+    if (ids === null) return {};
+    return { OR: [{ assignedToId: { in: ids } }, { createdById: actor.id }, { enquiry: this.crm.leadScope(actor, p) }] };
   }
 
   @Get()
@@ -50,7 +52,7 @@ export class TasksController {
     const now = new Date();
     const dayStart = new Date(now);
     dayStart.setHours(0, 0, 0, 0);
-    const who: Prisma.LeadTaskWhereInput = assignee === 'all' && can(actor.role, 'enquiry.view-all') ? {} : assignee && assignee !== 'me' && assignee !== 'all' ? { assignedToId: assignee === 'none' ? null : assignee } : enquiryId ? {} : { assignedToId: actor.id };
+    const who: Prisma.LeadTaskWhereInput = assignee === 'all' && can(actor, 'enquiry.view', 'TEAM') ? {} : assignee && assignee !== 'me' && assignee !== 'all' ? { assignedToId: assignee === 'none' ? null : assignee } : enquiryId ? {} : { assignedToId: actor.id };
     const where: Prisma.LeadTaskWhereInput = {
       AND: [
         { developmentId },
@@ -195,13 +197,13 @@ export class TasksController {
   // ─── Helpers ───────────────────────────────────────────────────────────
 
   private async owned(id: string, actor: Actor) {
-    const t = await this.prisma.client.leadTask.findFirst({ where: { AND: [{ id, developmentId: await this.dev.id() }, this.scope(actor)] } });
+    const t = await this.prisma.client.leadTask.findFirst({ where: { AND: [{ id, developmentId: await this.dev.id() }, this.scope(actor, 'enquiry.edit')] } });
     if (!t) throw new NotFoundException('No such task');
     return t;
   }
 
   private async lead(id: string, actor: Actor) {
-    const lead = await this.prisma.client.enquiry.findFirst({ where: { AND: [{ id, developmentId: await this.dev.id(), archivedAt: null }, this.crm.leadScope(actor)] }, select: { id: true, name: true, assignedToId: true } });
+    const lead = await this.prisma.client.enquiry.findFirst({ where: { AND: [{ id, developmentId: await this.dev.id(), archivedAt: null }, this.crm.leadScope(actor, 'enquiry.edit')] }, select: { id: true, name: true, assignedToId: true } });
     if (!lead) throw new NotFoundException('No such lead, or it belongs to another agent.');
     return lead;
   }
@@ -209,7 +211,7 @@ export class TasksController {
   /** A task goes to the lead's owner by default; giving one to someone else needs `enquiry.assign`. */
   private async assignee(actor: Actor, requested: string | null | undefined, fallback: string | null): Promise<string | null> {
     const target = requested === undefined ? (fallback ?? actor.id) : requested;
-    if (target && target !== actor.id && target !== fallback && !can(actor.role, 'enquiry.assign')) {
+    if (target && target !== actor.id && target !== fallback && !can(actor, 'enquiry.assign')) {
       throw new ForbiddenException('Only a sales manager can give tasks to other people.');
     }
     if (target) {

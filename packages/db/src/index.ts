@@ -24,3 +24,4 @@ function createClient(): PrismaClient {
 export const prisma: PrismaClient = globalForPrisma.prisma ?? createClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+export { ensureRoles, type RoleDefaults } from './roles.js';

@@ -585,9 +585,9 @@ export const tourScenes = [
  * a login without TOTP (§5.9), and the seed skips these when NODE_ENV=production.
  */
 export const seedAdmins = [
-  ['owner@example.invalid', 'Seed owner', 'SUPER_ADMIN'],
-  ['property@example.invalid', 'Seed property manager', 'PROPERTY_MANAGER'],
-  ['sales@example.invalid', 'Seed sales manager', 'SALES_MANAGER'],
-  ['content@example.invalid', 'Seed content manager', 'CONTENT_MANAGER'],
-  ['viewer@example.invalid', 'Seed viewer', 'VIEWER'],
+  ['owner@example.invalid', 'Seed owner', 'SUPER_ADMIN', 'IT'],
+  ['property@example.invalid', 'Seed property manager', 'PROPERTY_MANAGER', 'Property'],
+  ['sales@example.invalid', 'Seed sales manager', 'SALES_MANAGER', 'Sales'],
+  ['content@example.invalid', 'Seed content manager', 'CONTENT_MANAGER', 'Marketing'],
+  ['viewer@example.invalid', 'Seed viewer', 'VIEWER', null],
 ] as const;

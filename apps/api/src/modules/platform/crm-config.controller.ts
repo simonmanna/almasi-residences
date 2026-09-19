@@ -20,6 +20,7 @@ import {
 import type { FastifyReply } from 'fastify';
 import type { DocumentKind, EnquiryStatus, LeadSource, Prisma } from '@avida/db';
 import { can, DOCUMENT_KIND_LABEL, scoringRules, SCORING_RULES, type ScoringRuleSetting } from '@avida/types';
+import { AccessService } from '../../common/access.service.js';
 import { AuditService } from '../../common/audit.service.js';
 import { CrmService } from '../../common/crm.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
@@ -48,6 +49,7 @@ export class CrmConfigController {
     private readonly dev: CurrentDevelopment,
     private readonly audit: AuditService,
     private readonly crm: CrmService,
+    private readonly access: AccessService,
     private readonly storage: StorageService,
   ) {}
 
@@ -153,8 +155,8 @@ export class CrmConfigController {
     const warm = dto.warmThreshold ?? before.warmThreshold;
     if (warm >= hot) throw new BadRequestException('The warm threshold must be below the hot one.');
     if (dto.assignmentPool?.length) {
-      const users = await this.prisma.client.adminUser.findMany({ where: { id: { in: dto.assignmentPool }, active: true }, select: { role: true } });
-      if (users.length !== dto.assignmentPool.length || users.some((u) => !can(u.role, 'enquiry.edit'))) throw new BadRequestException('Everyone in the rotation must be an active user who can work leads.');
+      const able = await this.access.activeUsersWith('enquiry.edit', dto.assignmentPool);
+      if (able.length !== new Set(dto.assignmentPool).size) throw new BadRequestException('Everyone in the rotation must be an active user who can work leads.');
     }
     const after = await this.prisma.client.crmSettings.update({
       where: { developmentId },
@@ -238,7 +240,7 @@ export class CrmConfigController {
   @Post('views')
   async saveView(@Body() dto: SavedViewDto, @Req() req: AdminRequest) {
     const clean = Object.fromEntries(Object.entries(dto.filters).filter(([k, v]) => typeof v === 'string' && k.length <= 40 && v.length <= 200 && k !== 'page' && k !== 'open').slice(0, 30));
-    return this.prisma.client.savedView.create({ data: { userId: actorOf(req).id, scope: dto.scope, name: dto.name.trim(), filters: clean, shared: Boolean(dto.shared) && can(actorOf(req).role, 'enquiry.view-all') } });
+    return this.prisma.client.savedView.create({ data: { userId: actorOf(req).id, scope: dto.scope, name: dto.name.trim(), filters: clean, shared: Boolean(dto.shared) && can(actorOf(req), 'enquiry.view', 'ALL') } });
   }
 
   @Delete('views/:id')
@@ -292,7 +294,7 @@ export class CrmConfigController {
   async upload(@Param('id') id: string, @Req() req: AdminRequest) {
     const actor = actorOf(req);
     const developmentId = await this.dev.id();
-    const lead = await this.prisma.client.enquiry.findFirst({ where: { AND: [{ id, developmentId, archivedAt: null }, this.crm.leadScope(actor)] }, select: { id: true, name: true } });
+    const lead = await this.prisma.client.enquiry.findFirst({ where: { AND: [{ id, developmentId, archivedAt: null }, this.crm.leadScope(actor, 'enquiry.edit')] }, select: { id: true, name: true } });
     if (!lead) throw new NotFoundException('No such lead, or it belongs to another agent.');
     if (!req.isMultipart()) throw new BadRequestException('Send the file as multipart/form-data.');
     const fields: Record<string, string> = {};

@@ -59,7 +59,7 @@ export default function Activities() {
       <Card>
         <div className="toolbar">
           <Input style={{ maxWidth: 300 }} placeholder="Search text or lead name" value={q} onChange={(e) => setQ(e.target.value)} />
-          <Select className="sm" style={{ width: 'auto' }} value={s.authorId ?? ''} onChange={(e) => set({ authorId: e.target.value, page: 1 })} placeholder="Anyone" options={[{ value: 'me', label: 'Me' }, ...(can('enquiry.view-all') ? (team ?? []).map((t) => ({ value: t.id, label: t.name })) : [])]} />
+          <Select className="sm" style={{ width: 'auto' }} value={s.authorId ?? ''} onChange={(e) => set({ authorId: e.target.value, page: 1 })} placeholder="Anyone" options={[{ value: 'me', label: 'Me' }, ...(can('enquiry.view', 'TEAM') ? (team ?? []).map((t) => ({ value: t.id, label: t.name })) : [])]} />
           <Input type="date" className="sm" style={{ width: 'auto' }} value={s.from ?? ''} onChange={(e) => set({ from: e.target.value, page: 1 })} aria-label="From" />
           <Input type="date" className="sm" style={{ width: 'auto' }} value={s.to ?? ''} onChange={(e) => set({ to: e.target.value, page: 1 })} aria-label="To" />
         </div>

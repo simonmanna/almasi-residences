@@ -30,6 +30,7 @@ import {
   type LeadSourceValue,
   type LostReasonValue,
 } from '@avida/types';
+import { AccessService } from '../../common/access.service.js';
 import { AuditService } from '../../common/audit.service.js';
 import { CrmService, unitCard, type CrmActor } from '../../common/crm.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
@@ -74,7 +75,7 @@ type ListRow = Prisma.EnquiryGetPayload<{ include: typeof listInclude }>;
  * viewings, deals and reservations it led to.
  *
  * Agents see their own leads and the unassigned pool; managers see all
- * (`enquiry.view-all`). Every rule is enforced here, never by the admin UI.
+ * (the data scope of `enquiry.view` / `enquiry.edit`). Every rule is enforced here, never by the admin UI.
  */
 @Controller('admin/enquiries')
 @UseGuards(AdminGuard)
@@ -86,6 +87,7 @@ export class EnquiriesController {
     private readonly dev: CurrentDevelopment,
     private readonly audit: AuditService,
     private readonly crm: CrmService,
+    private readonly access: AccessService,
   ) {}
 
   private async scope(actor: CrmActor, archived = false): Promise<Prisma.EnquiryWhereInput> {
@@ -350,7 +352,7 @@ export class EnquiriesController {
       orderBy: { createdAt: 'desc' },
       take: 10,
     });
-    const visible = can(actor.role, 'enquiry.view-all');
+    const visible = can(actor, 'enquiry.view', 'ALL');
     return rows.map((r) => {
       const reasons = [
         email && r.email?.toLowerCase() === email ? 'Same email' : null,
@@ -483,7 +485,7 @@ export class EnquiriesController {
       },
       [...unitCards.map((u) => u.id), ...(lead.primaryUnitId ? [lead.primaryUnitId] : [])],
     );
-    const canDocs = can(actor.role, 'crm.documents');
+    const canDocs = can(actor, 'crm.documents');
     const { units, notes, viewings, _count, tasks, deals, documents, stageChanges, ...rest } = lead;
     const stageLabel = (sid: string | null, status: string | null) => (sid ? stages.find((s) => s.id === sid)?.label : null) ?? (status ? STAGE_LABEL[status] : null);
     return {
@@ -659,7 +661,7 @@ export class EnquiriesController {
   async bulk(@Body() dto: BulkLeadDto, @Req() req: AdminRequest) {
     const actor = actorOf(req);
     const developmentId = await this.dev.id();
-    const leads = await this.prisma.client.enquiry.findMany({ where: { AND: [{ id: { in: dto.ids }, developmentId }, this.crm.leadScope(actor)] }, select: { id: true, developmentId: true, status: true, stageId: true, contactedAt: true, assignedToId: true, name: true, tags: true } });
+    const leads = await this.prisma.client.enquiry.findMany({ where: { AND: [{ id: { in: dto.ids }, developmentId }, this.crm.leadScope(actor, 'enquiry.edit')] }, select: { id: true, developmentId: true, status: true, stageId: true, contactedAt: true, assignedToId: true, name: true, tags: true } });
     if (leads.length !== dto.ids.length) throw new NotFoundException('Some leads were not found, or belong to another agent.');
     const now = new Date();
     let summary = '';
@@ -804,8 +806,9 @@ export class EnquiriesController {
 
   // ─── Helpers ───────────────────────────────────────────────────────────
 
+  /** A lead the person may change — the `enquiry.edit` scope, which can be narrower than what they may read. */
   private async owned(id: string, actor: CrmActor) {
-    const lead = await this.prisma.client.enquiry.findFirst({ where: { AND: [{ id, developmentId: await this.dev.id(), archivedAt: null }, this.crm.leadScope(actor)] }, include: { units: true } });
+    const lead = await this.prisma.client.enquiry.findFirst({ where: { AND: [{ id, developmentId: await this.dev.id(), archivedAt: null }, this.crm.leadScope(actor, 'enquiry.edit')] }, include: { units: true } });
     if (!lead) throw new NotFoundException('No such lead, or it belongs to another agent.');
     return lead;
   }
@@ -816,7 +819,7 @@ export class EnquiriesController {
    * is never taken from the client on trust: it is checked against the session.
    */
   private async resolveAssignee(actor: Actor, requested: string | null | undefined, current: string | null, creating: boolean): Promise<string | null> {
-    const mayAssign = can(actor.role, 'enquiry.assign');
+    const mayAssign = can(actor, 'enquiry.assign');
     if (requested === undefined) return creating && !mayAssign ? actor.id : (current ?? null);
     if (requested === current) return current;
     const selfClaim = requested === actor.id && (current === null || creating);
@@ -827,9 +830,9 @@ export class EnquiriesController {
   }
 
   private async assertAssignable(userId: string) {
-    const u = await this.prisma.client.adminUser.findUnique({ where: { id: userId }, select: { active: true, role: true } });
+    const u = await this.prisma.client.adminUser.findUnique({ where: { id: userId }, select: { active: true } });
     if (!u?.active) throw new BadRequestException('That team member does not exist or is inactive.');
-    if (!can(u.role, 'enquiry.edit')) throw new BadRequestException('That person’s role cannot work leads.');
+    if (!(await this.access.userCan(userId, 'enquiry.edit'))) throw new BadRequestException('That person’s role cannot work leads.');
   }
 
   private async assertRefs(developmentId: string, dto: { unitIds?: string[]; primaryUnitId?: string | null; typologyId?: string | null; campaignId?: string | null }) {

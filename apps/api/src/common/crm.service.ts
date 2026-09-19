@@ -3,6 +3,8 @@ import type { EnquiryStatus, LeadNoteKind, Prisma, PipelineStage } from '@avida/
 import {
   can,
   computeLeadScore,
+  scopeOf,
+  scopeRank,
   DEFAULT_PIPELINE,
   isClosedStage,
   LEAD_SOURCE_LABEL,
@@ -11,16 +13,28 @@ import {
   temperatureFor,
   type LeadSourceValue,
   type ScoreBreakdown,
+  type Grants,
+  type Permission,
   type ScoringRuleSetting,
 } from '@avida/types';
+import { AccessService } from './access.service.js';
 import { PrismaService } from './prisma.service.js';
 
 type Tx = Prisma.TransactionClient;
 
+/** What a scope filter needs to know about the person asking. */
 export interface CrmActor {
   id: string;
-  role: string;
+  grants: Grants;
+  teamIds?: string[];
+  departmentIds?: string[];
 }
+
+/** The permissions whose data scope decides which CRM records a person reaches. */
+export type RecordPermission = Extract<Permission, 'enquiry.view' | 'enquiry.edit' | 'deal.edit'>;
+
+/** Matches nothing: for a NONE scope reaching a filter. */
+const NOTHING = { id: { in: [] as string[] } };
 
 /** The lead columns a stage move needs. */
 export interface MovableLead {
@@ -57,13 +71,48 @@ export const unitCard = {
 export class CrmService {
   private readonly seeded = new Set<string>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly access: AccessService,
+  ) {}
 
-  // ─── Visibility ────────────────────────────────────────────────────────
+  // ─── Visibility (data scopes) ──────────────────────────────────────────
 
-  /** Agents see their own leads and the unassigned pool; managers see every lead. */
-  leadScope(actor: CrmActor): Prisma.EnquiryWhereInput {
-    return can(actor.role, 'enquiry.view-all') ? {} : { OR: [{ assignedToId: actor.id }, { assignedToId: null }] };
+  /**
+   * The people whose records a scope reaches: null means everyone (ALL), an
+   * empty list means no one (NONE).
+   */
+  ownerIds(actor: CrmActor, p: RecordPermission = 'enquiry.view'): string[] | null {
+    const s = scopeOf(actor, p);
+    if (s === 'ALL') return null;
+    if (s === 'NONE') return [];
+    if (s === 'DEPARTMENT') return [actor.id, ...(actor.departmentIds ?? [])];
+    if (s === 'TEAM') return [actor.id, ...(actor.teamIds ?? [])];
+    return [actor.id];
+  }
+
+  /**
+   * Which leads a person reaches through a permission. OWN: leads they own or
+   * created. ASSIGNED adds the unassigned pool, so agents can pick leads up;
+   * TEAM and DEPARTMENT add those people's leads; ALL is every lead. Reads use
+   * `enquiry.view`, changes `enquiry.edit` — so a lead can be visible to
+   * someone who may not change it.
+   */
+  leadScope(actor: CrmActor, p: RecordPermission = 'enquiry.view'): Prisma.EnquiryWhereInput {
+    const s = scopeOf(actor, p);
+    if (s === 'ALL') return {};
+    if (s === 'NONE') return NOTHING;
+    const ids = this.ownerIds(actor, p)!;
+    return { OR: [{ assignedToId: { in: ids } }, { createdById: actor.id }, ...(scopeRank(s) >= scopeRank('ASSIGNED') ? [{ assignedToId: null }] : [])] };
+  }
+
+  /** Deals the scope reaches by agent or by the lead's owner, and those the person opened. */
+  dealScope(actor: CrmActor, p: RecordPermission = 'enquiry.view'): Prisma.DealWhereInput {
+    const s = scopeOf(actor, p);
+    if (s === 'ALL') return {};
+    if (s === 'NONE') return NOTHING;
+    const ids = this.ownerIds(actor, p)!;
+    return { OR: [{ agentId: { in: ids } }, { enquiry: { assignedToId: { in: ids } } }, { createdById: actor.id }] };
   }
 
   // ─── Pipeline ──────────────────────────────────────────────────────────
@@ -224,11 +273,12 @@ export class CrmService {
     const settings = await this.settings(developmentId);
     if (settings.assignmentMode === 'MANUAL') return null;
     const users = await this.prisma.client.adminUser.findMany({
-      where: { active: true, ...(settings.assignmentPool.length ? { id: { in: settings.assignmentPool } } : { role: { in: ['SALES_AGENT', 'SALES_MANAGER'] } }) },
-      select: { id: true, role: true },
+      where: { active: true, ...(settings.assignmentPool.length ? { id: { in: settings.assignmentPool } } : { role: { key: { in: ['SALES_AGENT', 'SALES_MANAGER'] } } }) },
+      select: { id: true },
       orderBy: { createdAt: 'asc' },
     });
-    const pool = users.filter((u) => can(u.role, 'enquiry.edit'));
+    const grants = await this.access.grantsForUsers(users.map((u) => u.id));
+    const pool = users.filter((u) => can({ grants: grants.get(u.id) ?? {} }, 'enquiry.edit'));
     if (!pool.length) return null;
     if (settings.assignmentMode === 'ROUND_ROBIN') {
       // Increment first, so two leads arriving together never take the same turn.
@@ -246,9 +296,9 @@ export class CrmService {
 
   // ─── In-app notifications ──────────────────────────────────────────────
 
-  async managerIds(): Promise<string[]> {
-    const rows = await this.prisma.client.adminUser.findMany({ where: { active: true, role: { in: ['SUPER_ADMIN', 'SALES_MANAGER'] } }, select: { id: true } });
-    return rows.map((r) => r.id);
+  /** Who hears about sales events: active people who may assign leads (managers), whatever their role is called. */
+  managerIds(): Promise<string[]> {
+    return this.access.activeUsersWith('enquiry.assign');
   }
 
   /** One bell entry per person; never to the person who caused it. A dedupe key makes a repeat a no-op. */

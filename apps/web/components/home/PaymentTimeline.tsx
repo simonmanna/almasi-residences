@@ -21,7 +21,7 @@ export function PaymentTimeline({
   milestones,
   handover,
   id = 'payment',
-  ground = 'quiet',
+  ground = 'night',
 }: {
   milestones: MilestoneDto[];
   /** "Q2 2028", or null when the property has no handover date. */
@@ -74,8 +74,8 @@ export function PaymentTimeline({
       <div className="container">
         <header className={styles.head}>
           <div>
-            <p className={`kicker-lg ${styles.kicker}`}>Payment plan</p>
-            <RevealText as="h2" id={`${id}-title`} className="title-sm" lines={['Pay as it rises.']} />
+            <p className={`kicker-lg ${styles.kicker}`}>Payment Plan</p>
+            <RevealText as="h2" id={`${id}-title`} className="title-sm" lines={['Pay As It Rises.']} />
           </div>
           <div className={styles.aside}>
             {/* Counted from the plan itself: this sentence once said "four" above a plan the admin could change. */}

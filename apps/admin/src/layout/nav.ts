@@ -1,5 +1,7 @@
 import {
   Activity,
+  BadgeCheck,
+  UsersRound,
   BarChart3,
   Contact,
   KeyRound,
@@ -43,7 +45,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
-import type { Permission } from '@avida/types';
+import type { Permission, PermissionScope } from '@avida/types';
 
 export interface NavItem {
   label: string;
@@ -51,6 +53,8 @@ export interface NavItem {
   icon: LucideIcon;
   /** Hidden from roles without this permission; the API would refuse them anyway. */
   needs?: Permission;
+  /** …held at least at this data scope (a team view needs TEAM or wider). */
+  min?: PermissionScope;
   /** Page title and subtitle in the top bar. */
   title?: string;
   sub?: string;
@@ -103,10 +107,11 @@ export const NAV: NavGroup[] = [
       { label: 'Activities', to: '/crm/activities', icon: Activity, needs: 'enquiry.view', sub: 'Every call, message, meeting and change' },
       { label: 'Viewings', to: '/viewings', icon: CalendarCheck, needs: 'enquiry.view', sub: 'Schedule appointments and record outcomes' },
       { label: 'Deals', to: '/crm/deals', icon: Handshake, needs: 'enquiry.view', sub: 'Negotiations, reservations, contracts and sales' },
+      { label: 'Approvals', to: '/approvals', icon: BadgeCheck, needs: 'enquiry.view', sub: 'Discounts, reservations and sales waiting for a decision' },
       { label: 'Reservations', to: '/reservations', icon: KeyRound, sub: 'Holds, deposits, expiry and conversion to sale' },
       { label: 'Contacts', to: '/buyers', icon: Contact, needs: 'buyer.view', sub: 'Clients, buyers and owners' },
       { label: 'Campaigns', to: '/crm/campaigns', icon: Megaphone, needs: 'enquiry.view', sub: 'Marketing campaigns and what they sold' },
-      { label: 'Team', to: '/crm/team', icon: Users, needs: 'enquiry.view-all', title: 'Sales team', sub: 'Workload, overdue work and pipeline by person' },
+      { label: 'Team', to: '/crm/team', icon: Users, needs: 'enquiry.view', min: 'TEAM', title: 'Sales team', sub: 'Workload, overdue work and pipeline by person' },
       { label: 'Reports', to: '/crm/reports', icon: BarChart3, needs: 'reports.view', title: 'CRM reports', sub: 'Sources, conversion, speed and lost reasons' },
       { label: 'CRM settings', to: '/crm/settings', icon: SlidersHorizontal, needs: 'enquiry.view', sub: 'Pipeline stages, scoring and assignment' },
     ],
@@ -139,11 +144,12 @@ export const NAV: NavGroup[] = [
     items: [{ label: 'Sales overview', to: '/sales', icon: BarChart3, sub: 'Value sold, reserved and still to sell' }],
   },
   {
-    title: 'System',
+    title: 'Settings',
     items: [
-      { label: 'Users & roles', to: '/users', icon: ShieldCheck, needs: 'user.manage', sub: 'Who can do what' },
-      { label: 'Activity / audit log', to: '/audit', icon: History, needs: 'audit.view', sub: 'Every change, who made it and when' },
-      { label: 'Settings', to: '/settings', icon: Settings, sub: 'Your account and the platform' },
+      { label: 'Users & access', to: '/users', icon: UsersRound, needs: 'user.view', title: 'Users & access', sub: 'People, their roles and what they can do' },
+      { label: 'Roles & permissions', to: '/settings/roles', icon: ShieldCheck, needs: 'user.view', title: 'Roles & permissions', sub: 'Reusable roles and what each may do' },
+      { label: 'Audit log', to: '/audit', icon: History, needs: 'audit.view', sub: 'Every change, who made it and when' },
+      { label: 'Account & security', to: '/settings', icon: Settings, sub: 'Your account, password and two-factor sign-in' },
     ],
   },
 ];

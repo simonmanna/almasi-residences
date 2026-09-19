@@ -15,7 +15,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { Prisma } from '@avida/db';
-import { can, contentPageDef, PERMISSION_LABEL, type Permission } from '@avida/types';
+import { can, contentPageDef, PERMISSION_LABEL, type AccessSubject, type Permission } from '@avida/types';
 import { IsDateString, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { AuditService } from '../../common/audit.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
@@ -173,12 +173,12 @@ export class PublishingController {
     const [drafts, archived] = await Promise.all([
       Promise.all(
         Object.entries(ENTITIES).map(async ([key, def]) =>
-          (await this.delegate(def).findMany({ where: { ...def.scopeWhere(developmentId), published: false, archivedAt: null }, take: 50 })).map((r) => this.item(key, def, r, actor.role)),
+          (await this.delegate(def).findMany({ where: { ...def.scopeWhere(developmentId), published: false, archivedAt: null }, take: 50 })).map((r) => this.item(key, def, r, actor)),
         ),
       ),
       Promise.all(
         Object.entries(ENTITIES).map(async ([key, def]) =>
-          (await this.delegate(def).findMany({ where: { ...def.scopeWhere(developmentId), archivedAt: { not: null } }, orderBy: { archivedAt: 'desc' }, take: 100 })).map((r) => this.item(key, def, r, actor.role)),
+          (await this.delegate(def).findMany({ where: { ...def.scopeWhere(developmentId), archivedAt: { not: null } }, orderBy: { archivedAt: 'desc' }, take: 100 })).map((r) => this.item(key, def, r, actor)),
         ),
       ),
     ]);
@@ -201,7 +201,7 @@ export class PublishingController {
       archived: archived.flat(),
       schedules: schedules.map((s) => ({ ...s, requestedBy: users.get(s.requestedById) ?? 'Unknown user' })),
       approvals: approvals.map((a) => ({ ...a, requestedBy: users.get(a.requestedById) ?? 'Unknown user' })),
-      canPublish: can(actor.role, 'content.publish'),
+      canPublish: can(actor, 'content.publish'),
     };
   }
 
@@ -213,7 +213,7 @@ export class PublishingController {
     if (!def && entity !== 'page') throw new NotFoundException('That cannot be scheduled.');
     const actor = actorOf(req);
     const permission = def?.publish ?? 'content.publish';
-    if (!can(actor.role, permission)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[permission].toLowerCase()}.`);
+    if (!can(actor, permission)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[permission].toLowerCase()}.`);
     const runAt = new Date(dto.runAt);
     if (runAt.getTime() <= Date.now()) throw new BadRequestException('Choose a future time.');
     const developmentId = await this.dev.id();
@@ -244,7 +244,7 @@ export class PublishingController {
     if (!def && entity !== 'page') throw new NotFoundException('That cannot be submitted for approval.');
     const actor = actorOf(req);
     const permission = def?.edit ?? 'content.edit';
-    if (!can(actor.role, permission)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[permission].toLowerCase()}.`);
+    if (!can(actor, permission)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[permission].toLowerCase()}.`);
     const developmentId = await this.dev.id();
     const row = def
       ? await this.delegate(def).findFirst({ where: { id, ...def.scopeWhere(developmentId) } })
@@ -271,7 +271,7 @@ export class PublishingController {
     return { ok: true };
   }
 
-  private item(key: string, def: EntityDef, r: Record<string, unknown>, role: string) {
+  private item(key: string, def: EntityDef, r: Record<string, unknown>, role: AccessSubject) {
     return {
       entity: key,
       entityLabel: def.label,
@@ -296,7 +296,7 @@ export class PublishingController {
     if (!['publish', 'unpublish', 'archive', 'restore'].includes(action)) throw new BadRequestException('Unknown action.');
     const actor = actorOf(req);
     const need = action === 'publish' || action === 'unpublish' ? def.publish : def.edit;
-    if (!can(actor.role, need)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[need].toLowerCase()}.`);
+    if (!can(actor, need)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[need].toLowerCase()}.`);
 
     const developmentId = await this.dev.id();
     const d = this.delegate(def);
@@ -330,7 +330,7 @@ export class PublishingController {
     const def = ENTITIES[entity];
     if (!def) throw new NotFoundException('That cannot be deleted here.');
     const actor = actorOf(req);
-    if (!can(actor.role, def.edit)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[def.edit].toLowerCase()}.`);
+    if (!can(actor, def.edit)) throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[def.edit].toLowerCase()}.`);
     if (!def.deletable) throw new ConflictException(`A ${def.label.toLowerCase()} is deleted from its own screen, where what depends on it is checked.`);
     const developmentId = await this.dev.id();
     const d = this.delegate(def);

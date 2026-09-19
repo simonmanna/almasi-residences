@@ -171,7 +171,7 @@ export function ResidenceExplorer({
 
   return (
     <>
-      <header className={`container ground-band ${styles.header}`} data-ground="stone">
+      <header className={`container ground-band ${styles.header}`} data-ground="night" data-nav-over>
         <h1 className={`display ${styles.title}`}>Residences</h1>
         <p className={`small ${styles.tally}`}>
           <span className="tabular">{summary.total}</span> residences ·{' '}

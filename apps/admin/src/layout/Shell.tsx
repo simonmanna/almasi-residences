@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Bell, ChevronDown, KeyRound, LogOut, Menu as MenuIcon, Search, Settings } from 'lucide-react';
-import { ROLE_LABEL, type AdminRole } from '@avida/types';
 import { get, post, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { ago, initials } from '../lib/format';
@@ -211,7 +210,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </Link>
         <nav aria-label="Admin">
           {NAV.map((group) => {
-            const items = group.items.filter((i) => !i.needs || can(i.needs));
+            const items = group.items.filter((i) => !i.needs || can(i.needs, i.min));
             if (!items.length) return null;
             const closed = collapsed[group.title] && !items.some((i) => i === current);
             return (
@@ -252,7 +251,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 <span className="avatar">{initials(user!.name)}</span>
                 <div>
                   <strong>{user!.name}</strong>
-                  <span>{ROLE_LABEL[user!.role as AdminRole] ?? user!.role}</span>
+                  <span>{user!.roleName ?? user!.role}</span>
                 </div>
                 <ChevronDown size={16} className="muted" />
               </button>

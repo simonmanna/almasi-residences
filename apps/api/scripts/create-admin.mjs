@@ -5,7 +5,7 @@
  * enrol itself under Settings, so this is for the first account and for
  * recovering one nobody can sign in to.
  *
- *   node scripts/create-admin.mjs <email> "<name>" [OWNER|SALES]
+ *   node scripts/create-admin.mjs <email> "<name>" [ROLE_KEY]   (default SUPER_ADMIN)
  *
  * Prints the generated password and an otpauth:// URI: add it to an
  * authenticator app (most accept the URI pasted, or render it as a QR code).
@@ -17,11 +17,13 @@ import { generateSecret, generateURI } from 'otplib';
 import db from '@avida/db';
 
 const { prisma } = db;
-const ROLES = Object.values(db.AdminRole ?? { OWNER: 'OWNER', SALES: 'SALES' });
-
-const [emailArg, name, role = 'SALES'] = process.argv.slice(2);
-if (!emailArg || !name || !ROLES.includes(role)) {
-  console.error(`usage: create-admin.mjs <email> "<name>" [${ROLES.join('|')}]`);
+const [emailArg, name, role = 'SUPER_ADMIN'] = process.argv.slice(2);
+// Roles are rows now; the API creates the system ones on its first start.
+const roleRow = await prisma.role.findUnique({ where: { key: role }, select: { id: true } });
+if (!emailArg || !name || !roleRow) {
+  const keys = (await prisma.role.findMany({ select: { key: true }, orderBy: { position: 'asc' } })).map((r) => r.key);
+  console.error(`usage: create-admin.mjs <email> "<name>" [${keys.join('|') || 'start the API once to create the roles'}]`);
+  await prisma.$disconnect();
   process.exit(2);
 }
 
@@ -31,7 +33,9 @@ const totpSecret = generateSecret();
 const passwordHash = await hash(password);
 const reset = {
   name,
-  role,
+  roleId: roleRow.id,
+  status: 'ACTIVE',
+  active: true,
   passwordHash,
   totpSecret,
   totpEnrolledAt: new Date(),

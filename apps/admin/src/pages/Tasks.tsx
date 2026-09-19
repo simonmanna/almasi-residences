@@ -58,7 +58,7 @@ export default function Tasks() {
       <Card>
         <div className="toolbar">
           <Segmented value={status} onChange={(v) => set({ status: v === 'open' ? null : v })} options={[{ value: 'open', label: 'Open' }, { value: 'done', label: 'Done (14 days)' }]} />
-          {can('enquiry.view-all') && <Select className="sm" style={{ width: 'auto' }} value={s.assignee ?? ''} onChange={(e) => set({ assignee: e.target.value })} placeholder="My tasks" options={[{ value: 'all', label: 'Everyone' }, { value: 'none', label: 'Unassigned' }, ...(team ?? []).map((t) => ({ value: t.id, label: t.name }))]} />}
+          {can('enquiry.view', 'TEAM') && <Select className="sm" style={{ width: 'auto' }} value={s.assignee ?? ''} onChange={(e) => set({ assignee: e.target.value })} placeholder="My tasks" options={[{ value: 'all', label: 'Everyone' }, { value: 'none', label: 'Unassigned' }, ...(team ?? []).map((t) => ({ value: t.id, label: t.name }))]} />}
           <Select className="sm" style={{ width: 'auto' }} value={s.type ?? ''} onChange={(e) => set({ type: e.target.value })} placeholder="Any type" options={TASK_TYPES.map((t) => ({ value: t, label: TASK_TYPE_LABEL[t] }))} />
         </div>
         {error && <ErrorBox error={error} onRetry={refetch} />}

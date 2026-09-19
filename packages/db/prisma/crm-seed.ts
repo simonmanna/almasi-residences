@@ -10,8 +10,8 @@
  *   pnpm --filter @avida/db seed:crm
  */
 import type { EnquiryStatus, LeadNoteKind, LeadSource, Prisma, TaskType } from '../generated/client/client.js';
-import { DEFAULT_PIPELINE } from '@avida/types';
-import { prisma } from '../src/index.js';
+import { DEFAULT_PIPELINE, DEFAULT_ROLES } from '@avida/types';
+import { ensureRoles, prisma } from '../src/index.js';
 
 const DAY = 86_400_000;
 const now = Date.now();
@@ -69,11 +69,14 @@ async function main() {
   }
 
   // ── Team ──
-  const manager = await prisma.adminUser.findFirstOrThrow({ where: { role: 'SALES_MANAGER' } });
+  await ensureRoles(prisma, DEFAULT_ROLES);
+  const manager = await prisma.adminUser.findFirstOrThrow({ where: { role: { key: 'SALES_MANAGER' } } });
   const passwordHash = manager.passwordHash;
   const team = [];
-  for (const [email, name, role] of [['john.agent@example.invalid', 'John Mugabo', 'SALES_AGENT'], ['mary.agent@example.invalid', 'Mary Uwera', 'SALES_AGENT'], ['marketing@example.invalid', 'Seed marketing', 'MARKETING']] as const) {
-    team.push(await prisma.adminUser.upsert({ where: { email }, create: { email, name, role, passwordHash }, update: {} }));
+  for (const [email, name, role, department] of [['john.agent@example.invalid', 'John Mugabo', 'SALES_AGENT', 'Sales'], ['mary.agent@example.invalid', 'Mary Uwera', 'SALES_AGENT', 'Sales'], ['marketing@example.invalid', 'Seed marketing', 'MARKETING', 'Marketing']] as const) {
+    const roleId = (await prisma.role.findUniqueOrThrow({ where: { key: role }, select: { id: true } })).id;
+    // Agents report to the seeded sales manager, so a TEAM scope has a team to see.
+    team.push(await prisma.adminUser.upsert({ where: { email }, create: { email, name, roleId, department, passwordHash, managerId: role === 'SALES_AGENT' ? manager.id : null }, update: {} }));
   }
   const [john, mary] = team;
   const agents = [john!, mary!, manager];

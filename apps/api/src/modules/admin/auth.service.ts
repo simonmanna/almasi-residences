@@ -3,7 +3,8 @@ import { hash, verify } from '@node-rs/argon2';
 // otplib 13's functional API ships with its crypto and base32 plugins wired
 // in; a bare `new TOTP()` has neither and throws on every verify.
 import { generateSecret, generateURI, verify as verifyTotp } from 'otplib';
-import { ROLE_PERMISSIONS, type AdminRole } from '@avida/types';
+import { canSignIn, PERMISSIONS, scopeOf } from '@avida/types';
+import { AccessService, principalSelect } from '../../common/access.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { SessionService } from './session.service.js';
@@ -20,6 +21,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly sessions: SessionService,
     private readonly dev: CurrentDevelopment,
+    private readonly access: AccessService,
   ) {}
 
   static hashPassword(password: string): Promise<string> {
@@ -29,12 +31,13 @@ export class AuthService {
   async login(email: string, password: string, totp?: string) {
     const user = await this.prisma.client.adminUser.findUnique({
       where: { email: email.toLowerCase() },
+      include: { role: { select: { key: true } } },
     });
 
     // Same message and roughly the same work either way — a different response
     // for "no such account" tells an attacker which emails are staff. A
     // deactivated account is answered exactly like a missing one.
-    if (!user || !user.active) {
+    if (!user || !user.active || !canSignIn(user.status)) {
       await hash('decoy-work-to-equalise-timing');
       throw new UnauthorizedException('Those details do not match an account');
     }
@@ -75,14 +78,15 @@ export class AuthService {
 
     await this.prisma.client.adminUser.update({
       where: { id: user.id },
-      data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() },
+      // An invited account becomes active the first time it signs in.
+      data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date(), lastActiveAt: new Date(), ...(user.status === 'INVITED' ? { status: 'ACTIVE' } : {}) },
     });
 
-    const { token, csrf } = this.sessions.issue(user.id, user.role, user.tokenVersion);
+    const { token, csrf } = this.sessions.issue(user.id, user.role.key, user.tokenVersion);
     return {
       token,
       csrf,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role.key },
     };
   }
 
@@ -138,15 +142,27 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.prisma.client.adminUser.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true, role: true, lastLoginAt: true, totpEnrolledAt: true, recoveryCodeHashes: true },
+      select: { ...principalSelect, email: true, lastLoginAt: true, totpEnrolledAt: true, recoveryCodeHashes: true, jobTitle: true, role: { select: { key: true, name: true, description: true, active: true, updatedAt: true } } },
     });
     if (!user) throw new UnauthorizedException('Sign in to continue');
-    const { recoveryCodeHashes, ...rest } = user;
+    const grants = await this.access.grantsOf(user);
     return {
-      ...rest,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      jobTitle: user.jobTitle,
+      department: user.department,
+      status: user.status,
+      role: user.role.key,
+      roleName: user.role.name,
+      roleDescription: user.role.description,
+      lastLoginAt: user.lastLoginAt,
       twoFactor: user.totpEnrolledAt !== null,
-      recoveryCodesLeft: recoveryCodeHashes.length,
-      permissions: ROLE_PERMISSIONS[user.role as AdminRole] ?? [],
+      recoveryCodesLeft: user.recoveryCodeHashes.length,
+      // What the admin uses to decide what to show. The API re-resolves it on every request.
+      grants,
+      permissions: PERMISSIONS.filter((p) => scopeOf({ grants }, p) !== 'NONE'),
+      overrides: user.overrides.length,
     };
   }
 

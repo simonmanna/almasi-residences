@@ -28,6 +28,7 @@ import { ResidencesService } from './residences.service.js';
 import { ResidentsController } from './residents.controller.js';
 import { RoomsController } from './rooms.controller.js';
 import { FeaturesController, TypesController } from './types.controller.js';
+import { RolesController } from './roles.controller.js';
 import { UsersController } from './users.controller.js';
 
 /** The admin platform (D-33): every route under /api/v1/admin except sign-in. */
@@ -51,6 +52,7 @@ import { UsersController } from './users.controller.js';
     ContentController,
     LandmarksController,
     UsersController,
+    RolesController,
     AuditController,
     PresentationController,
     PublishingController,

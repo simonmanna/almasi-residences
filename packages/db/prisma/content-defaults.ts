@@ -21,12 +21,12 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
       ctaPrimaryHref: '/residences',
       ctaSecondaryLabel: 'Take the 3D tour',
       ctaSecondaryHref: '/tour',
-      introTitle: 'One distinct address.',
+      introTitle: 'One Distinct Address.',
       introBody:
         'Almasi is Swahili for diamond — stone, walnut and glass on a quiet rise in Kimihurura, with deep balconies and a whole floor of amenities.',
       residencesKicker: 'Residences',
-      residencesTitle: '{types} ways|to live here.',
-      storyTitle: 'The experience',
+      residencesTitle: '{types} Ways|To Live Here.',
+      storyTitle: 'The Experience',
       amenitiesKicker: 'Amenities',
       // Title and lede intentionally empty — the Amenities section on the home
       // page renders no heading or lead copy (the component shows nothing for
@@ -36,11 +36,11 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
       penthouseKicker: 'The penthouses',
       penthouseTitle: 'The top floor,|in {penthouse.countWords} residences.',
       penthouseLede: 'From {penthouse.areaMin} to {penthouse.areaMax} m², glazed on three sides above the treetops.',
-      filmKicker: 'The film',
-      filmTitle: 'Almasi, an architectural film',
+      filmKicker: 'The Film',
+      filmTitle: 'Almasi, An Architectural Film',
       filmCta: 'Play the film',
       progressKicker: 'Construction',
-      progressTitle: 'Rising in|Kimihurura.',
+      progressTitle: 'Rising In|Kimihurura.',
     },
   },
   locationSection: {
@@ -139,7 +139,7 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
       heroKicker: 'Contact',
       heroTitle: 'Enquire about|Almasi',
       heroLede: 'Ask about a residence, arrange a viewing or discuss a reservation. The sales team replies within one working day.',
-      enquireTitle: 'Arrange a private viewing.',
+      enquireTitle: 'Arrange A Private Viewing.',
       enquireBody:
         'Viewings are by appointment with the sales team. Tell us which residences interest you and when suits you, and we will reply within one working day.',
       responseTime: 'We reply within one working day.',

@@ -27,7 +27,7 @@ export function LocationExperience({
   lede,
   note,
   id = 'location',
-  ground = 'stone',
+  ground = 'quiet',
 }: {
   landmarks: LandmarkDto[];
   latitude: number;

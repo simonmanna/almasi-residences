@@ -68,7 +68,7 @@
 
 [data-theme="blue"] [data-ground="quiet"] {
   --surface:            #F7FAFC;
-  --surface-raised:     #FFFFFF;
+  --surface-raised:     #FBFDFE;
   --surface-sunk:       #EAF0F5;
   --ink:                #11202E;
   --ink-muted:          #4C6274;
@@ -189,8 +189,8 @@
 }
 
 [data-theme="sky"] [data-ground="quiet"] {
-  --surface:            #FFFFFF;
-  --surface-raised:     #FFFFFF;
+  --surface:            #F5FAFE;
+  --surface-raised:     #FCFEFF;
   --surface-sunk:       #EDF5FC;
   --ink:                #15375E;
   --ink-muted:          #48647F;

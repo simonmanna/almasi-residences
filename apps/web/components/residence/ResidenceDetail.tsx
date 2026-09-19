@@ -221,7 +221,7 @@ export function ResidenceDetail({
       </section>
 
       {/* ─── Plan and position ───────────────────────────────────────── */}
-      <section ref={planRef} className={`section ${styles.plans}`} data-ground="stone" aria-labelledby="plan-title">
+      <section ref={planRef} className={`section ${styles.plans}`} data-ground="night" aria-labelledby="plan-title">
         <div className="container">
           <header className={styles.head}>
             <div>
@@ -406,7 +406,7 @@ export function ResidenceDetail({
 
       {/* ─── Alternatives ────────────────────────────────────────────── */}
       {similar.length > 0 && (
-        <section className={`section ${styles.similarSection}`} data-ground="stone" aria-labelledby="similar-title">
+        <section className={`section ${styles.similarSection}`} data-ground="night" aria-labelledby="similar-title">
           <div className="container">
             <h2 id="similar-title" className="h3">
               {r.publicStatus === 'available' ? 'Similar residences, available now' : 'Available instead'}

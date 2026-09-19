@@ -27,7 +27,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 import {
-  ADMIN_ROLES,
+  PERMISSION_SCOPES,
+  PERMISSIONS,
   BUYER_STAGES,
   CONSTRUCTION_STATUSES,
   DEVELOPMENT_STATUSES,
@@ -526,16 +527,75 @@ export class CreateLandmarkDto extends UpdateLandmarkDto {
 // ─── Users ───────────────────────────────────────────────────────────────
 
 export class CreateUserDto {
-  @IsEmail() email!: string;
-  @IsString() @Length(1, 120) name!: string;
-  @IsIn(ADMIN_ROLES) role!: string;
+  @IsEmail() @MaxLength(200) email!: string;
+  /** Either `name`, or first and last name (joined). */
+  @IsOptional() @IsString() @Length(1, 120) name?: string;
+  @IsOptional() @IsString() @Length(1, 60) firstName?: string;
+  @IsOptional() @IsString() @MaxLength(60) lastName?: string;
+  /** Role id; `role` (a role key) is still accepted from older clients. */
+  @IsOptional() @IsString() roleId?: string;
+  @IsOptional() @IsString() @MaxLength(60) role?: string;
+  @IsOptional() @IsString() @MaxLength(40) phone?: string | null;
+  @IsOptional() @IsString() @MaxLength(60) department?: string | null;
+  @IsOptional() @IsString() @MaxLength(80) jobTitle?: string | null;
+  @IsOptional() @IsString() managerId?: string | null;
+  @IsOptional() @IsIn(['ACTIVE', 'INVITED']) status?: 'ACTIVE' | 'INVITED';
   @IsOptional() @IsString() @MinLength(12) @MaxLength(200) password?: string;
 }
 
 export class UpdateUserDto {
   @IsOptional() @IsString() @Length(1, 120) name?: string;
-  @IsOptional() @IsIn(ADMIN_ROLES) role?: string;
+  @IsOptional() @IsString() roleId?: string;
+  @IsOptional() @IsString() @MaxLength(60) role?: string;
+  @IsOptional() @IsString() @MaxLength(40) phone?: string | null;
+  @IsOptional() @IsString() @MaxLength(60) department?: string | null;
+  @IsOptional() @IsString() @MaxLength(80) jobTitle?: string | null;
+  @IsOptional() @IsString() managerId?: string | null;
+  /** Kept for older clients: false deactivates, true reactivates. */
   @IsOptional() @IsBoolean() active?: boolean;
+}
+
+export class DeactivateUserDto {
+  @IsOptional() @IsIn(['INACTIVE', 'SUSPENDED']) status?: 'INACTIVE' | 'SUSPENDED';
+  @IsOptional() @IsString() @MaxLength(500) reason?: string;
+  /** Hand their open leads, tasks, deals and viewings to this person in the same step. */
+  @IsOptional() @IsString() reassignToId?: string;
+}
+
+export class ReassignUserDto {
+  @IsString() toUserId!: string;
+}
+
+export class OverrideDto {
+  @IsIn(PERMISSIONS) permission!: string;
+  @IsIn(PERMISSION_SCOPES) scope!: string;
+  @IsOptional() @IsString() @MaxLength(300) reason?: string | null;
+  @IsOptional() @IsDateString() expiresAt?: string | null;
+}
+
+export class OverridesDto {
+  @IsArray() @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => OverrideDto) overrides!: OverrideDto[];
+}
+
+export class RoleDto {
+  @IsOptional() @IsString() @Length(2, 60) name?: string;
+  @IsOptional() @IsString() @MaxLength(300) description?: string | null;
+}
+
+export class CreateRoleDto {
+  @IsString() @Length(2, 60) name!: string;
+  @IsOptional() @IsString() @MaxLength(300) description?: string | null;
+  /** Start from another role's permissions. */
+  @IsOptional() @IsString() copyFromId?: string;
+}
+
+export class GrantDto {
+  @IsIn(PERMISSIONS) permission!: string;
+  @IsIn(PERMISSION_SCOPES) scope!: string;
+}
+
+export class RolePermissionsDto {
+  @IsArray() @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => GrantDto) grants!: GrantDto[];
 }
 
 // ─── Website presentation (roadmap phase 1) ──────────────────────────────

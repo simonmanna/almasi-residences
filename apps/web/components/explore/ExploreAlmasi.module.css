@@ -50,9 +50,9 @@
 }
 
 .body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  position: relative;
   border-top: 1px solid var(--line);
+  isolation: isolate;
 }
 
 .stage {
@@ -119,10 +119,11 @@
 
 .controls {
   position: absolute;
-  right: 20px;
+  left: 50%;
   bottom: 20px;
   display: flex;
   gap: 6px;
+  transform: translateX(-50%);
 }
 
 .controls button {
@@ -172,19 +173,30 @@
 }
 
 .panel {
-  display: grid;
-  align-content: start;
-  gap: 28px;
-  max-height: min(84svh, 880px);
-  padding: 24px 0 24px 28px;
-  border-left: 1px solid var(--line);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: var(--page-margin);
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
 }
 
 .floors {
   display: grid;
+  position: absolute;
+  top: 50%;
+  left: clamp(20px, 3.4vw, 56px);
+  width: min(330px, 29vw);
+  max-height: calc(100% - 48px);
+  padding: 12px 18px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  box-shadow: 0 22px 60px rgb(0 0 0 / 0.2);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  transform: translateY(-50%);
 }
 
 .floor {
@@ -221,6 +233,29 @@
 .detail {
   display: grid;
   gap: 16px;
+  position: absolute;
+  right: clamp(20px, 3.4vw, 56px);
+  bottom: 28px;
+  width: min(360px, 31vw);
+  max-height: calc(100% - 56px);
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  box-shadow: 0 22px 60px rgb(0 0 0 / 0.24);
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  animation: detail-rise 0.4s var(--ease-out);
+}
+
+@keyframes detail-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }
 
 .detailHead {
@@ -323,25 +358,36 @@
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  .body {
-    grid-template-columns: 1fr;
-  }
   .stage {
     height: 66svh;
     min-height: 440px;
   }
   .panel {
-    max-height: none;
+    position: relative;
+    inset: auto;
+    display: grid;
+    gap: 18px;
     padding: 24px var(--page-margin) 40px;
-    border-left: 0;
     border-top: 1px solid var(--line);
+    pointer-events: auto;
   }
   .floors {
     display: flex;
+    position: static;
+    width: auto;
+    max-height: none;
     gap: 8px;
+    padding: 0 0 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     overflow-x: auto;
-    padding-bottom: 4px;
+    overflow-y: hidden;
     scrollbar-width: thin;
+    transform: none;
   }
   .floor {
     grid-template-columns: auto auto;
@@ -356,7 +402,47 @@
   .floor .floorCount {
     grid-column: 1 / -1;
   }
+  .detail {
+    position: static;
+    width: auto;
+    max-height: none;
+    padding: 20px;
+    background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+    box-shadow: none;
+    overflow: visible;
+  }
   .legend {
     display: none;
+  }
+  .controls {
+    right: 20px;
+    left: auto;
+    transform: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .stage {
+    height: 58svh;
+    min-height: 400px;
+  }
+
+  .panel {
+    padding-inline: var(--page-margin);
+  }
+
+  .detail {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .facts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail {
+    animation: none;
   }
 }

@@ -1,5 +1,4 @@
 import { Users } from 'lucide-react';
-import { ROLE_LABEL, type AdminRole } from '@avida/types';
 import { get } from '../lib/api';
 import { ago, money } from '../lib/format';
 import { useQuery } from '../lib/query';
@@ -11,6 +10,7 @@ interface Member {
   id: string;
   name: string;
   role: string;
+  roleName?: string;
   lastLoginAt: string | null;
   openLeads: number;
   uncontacted: number;
@@ -43,7 +43,7 @@ export default function CrmTeam() {
               <tbody>
                 {data.members.map((m) => (
                   <tr key={m.id}>
-                    <td data-label="Person"><span className="row" style={{ gap: 8 }}><Avatar name={m.name} /><span><strong>{m.name}</strong><div className="small muted">{ROLE_LABEL[m.role as AdminRole] ?? m.role}</div></span></span></td>
+                    <td data-label="Person"><span className="row" style={{ gap: 8 }}><Avatar name={m.name} /><span><strong>{m.name}</strong><div className="small muted">{m.roleName ?? m.role}</div></span></span></td>
                     <td data-label="Open leads"><Link to={`/enquiries?assignedTo=${m.id}&view=open`} className="row" style={{ gap: 8 }}><Meter value={m.openLeads} max={maxLoad} /><strong className="tabular">{m.openLeads}</strong></Link></td>
                     <td data-label="No first reply" className="num">{m.uncontacted ? <Badge tone="red" plain>{m.uncontacted}</Badge> : '0'}</td>
                     <td data-label="Overdue tasks" className="num">{m.overdueTasks ? <Link to={`/crm/tasks?assignee=${m.id}&range=overdue`}><Badge tone="red" plain>{m.overdueTasks}</Badge></Link> : '0'}</td>

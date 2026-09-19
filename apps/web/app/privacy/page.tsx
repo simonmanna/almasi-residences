@@ -64,7 +64,7 @@ export default async function PrivacyPage() {
           </p>
         </section>
 
-        <section className="ground-band" data-ground="stone" aria-labelledby="why-title">
+        <section className="ground-band" data-ground="night" aria-labelledby="why-title">
           <h2 id="why-title" className="h3">
             Why we need it
           </h2>
@@ -95,7 +95,7 @@ export default async function PrivacyPage() {
           </p>
         </section>
 
-        <section className="ground-band" data-ground="stone" aria-labelledby="analytics-title">
+        <section className="ground-band" data-ground="night" aria-labelledby="analytics-title">
           <h2 id="analytics-title" className="h3">
             Measurement
           </h2>
@@ -118,7 +118,7 @@ export default async function PrivacyPage() {
           </p>
         </section>
 
-        <section className="ground-band" data-ground="stone" aria-labelledby="rights-title">
+        <section className="ground-band" data-ground="night" aria-labelledby="rights-title">
           <h2 id="rights-title" className="h3">
             Your choices
           </h2>

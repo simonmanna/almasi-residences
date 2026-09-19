@@ -118,7 +118,8 @@ test.describe('the lead loop and who may see what', () => {
       expect(await viewer.status('/admin/residences?pageSize=1')).toBe(200);
       expect(await viewer.status('/admin/residences/export.csv')).toBe(403);
       expect(await viewer.status('/admin/users')).toBe(403);
-      expect(await viewer.status('/admin/audit')).toBe(403);
+      // Viewer / Auditor reads the audit log (roles & permissions, 2026-09); it still cannot export it.
+      expect(await viewer.status('/admin/audit')).toBe(200);
 
       const page = await viewer.get<{ data: { id: string }[] }>('/admin/residences?pageSize=1');
       const detail = await viewer.get<{ notes: string | null }>(`/admin/residences/${page.data[0]!.id}`);

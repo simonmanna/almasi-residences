@@ -1,6 +1,6 @@
 import { copy, getDevelopment, getPagesSafe } from '../../lib/api';
 import { addressLines, contactFrom, mailtoHref, telHref, whatsappHref } from '../../lib/contact';
-import { twoLines } from '../../lib/text';
+import { titleCaseHeading, twoLines } from '../../lib/text';
 import { EnquiryForm } from '../enquiry/EnquiryForm';
 import { RevealText } from '../ui/RevealText';
 import styles from './EnquireSection.module.css';
@@ -28,7 +28,7 @@ export async function EnquireSection({
   const wa = whatsappHref(contact);
   const tel = telHref(contact);
   const mail = mailtoHref(contact);
-  const title = heading ?? twoLines(copy(pages, 'contact', 'enquireTitle'));
+  const title = (heading ?? twoLines(copy(pages, 'contact', 'enquireTitle'))).map(titleCaseHeading);
   const lines = compact ? [title.join(' ')] : title;
   const body = copy(pages, 'contact', 'enquireBody');
 

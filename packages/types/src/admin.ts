@@ -6,38 +6,10 @@
  * the admin reads the same table to hide what a role cannot use.
  */
 
-// ─── Roles & permissions ─────────────────────────────────────────────────
-
-export const ADMIN_ROLES = [
-  'SUPER_ADMIN',
-  'PROPERTY_MANAGER',
-  'SALES_MANAGER',
-  'SALES_AGENT',
-  'MARKETING',
-  'CONTENT_MANAGER',
-  'VIEWER',
-] as const;
-export type AdminRole = (typeof ADMIN_ROLES)[number];
-
-export const ROLE_LABEL: Record<AdminRole, string> = {
-  SUPER_ADMIN: 'Super admin',
-  PROPERTY_MANAGER: 'Property manager',
-  SALES_MANAGER: 'Sales manager',
-  SALES_AGENT: 'Sales agent',
-  MARKETING: 'Marketing',
-  CONTENT_MANAGER: 'Content manager',
-  VIEWER: 'Viewer',
-};
-
-export const ROLE_DESCRIPTION: Record<AdminRole, string> = {
-  SUPER_ADMIN: 'Full access, including users, settings and reversing a sale.',
-  PROPERTY_MANAGER: 'Property, floors, residences, rooms, parking, amenities and residents.',
-  SALES_MANAGER: 'The whole CRM: every lead, the team, pipeline settings, deals, pricing and reservations.',
-  SALES_AGENT: 'Their own and unassigned leads: activities, tasks, viewings, deals and reservations. No price overrides.',
-  MARKETING: 'Campaigns, lead sources and CRM reports. Reads leads; does not work them.',
-  CONTENT_MANAGER: 'Images, galleries, videos, floor plans, designs and website content.',
-  VIEWER: 'Read-only. No access to resident or buyer contact details.',
-};
+// ─── Permissions ─────────────────────────────────────────────────────────
+//
+// Roles live in the database now; see access.ts for the catalog, data scopes,
+// default roles and how a user's effective access is resolved.
 
 export const PERMISSIONS = [
   // Reads. Before these existed, any authenticated request could read any admin
@@ -78,13 +50,19 @@ export const PERMISSIONS = [
   'gallery.edit',
   'content.edit',
   'content.publish',
-  'user.manage',
+  'user.view',
+  'user.create',
+  'user.edit',
+  'user.deactivate',
+  'user.assign-role',
+  'role.manage',
   'audit.view',
+  'audit.export',
   'settings.edit',
   'reservation.edit',
   'reports.view',
+  'finance.view',
   // CRM.
-  'enquiry.view-all',
   'enquiry.assign',
   'enquiry.merge',
   'enquiry.archive',
@@ -132,12 +110,18 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
   'gallery.edit': 'Manage galleries',
   'content.edit': 'Edit website content and FAQs',
   'content.publish': 'Publish, unpublish and archive website content',
-  'user.manage': 'Manage users and roles',
+  'user.view': 'See users',
+  'user.create': 'Add users',
+  'user.edit': 'Edit users',
+  'user.deactivate': 'Deactivate users',
+  'user.assign-role': 'Assign roles',
+  'role.manage': 'Manage roles and permissions',
   'audit.view': 'Read the audit log',
+  'audit.export': 'Export the audit log',
+  'finance.view': 'See financial details',
   'settings.edit': 'Change settings',
   'reservation.edit': 'Hold, extend and release reservations',
   'reports.view': 'See sales, demand and website reports',
-  'enquiry.view-all': 'See every lead, not only their own and unassigned ones',
   'enquiry.assign': 'Assign and reassign leads to other people',
   'enquiry.merge': 'Merge duplicate leads',
   'enquiry.archive': 'Archive and restore leads',
@@ -148,143 +132,6 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
   'crm.documents': 'Upload and read lead documents',
   'crm.configure': 'Configure the pipeline, lead scoring and assignment rules',
 };
-
-const ALL: readonly Permission[] = PERMISSIONS;
-
-export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
-  SUPER_ADMIN: ALL,
-  PROPERTY_MANAGER: [
-    'property.view',
-    'floor.view',
-    'residence.view',
-    'typology.view',
-    'parking.view',
-    'payment-plan.view',
-    'media.view',
-    'gallery.view',
-    'content.view',
-    'residence.export',
-    'property.edit',
-    'floor.edit',
-    'residence.edit',
-    'residence.delete',
-    'residence.status',
-    'residence.notes',
-    'typology.edit',
-    'room.edit',
-    'parking.edit',
-    'amenity.edit',
-    'resident.view',
-    'resident.edit',
-    'media.edit',
-    'content.publish',
-    'audit.view',
-    'reports.view',
-  ],
-  SALES_MANAGER: [
-    'property.view',
-    'floor.view',
-    'residence.view',
-    'typology.view',
-    'parking.view',
-    'payment-plan.view',
-    'media.view',
-    'gallery.view',
-    'content.view',
-    'residence.export',
-    'residence.status',
-    'residence.price',
-    'residence.notes',
-    'payment-plan.edit',
-    'parking.edit',
-    'buyer.view',
-    'buyer.edit',
-    'enquiry.view',
-    'enquiry.edit',
-    'enquiry.export',
-    'resident.view',
-    'reservation.edit',
-    'reports.view',
-    'enquiry.view-all',
-    'enquiry.assign',
-    'enquiry.merge',
-    'enquiry.archive',
-    'deal.edit',
-    'deal.price',
-    'deal.close',
-    'campaign.edit',
-    'crm.documents',
-    'crm.configure',
-  ],
-  // Works their own pipeline. Sees unassigned leads so they can pick them up;
-  // cannot move a lead to someone else, override a price or close a sale.
-  SALES_AGENT: [
-    'property.view',
-    'floor.view',
-    'residence.view',
-    'typology.view',
-    'parking.view',
-    'payment-plan.view',
-    'media.view',
-    'gallery.view',
-    'content.view',
-    'buyer.view',
-    'buyer.edit',
-    'enquiry.view',
-    'enquiry.edit',
-    'reservation.edit',
-    'deal.edit',
-    'crm.documents',
-  ],
-  MARKETING: [
-    'property.view',
-    'floor.view',
-    'residence.view',
-    'typology.view',
-    'media.view',
-    'gallery.view',
-    'content.view',
-    'enquiry.view',
-    'enquiry.view-all',
-    'campaign.edit',
-    'reports.view',
-  ],
-  CONTENT_MANAGER: [
-    'property.view',
-    'floor.view',
-    'residence.view',
-    'typology.view',
-    'parking.view',
-    'payment-plan.view',
-    'media.view',
-    'gallery.view',
-    'content.view',
-    'media.edit',
-    'gallery.edit',
-    'content.edit',
-    'content.publish',
-    'amenity.edit',
-  ],
-  // Read-only, and that is now an explicit grant rather than the absence of
-  // checks. A viewer may browse the property; it may not export it in bulk, and
-  // it never sees residents, buyers, enquiries, private notes or the audit log.
-  VIEWER: [
-    'property.view',
-    'floor.view',
-    'residence.view',
-    'typology.view',
-    'parking.view',
-    'payment-plan.view',
-    'media.view',
-    'gallery.view',
-    'content.view',
-  ],
-};
-
-export function can(role: string | null | undefined, permission: Permission): boolean {
-  if (!role || !(role in ROLE_PERMISSIONS)) return false;
-  return ROLE_PERMISSIONS[role as AdminRole].includes(permission);
-}
 
 // ─── Enumerations ────────────────────────────────────────────────────────
 

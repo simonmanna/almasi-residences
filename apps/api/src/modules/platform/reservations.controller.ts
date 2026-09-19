@@ -56,16 +56,19 @@ export class ReservationsController {
       this.prisma.client.reservation.findMany({ where, orderBy: [{ status: 'asc' }, { heldUntil: 'asc' }], include, take: 500 }),
       this.prisma.client.reservation.groupBy({ by: ['status'], where: { developmentId }, _count: true }),
     ]);
-    const canBuyers = can(actorOf(req).role, 'buyer.view');
+    const canBuyers = can(actorOf(req), 'buyer.view');
+    // Field-level: deposit amounts need `finance.view` (or the authority to manage reservations).
+    const canMoney = can(actorOf(req), 'finance.view') || can(actorOf(req), 'reservation.edit');
     const now = Date.now();
     return {
       data: rows.map((r) => ({
         ...r,
+        depositMinor: canMoney ? r.depositMinor : null,
         buyer: canBuyers ? r.buyer : r.buyer ? { id: r.buyer.id, fullName: 'Client' } : null,
         hoursLeft: r.status === 'ACTIVE' ? Math.round((r.heldUntil.getTime() - now) / 3_600_000) : null,
       })),
       counts: Object.fromEntries(counts.map((c) => [c.status, c._count])),
-      depositsHeldMinor: rows.filter((r) => r.status === 'ACTIVE' && r.depositReceivedAt).reduce((a, r) => a + (r.depositMinor ?? 0), 0),
+      depositsHeldMinor: !canMoney ? null : rows.filter((r) => r.status === 'ACTIVE' && r.depositReceivedAt).reduce((a, r) => a + (r.depositMinor ?? 0), 0),
     };
   }
 

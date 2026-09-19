@@ -1,20 +1,30 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { can, PERMISSION_LABEL, type Permission } from '@avida/types';
+import { can, PERMISSION_LABEL, type Grants, type Permission } from '@avida/types';
 import type { AdminRequest } from '../admin/admin.guard.js';
 
+/**
+ * The signed-in person as controllers see them. `grants` is their effective
+ * access, resolved by AdminGuard on this request; `can(actor, p)` reads it.
+ * Never built from anything the client sent.
+ */
 export interface Actor {
   id: string;
+  /** Role key, e.g. "SALES_AGENT". Display and logging only — decisions read `grants`. */
   role: string;
   name: string;
+  grants: Grants;
+  teamIds: string[];
+  departmentIds: string[];
 }
 
 export function actorOf(req: AdminRequest): Actor {
-  return { id: req.admin!.userId, role: req.admin!.role, name: req.admin!.name };
+  const a = req.admin!;
+  return { id: a.userId, role: a.role, name: a.name, grants: a.grants, teamIds: a.teamIds, departmentIds: a.departmentIds };
 }
 
 /** For checks that depend on the body (e.g. a price inside a general edit). */
 export function assertCan(actor: Actor, permission: Permission): void {
-  if (!can(actor.role, permission)) {
+  if (!can(actor, permission)) {
     throw new ForbiddenException(`Your role does not allow this: ${PERMISSION_LABEL[permission].toLowerCase()}.`);
   }
 }
@@ -50,7 +60,7 @@ export function defined<T extends Record<string, unknown>>(obj: T): Partial<T> {
  * On create, a role that may not publish gets a draft rather than a refusal.
  */
 export function publishStamp(actor: Actor, published: boolean | undefined, creating = false): { published?: boolean; publishedAt?: Date | null; publishedById?: string | null; unpublishedAt?: Date | null } {
-  const allowed = can(actor.role, 'content.publish');
+  const allowed = can(actor, 'content.publish');
   if (published === undefined) {
     if (!creating) return {};
     return allowed ? { published: true, publishedAt: new Date(), publishedById: actor.id } : { published: false };

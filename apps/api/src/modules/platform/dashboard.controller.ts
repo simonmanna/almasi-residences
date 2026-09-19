@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common';
-import { can, effectivePriceMinor, PARKING_STATUSES, UNIT_STATUSES, type Permission, type UnitStatus } from '@avida/types';
+import { can, effectivePriceMinor, PARKING_STATUSES, UNIT_STATUSES, type AccessSubject, type Permission, type UnitStatus } from '@avida/types';
 import { CrmService } from '../../common/crm.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
@@ -25,10 +25,10 @@ const ACTIVITY_GATE: Record<string, Permission> = {
   buyer: 'buyer.view',
   resident: 'resident.view',
   enquiry: 'enquiry.view',
-  user: 'user.manage',
+  user: 'user.view',
 };
 
-function canSeeActivity(role: string, entity: string | null): boolean {
+function canSeeActivity(role: AccessSubject, entity: string | null): boolean {
   const needed = entity ? ACTIVITY_GATE[entity] : undefined;
   return !needed || can(role, needed);
 }
@@ -47,7 +47,7 @@ export class DashboardController {
   @Get('dashboard')
   @RequirePermission('property.view')
   async dashboard(@Req() req: AdminRequest) {
-    const role = actorOf(req).role;
+    const role = actorOf(req);
     const { id: developmentId, currency } = await this.dev.get();
     const weekAgo = new Date(Date.now() - 7 * 86400_000);
 
@@ -244,7 +244,7 @@ export class DashboardController {
   async search(@Query('q') raw: string | undefined, @Req() req: AdminRequest) {
     const q = (raw ?? '').trim();
     if (!q) return { results: [] };
-    const role = actorOf(req).role;
+    const role = actorOf(req);
     const developmentId = await this.dev.id();
     const like = { contains: q, mode: 'insensitive' as const };
     const codeLike = { contains: q.replace(/\s+/g, '-'), mode: 'insensitive' as const };
@@ -272,8 +272,8 @@ export class DashboardController {
     ]);
     const [deals, viewings, activities] = can(role, 'enquiry.view')
       ? await Promise.all([
-          this.prisma.client.deal.findMany({ where: { AND: [{ developmentId, archivedAt: null, OR: [{ enquiry: { name: like } }, { buyer: { fullName: like } }, { unit: { code: codeLike } }] }, can(role, 'enquiry.view-all') ? {} : { OR: [{ agentId: actorOf(req).id }, { enquiry: { assignedToId: actorOf(req).id } }] }] }, take: 4, include: { unit: { select: { code: true } }, enquiry: { select: { id: true, name: true } } } }),
-          this.prisma.client.viewing.findMany({ where: { developmentId, name: like, ...(can(role, 'enquiry.view-all') ? {} : { agentId: actorOf(req).id }) }, take: 4, orderBy: { createdAt: 'desc' } }),
+          this.prisma.client.deal.findMany({ where: { AND: [{ developmentId, archivedAt: null, OR: [{ enquiry: { name: like } }, { buyer: { fullName: like } }, { unit: { code: codeLike } }] }, this.crm.dealScope(role)] }, take: 4, include: { unit: { select: { code: true } }, enquiry: { select: { id: true, name: true } } } }),
+          this.prisma.client.viewing.findMany({ where: { developmentId, name: like, ...(can(role, 'enquiry.view', 'ALL') ? {} : { OR: [{ agentId: { in: this.crm.ownerIds(role) ?? [] } }, { enquiry: this.crm.leadScope(role) }] }) }, take: 4, orderBy: { createdAt: 'desc' } }),
           q.length >= 3 ? this.prisma.client.leadNote.findMany({ where: { body: like, enquiry: { developmentId, ...this.crm.leadScope(actorOf(req)) } }, take: 4, orderBy: { createdAt: 'desc' }, include: { enquiry: { select: { id: true, name: true } } } }) : Promise.resolve([]),
         ])
       : [[], [], []];

@@ -137,7 +137,7 @@ export function ExploreAlmasi({
     <section id={id} className={styles.explore} data-ground="night" aria-labelledby={`${id}-title`}>
       <div className={`container ${styles.head}`}>
         <div>
-          <p className={`mark kicker-lg ${styles.kicker}`}>The building</p>
+          <p className={`mark kicker-lg ${styles.kicker}`}>The Building</p>
           <h2 id={`${id}-title`} className="title-sm">
             {heading}
           </h2>

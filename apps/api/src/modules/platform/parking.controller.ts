@@ -58,7 +58,7 @@ export class ParkingController {
       this.prisma.client.parkingSpace.groupBy({ by: ['type'], where: { developmentId }, _count: true }),
       this.prisma.client.parkingSpace.count({ where: { developmentId } }),
     ]);
-    const showPeople = can(actorOf(req).role, 'resident.view');
+    const showPeople = can(actorOf(req), 'resident.view');
     return {
       data: rows.map((r) => ({ ...r, resident: showPeople ? r.resident : r.resident ? { id: r.resident.id, fullName: 'Assigned' } : null })),
       stats: {

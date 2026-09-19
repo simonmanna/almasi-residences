@@ -45,7 +45,7 @@ export default async function TermsPage() {
           </p>
         </section>
 
-        <section className="ground-band" data-ground="stone" aria-labelledby="price-title">
+        <section className="ground-band" data-ground="night" aria-labelledby="price-title">
           <h2 id="price-title" className="h3">
             Prices and availability
           </h2>
@@ -74,7 +74,7 @@ export default async function TermsPage() {
           </p>
         </section>
 
-        <section className="ground-band" data-ground="stone" aria-labelledby="progress-title">
+        <section className="ground-band" data-ground="night" aria-labelledby="progress-title">
           <h2 id="progress-title" className="h3">
             Construction and handover
           </h2>
@@ -101,7 +101,7 @@ export default async function TermsPage() {
           </p>
         </section>
 
-        <section className="ground-band" data-ground="stone" aria-labelledby="contact-title">
+        <section className="ground-band" data-ground="night" aria-labelledby="contact-title">
           <h2 id="contact-title" className="h3">
             Questions
           </h2>

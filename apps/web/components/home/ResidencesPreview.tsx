@@ -26,11 +26,11 @@ export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCar
   const max = areas.length ? Math.max(...areas.map((t) => t.areaMax)) : 0;
 
   return (
-    <section id="residences" className={`section ${styles.section}`} data-ground="stone" aria-labelledby="residences-title">
+    <section id="residences" className={`section ${styles.section}`} data-ground="quiet" aria-labelledby="residences-title">
       <div className="container">
         <header className={styles.head}>
           <div>
-            <p className={`eyebrow ${styles.eyebrow}`}>Our residences</p>
+            <p className={`eyebrow ${styles.eyebrow}`}>Our Residences</p>
             {kicker && <p className={`mark kicker-lg ${styles.kicker}`}>{kicker}</p>}
             {lines.length > 0 && <RevealText as="h2" id="residences-title" className="title-sm" lines={[lines.join(' ')]} />}
           </div>

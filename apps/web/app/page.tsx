@@ -14,6 +14,7 @@ import {
 } from '../lib/api';
 import { pageMetadata } from '../lib/page-metadata';
 import { developmentJsonLd } from '../lib/seo';
+import { titleCaseHeading } from '../lib/text';
 import { HeroExperience } from '../components/home/HeroExperience';
 import { Introduction } from '../components/home/Introduction';
 import { ExploreAlmasi } from '../components/explore/ExploreAlmasi';
@@ -57,6 +58,7 @@ export default async function HomePage() {
   ]);
   const handover = dev?.handoverDate ? formatQuarter(dev.handoverDate) : null;
   const home = (key: string) => copy(pages, 'home', key);
+  const homeHeading = (key: string) => titleCaseHeading(home(key));
   // An unfilled CMS field must never ship a hero with no way in.
   const primaryCta = {
     label: home('ctaPrimaryLabel') || 'Explore residences',
@@ -73,21 +75,21 @@ export default async function HomePage() {
       {dev && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(developmentJsonLd(dev)) }} />}
       <HeroExperience
         kicker={home('heroKicker')}
-        title={home('heroTitle') || dev?.name || ''}
+        title={homeHeading('heroTitle') || dev?.name || ''}
         subtitle={home('heroSubtitle')}
         place={dev ? `${dev.city}, ${dev.country === 'RW' ? 'Rwanda' : dev.country}` : ''}
         primary={primaryCta}
         secondary={secondaryCta}
       />
-      <Introduction handover={handover} title={home('introTitle')} body={home('introBody')} kicker={home('heroKicker')} developmentName={dev?.name ?? ''} buildingConfig={dev?.buildingConfig} primary={primaryCta} secondary={secondaryCta} />
+      <Introduction handover={handover} title={homeHeading('introTitle')} body={home('introBody')} kicker={titleCaseHeading(home('heroKicker'))} developmentName={dev?.name ?? ''} buildingConfig={dev?.buildingConfig} primary={primaryCta} secondary={secondaryCta} />
       <ExploreAlmasi />
-      <ResidencesPreview cards={cards} kicker={home('residencesKicker')} title={home('residencesTitle')} />
+      <ResidencesPreview cards={cards} kicker={homeHeading('residencesKicker')} title={homeHeading('residencesTitle')} />
       <FeaturedResidences items={featured} />
-      <ExperienceStory stations={story?.stations ?? []} title={home('storyTitle')} />
+      <ExperienceStory stations={story?.stations ?? []} title={homeHeading('storyTitle')} />
       <AmenityExperience
         amenities={amenities.length ? amenities : (dev?.amenities ?? [])}
-        kicker={home('amenitiesKicker')}
-        lines={copyLines(pages, 'home', 'amenitiesTitle')}
+        kicker={homeHeading('amenitiesKicker')}
+        lines={copyLines(pages, 'home', 'amenitiesTitle').map(titleCaseHeading)}
         lead={home('amenitiesLede')}
         ground="quiet"
       />
@@ -96,15 +98,16 @@ export default async function HomePage() {
           landmarks={dev.landmarks}
           latitude={dev.latitude}
           longitude={dev.longitude}
-          kicker={copy(pages, 'locationSection', 'kicker')}
-          title={copy(pages, 'locationSection', 'title')}
+          kicker={titleCaseHeading(copy(pages, 'locationSection', 'kicker'))}
+          title={titleCaseHeading(copy(pages, 'locationSection', 'title'))}
           lede={copy(pages, 'locationSection', 'lede')}
           note={copy(pages, 'locationSection', 'note')}
+          ground="night"
         />
       )}
-      <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} />
-      <ProgressPreview updates={progress} kicker={home('progressKicker')} title={copyLines(pages, 'home', 'progressTitle')} />
-      <FilmTeaser kicker={home('filmKicker')} title={home('filmTitle')} cta={home('filmCta')} />
+      <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} ground="quiet" />
+      <ProgressPreview updates={progress} kicker={homeHeading('progressKicker')} title={copyLines(pages, 'home', 'progressTitle').map(titleCaseHeading)} />
+      <FilmTeaser kicker={homeHeading('filmKicker')} title={homeHeading('filmTitle')} cta={home('filmCta')} />
       <EnquireSection compact ground="quiet" />
       <SiteFooter />
     </main>

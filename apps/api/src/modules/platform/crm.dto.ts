@@ -275,3 +275,18 @@ export class DocumentMetaDto {
   @IsOptional() @IsString() @MaxLength(160) name?: string;
   @IsOptional() @IsBoolean() sent?: boolean;
 }
+
+// ─── Approvals ───────────────────────────────────────────────────────────
+
+/** A change the requester may not make themselves, for someone who may. */
+export class ApprovalRequestDto {
+  @IsIn(['update', 'action']) operation!: 'update' | 'action';
+  @IsOptional() @ValidateNested() @Type(() => DealFieldsDto) fields?: DealFieldsDto;
+  @IsOptional() @ValidateNested() @Type(() => DealActionDto) action?: DealActionDto;
+  @IsOptional() @IsString() @MaxLength(1000) note?: string;
+}
+
+export class ApprovalDecisionDto {
+  @IsIn(['approve', 'reject']) decision!: 'approve' | 'reject';
+  @IsOptional() @IsString() @MaxLength(1000) note?: string;
+}

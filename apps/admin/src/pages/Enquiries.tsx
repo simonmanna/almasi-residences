@@ -118,7 +118,7 @@ export default function Enquiries() {
             <Input ref={searchRef} placeholder="Name, phone, email, residence or tag  (F)" value={q} onChange={(ev) => setQ(ev.target.value)} />
           </label>
           <Select className="sm" style={{ width: 'auto' }} value={s.stageId ?? ''} onChange={(ev) => set({ stageId: ev.target.value, page: 1 })} placeholder="Any stage" options={(stages ?? []).filter((st) => st.active).map((st) => ({ value: st.id, label: `${st.label} (${st.leadCount})` }))} />
-          {can('enquiry.view-all') && <Select className="sm" style={{ width: 'auto' }} value={s.assignedTo ?? ''} onChange={(ev) => set({ assignedTo: ev.target.value, page: 1 })} placeholder="Any owner" options={[{ value: 'me', label: 'Me' }, { value: 'none', label: 'Unassigned' }, ...(team ?? []).map((t) => ({ value: t.id, label: t.name }))]} />}
+          {can('enquiry.view', 'TEAM') && <Select className="sm" style={{ width: 'auto' }} value={s.assignedTo ?? ''} onChange={(ev) => set({ assignedTo: ev.target.value, page: 1 })} placeholder="Any owner" options={[{ value: 'me', label: 'Me' }, { value: 'none', label: 'Unassigned' }, ...(team ?? []).map((t) => ({ value: t.id, label: t.name }))]} />}
           <Select className="sm" style={{ width: 'auto' }} value={s.temperature ?? ''} onChange={(ev) => set({ temperature: ev.target.value, page: 1 })} placeholder="Any temperature" options={(['HOT', 'WARM', 'COLD'] as const).map((t) => ({ value: t, label: TEMPERATURE_LABEL[t] }))} />
           <Button size="sm" icon={<Filter size={14} />} variant={activeFilters.length ? 'primary' : 'default'} onClick={() => setFiltersOpen(true)}>Filters{activeFilters.length ? ` (${activeFilters.length})` : ''}</Button>
           <span className="spacer" />
@@ -274,7 +274,7 @@ function SaveViewModal({ filters, onClose }: { filters: Record<string, string>; 
   return (
     <Modal title="Save this view" sub={`${Object.keys(filters).length} filter${Object.keys(filters).length === 1 ? '' : 's'} and the sort order`} onClose={onClose} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!name.trim()} onClick={() => void save()}>Save</Button></>}>
       <Field label="Name"><Input autoFocus value={name} placeholder="Hot diaspora investors" onChange={(e) => setName(e.target.value)} /></Field>
-      {can('enquiry.view-all') && <Checkbox checked={shared} onChange={setShared} label="Share with the team" />}
+      {can('enquiry.view', 'ALL') && <Checkbox checked={shared} onChange={setShared} label="Share with the team" />}
     </Modal>
   );
 }

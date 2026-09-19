@@ -1,12 +1,13 @@
 import { Controller, Get, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common';
 import type { EnquiryStatus, LeadNoteKind, Prisma } from '@avida/db';
 import { can, FIRST_RESPONSE_HOURS, PIPELINE_STAGES, stageRank } from '@avida/types';
+import { AccessService } from '../../common/access.service.js';
 import { CrmService } from '../../common/crm.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { pageOf, paged } from '../../common/http.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
-import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
+import { AdminGuard, RequirePermission, RequireScope, type AdminRequest } from '../admin/admin.guard.js';
 import { actorOf, type Actor } from './actor.js';
 
 const CLOSED: EnquiryStatus[] = ['SOLD', 'LOST', 'DISQUALIFIED', 'SPAM'];
@@ -26,7 +27,7 @@ const pct = (a: number, b: number) => (b ? Math.round((a / b) * 1000) / 10 : 0);
  * The CRM's read side: the dashboard a salesperson opens every morning, the
  * team's workload for a manager, the activity feed, and the reports that say
  * which sources sell and where leads stall. Agents see their own numbers;
- * `enquiry.view-all` sees the team.
+ * a TEAM, DEPARTMENT or ALL scope on `enquiry.view` sees that many people's.
  */
 @Controller('admin/crm')
 @UseGuards(AdminGuard)
@@ -37,25 +38,28 @@ export class CrmController {
     private readonly prisma: PrismaService,
     private readonly dev: CurrentDevelopment,
     private readonly crm: CrmService,
+    private readonly access: AccessService,
   ) {}
 
   private async leadWhere(actor: Actor, mine: boolean): Promise<Prisma.EnquiryWhereInput> {
     const developmentId = await this.dev.id();
     await this.crm.ensureStages(developmentId);
-    const all = can(actor.role, 'enquiry.view-all');
-    return { developmentId, archivedAt: null, status: { not: 'SPAM' }, ...(mine || !all ? { assignedToId: actor.id } : {}) };
+    const ids = mine || !can(actor, 'enquiry.view', 'TEAM') ? [actor.id] : this.crm.ownerIds(actor);
+    return { developmentId, archivedAt: null, status: { not: 'SPAM' }, ...(ids ? { assignedToId: { in: ids } } : {}) };
   }
 
   @Get('dashboard')
   async dashboard(@Req() req: AdminRequest, @Query('scope') scopeParam?: string) {
     const actor = actorOf(req);
     const developmentId = await this.dev.id();
-    const team = can(actor.role, 'enquiry.view-all');
+    const team = can(actor, 'enquiry.view', 'TEAM');
     const mine = scopeParam === 'mine' || !team;
     const leads = await this.leadWhere(actor, mine);
-    const taskWho: Prisma.LeadTaskWhereInput = mine ? { assignedToId: actor.id } : {};
-    const dealWho: Prisma.DealWhereInput = mine ? { OR: [{ agentId: actor.id }, { enquiry: { assignedToId: actor.id } }] } : {};
-    const viewingWho: Prisma.ViewingWhereInput = mine ? { OR: [{ agentId: actor.id }, { enquiry: { assignedToId: actor.id } }] } : {};
+    // Whose numbers: just mine, or everyone my scope reaches (null = everyone).
+    const who = mine ? [actor.id] : this.crm.ownerIds(actor);
+    const taskWho: Prisma.LeadTaskWhereInput = who ? { assignedToId: { in: who } } : {};
+    const dealWho: Prisma.DealWhereInput = who ? { OR: [{ agentId: { in: who } }, { enquiry: { assignedToId: { in: who } } }] } : {};
+    const viewingWho: Prisma.ViewingWhereInput = who ? { OR: [{ agentId: { in: who } }, { enquiry: { assignedToId: { in: who } } }] } : {};
     const now = new Date();
     const dayStart = new Date(now);
     dayStart.setHours(0, 0, 0, 0);
@@ -182,11 +186,15 @@ export class CrmController {
 
   /** Managers: who is carrying what, and where attention is slipping. Not a leaderboard. */
   @Get('team')
-  @RequirePermission('enquiry.view-all')
-  async team() {
+  @RequireScope('enquiry.view', 'TEAM')
+  async team(@Req() req: AdminRequest) {
+    const actor = actorOf(req);
     const developmentId = await this.dev.id();
     const now = new Date();
-    const users = await this.prisma.client.adminUser.findMany({ where: { active: true, role: { in: ['SUPER_ADMIN', 'SALES_MANAGER', 'SALES_AGENT'] } }, select: { id: true, name: true, role: true, lastLoginAt: true }, orderBy: { name: 'asc' } });
+    // The people who work leads, narrowed to the manager's own team or department when that is their scope.
+    const reach = this.crm.ownerIds(actor);
+    const workers = await this.access.activeUsersWith('enquiry.edit', reach ?? undefined);
+    const users = (await this.prisma.client.adminUser.findMany({ where: { id: { in: workers } }, select: { id: true, name: true, lastLoginAt: true, role: { select: { key: true, name: true } } }, orderBy: { name: 'asc' } })).map(({ role, ...u }) => ({ ...u, role: role.key, roleName: role.name }));
     const ids = users.map((u) => u.id);
     const [leads, fresh, overdue, viewings, deals, lastNote, week] = await Promise.all([
       this.prisma.client.enquiry.findMany({ where: { developmentId, archivedAt: null, assignedToId: { in: ids }, status: { notIn: CLOSED } }, select: { assignedToId: true, budgetMaxMinor: true, primaryUnit: { select: { priceMinor: true } }, units: { select: { unit: { select: { priceMinor: true } } } }, deals: { where: { status: { in: ['NEGOTIATION', 'RESERVED', 'CONTRACT'] } }, select: { status: true, agreedPriceMinor: true, listPriceMinor: true } } } }),

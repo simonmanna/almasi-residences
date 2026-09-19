@@ -1,4 +1,5 @@
 export * from './admin.js';
+export * from './access.js';
 export * from './building.js';
 export * from './concierge.js';
 export * from './crm.js';

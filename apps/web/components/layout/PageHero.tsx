@@ -55,7 +55,7 @@ export function PageHeader({
 }) {
   if (bold) {
     return (
-      <header className={`container ground-band ${styles.header} ${styles.headerBold}`} data-ground="stone">
+      <header className={`container ground-band ${styles.header} ${styles.headerBold}`} data-ground="night" data-nav-over>
         <h1 id="page-title" className={`display ${styles.boldTitle}`}>
           {kicker}
         </h1>
@@ -65,7 +65,7 @@ export function PageHeader({
     );
   }
   return (
-    <header className={`container ground-band ${styles.header}`} data-ground="stone">
+    <header className={`container ground-band ${styles.header}`} data-ground="night" data-nav-over>
       {kicker && <p className={`mark ${styles.kicker}`}>{kicker}</p>}
       <h1 id="page-title" className="display">
         {title}

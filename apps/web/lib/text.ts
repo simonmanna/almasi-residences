@@ -17,3 +17,10 @@ export function twoLines(text: string): string[] {
   }
   return [words.slice(0, best).join(' '), words.slice(best).join(' ')];
 }
+
+/** Capitalizes every word in display headings without changing existing casing. */
+export function titleCaseHeading(text: string): string {
+  return text.replace(/(^|[\s|])([\p{L}\p{N}])/gu, (_, boundary: string, character: string) =>
+    `${boundary}${character.toLocaleUpperCase()}`,
+  );
+}

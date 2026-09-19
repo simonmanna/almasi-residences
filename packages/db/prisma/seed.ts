@@ -12,14 +12,14 @@
  *   2. Every EXTERIOR/AERIAL media set has all four time states, every
  *      INTERIOR set has at least DAY and NIGHT (§4.3). Incomplete sets throw.
  */
-import { assertPercentagesSumTo100 } from '@avida/types';
+import { assertPercentagesSumTo100, DEFAULT_ROLES } from '@avida/types';
 import {
   Prisma,
   type MediaSetKind,
   type TimeState,
   type UnitStatus,
 } from '../generated/client/client.js';
-import { prisma } from '../src/index.js';
+import { ensureRoles, prisma } from '../src/index.js';
 import { contentDefaults } from './content-defaults.js';
 import { planGeometry, siteFilm, siteSpecifications, siteTours } from './site-seed.js';
 import {
@@ -649,10 +649,12 @@ async function main() {
     const { hash } = await import('@node-rs/argon2');
     const seedPassword = process.env.SEED_ADMIN_PASSWORD ?? 'phase-one-local-only';
     const passwordHash = await hash(seedPassword);
-    for (const [email, name, role] of seedAdmins) {
+    await ensureRoles(prisma, DEFAULT_ROLES);
+    for (const [email, name, role, department] of seedAdmins) {
+      const roleId = (await prisma.role.findUniqueOrThrow({ where: { key: role }, select: { id: true } })).id;
       await prisma.adminUser.upsert({
         where: { email },
-        create: { email, name, role, passwordHash },
+        create: { email, name, roleId, department, passwordHash },
         update: { passwordHash },
       });
     }
