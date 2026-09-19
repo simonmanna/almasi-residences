@@ -76,12 +76,12 @@
 }
 
 [data-ground="quiet"] {
-  --surface:            #FBF8F3;
-  --surface-raised:     #FDFBF7;
-  --surface-sunk:       #F1E9DF;
+  --surface:            #F3EADF;
+  --surface-raised:     #F8F2EA;
+  --surface-sunk:       #E9DDCF;
   --ink:                #35261A;
   --ink-muted:          #655344;
-  --line:               #DED0C1;
+  --line:               #D8CBBC;
   --accent:             #74492A;
   --accent-weak:        #AE8C6D;
   --on-accent:          #FFFFFF;

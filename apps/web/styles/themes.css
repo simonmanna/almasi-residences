@@ -67,12 +67,12 @@
 }
 
 [data-theme="blue"] [data-ground="quiet"] {
-  --surface:            #F7FAFC;
-  --surface-raised:     #FBFDFE;
-  --surface-sunk:       #EAF0F5;
+  --surface:            #E9F0F6;
+  --surface-raised:     #F1F6FA;
+  --surface-sunk:       #DCE6EF;
   --ink:                #11202E;
   --ink-muted:          #4C6274;
-  --line:               #CBD9E3;
+  --line:               #C5D2DC;
   --accent:             #256C99;
   --accent-weak:        #78A9C8;
   --on-accent:          #FFFFFF;
@@ -135,12 +135,12 @@
 /* ─── Sky Blue — daylight: paper white, a clear azure, deep marine ink ─── */
 :root[data-theme="sky"],
 [data-theme="sky"] [data-ground="stone"] {
-  --surface:            #F4F9FE;  /* page, sampled #F6FAFE / #F3F8FD */
-  --surface-raised:     #FFFFFF;
-  --surface-sunk:       #E6F1FB;  /* amenity strip, sampled #E8F3FD */
+  --surface:            #EAF3FC;  /* page, sampled #F6FAFE / #F3F8FD */
+  --surface-raised:     #F4F9FE;
+  --surface-sunk:       #DCEBF8;  /* amenity strip, sampled #E8F3FD */
   --ink:                #15375E;  /* headline, sampled #1A3F6A */
   --ink-muted:          #48647F;
-  --line:               #C8DBEC;
+  --line:               #C2D4E5;
   --accent:             #1D6DB0;  /* button, sampled #308CD1, deepened to read as text */
   --accent-weak:        #8CBFE6;
   --on-accent:          #FFFFFF;
@@ -189,12 +189,12 @@
 }
 
 [data-theme="sky"] [data-ground="quiet"] {
-  --surface:            #F5FAFE;
-  --surface-raised:     #FCFEFF;
-  --surface-sunk:       #EDF5FC;
+  --surface:            #E4F0FB;
+  --surface-raised:     #EEF6FD;
+  --surface-sunk:       #D8E9F7;
   --ink:                #15375E;
   --ink-muted:          #48647F;
-  --line:               #CCDEED;
+  --line:               #C1D2E0;
   --accent:             #1D6DB0;
   --accent-weak:        #8CBFE6;
   --on-accent:          #FFFFFF;
@@ -229,7 +229,7 @@
   --btn-tracking: 0.01em;
   --btn-weight: 600;
   --btn-shadow: 0 10px 24px -10px rgba(29, 109, 176, 0.55);
-  --card-surface:       #FFFFFF;
+  --card-surface:       #F6FAFE;
   --card-ink:           #15375E;
   --card-muted:         #48647F;
   --card-accent:        #1D6DB0;
@@ -240,7 +240,7 @@
   --card-shadow-hover:  0 2px 4px rgba(21, 55, 94, 0.06), 0 30px 60px -20px rgba(29, 109, 176, 0.38);
   --card-lift:          -6px;
   --texture: none;
-  --ambient: linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent 320px);
+  --ambient: linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 320px);
   --shade: 16 44 76;
   --on-media: 255 255 255;
   --dusk-base: #0E2640;
