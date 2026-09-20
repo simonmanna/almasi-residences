@@ -52,3 +52,9 @@ hero-overlap.png
 
 # hero film: generated source shots and the 4K master (large; kept out of git)
 media-src/
+
+# Stale dependency trees left by an interrupted install
+node_modules.stale/
+# API dev logs
+api-err.log
+api-start.log

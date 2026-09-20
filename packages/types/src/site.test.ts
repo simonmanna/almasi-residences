@@ -27,9 +27,9 @@ describe('3D placement', () => {
 });
 
 describe('site vocabulary', () => {
-  it('never prints a note beside a photograph, always beside a render', () => {
+  it('prints a note only where the image needs one', () => {
     expect(provenanceNote('PHOTOGRAPH')).toBe('');
-    expect(provenanceNote('CONCEPT_RENDER')).not.toBe('');
+    expect(provenanceNote('DRAWING')).not.toBe('');
   });
   it('only names known cache tags', () => {
     const known = new Set(Object.values(SITE_TAGS));

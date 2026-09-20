@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { fillCopyTokens, formatQuarter } from '@avida/types';
 import { DEVELOPMENT_SLUG, getDevelopment, getInventory, getMediaSlotsSafe, getSeo } from '../lib/api';
+import { organizationJsonLd, websiteJsonLd } from '../lib/seo';
 import { copyTokenValues } from '../lib/copy-tokens';
 import { summarise, toResidences } from '../lib/residences';
 import { MediaSlotsProvider } from '../components/providers/MediaSlotsProvider';
@@ -112,6 +113,16 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: { type: 'website', siteName: name || undefined, locale: 'en_GB' },
     twitter: { card: 'summary_large_image' },
     robots: { index: true, follow: true },
+    // §SEO — the verification tokens the admin pasted in (SEO → accounts).
+    // Nothing is printed for an account that was never connected.
+    ...(seo?.site?.gscVerification || seo?.site?.bingVerification
+      ? {
+          verification: {
+            ...(seo.site.gscVerification ? { google: seo.site.gscVerification } : {}),
+            ...(seo.site.bingVerification ? { other: { 'msvalidate.01': seo.site.bingVerification } } : {}),
+          },
+        }
+      : {}),
   };
 }
 
@@ -121,6 +132,14 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
   themeColor: '#3A281B',
 };
+
+/** GA4 through gtag, loaded after the page is interactive. */
+const ga4Script = (id: string) =>
+  `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${id}',{anonymize_ip:true});`;
+
+/** Tag Manager's own loader, with its id substituted. */
+const gtmScript = (id: string) =>
+  `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${id}');`;
 
 /**
  * §6.7 — the shell needs the inventory: in production a failed fetch fails the
@@ -139,7 +158,12 @@ async function loadShell() {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [{ dev, inventory }, slots] = await Promise.all([loadShell(), getMediaSlotsSafe()]);
+  const [{ dev, inventory }, slots, seo] = await Promise.all([loadShell(), getMediaSlotsSafe(), getSeo().catch(() => null)]);
+  // §SEO — who publishes the site, and the site itself. Emitted once here so
+  // every page inherits the same identity instead of repeating it.
+  const identity = [organizationJsonLd(dev, seo?.site ?? null, null), dev?.name ? websiteJsonLd(dev.name) : null].filter(Boolean);
+  const ga4 = seo?.site?.ga4MeasurementId ?? null;
+  const gtm = seo?.site?.gtmContainerId ?? null;
   const bathrooms = Object.fromEntries((dev?.typologies ?? []).map((t) => [t.slug, t.bathrooms]));
   const contact = contactFrom(dev?.contact, dev?.name);
 
@@ -157,6 +181,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {process.env.API_INTERNAL_URL && (
           <link rel="dns-prefetch" href={new URL(process.env.API_INTERNAL_URL).origin} />
         )}
+        {identity.length > 0 && (
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(identity) }} />
+        )}
+        {gtm && <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: gtmScript(gtm) }} />}
+        {ga4 && <link rel="preconnect" href="https://www.googletagmanager.com" />}
       </head>
       <body>
         <a href="#main" className="skip-link">
@@ -178,6 +207,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CursorLabel />
         <PreviewBanner />
         <WhatsAppLauncher contact={contact} />
+        {gtm && (
+          <noscript>
+            <iframe src={`https://www.googletagmanager.com/ns.html?id=${gtm}`} height="0" width="0" style={{ display: 'none', visibility: 'hidden' }} title="Tag Manager" />
+          </noscript>
+        )}
+        {ga4 && (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${ga4}`} />
+            <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: ga4Script(ga4) }} />
+          </>
+        )}
         <AnalyticsTracker />
         <RevealObserver />
       </body>

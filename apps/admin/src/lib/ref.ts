@@ -19,4 +19,5 @@ export function useCurrency(): string {
   return data?.currency ?? 'USD';
 }
 
-export const floorName = (f: { label: string; displayName: string | null }) => f.displayName ?? f.label;
+/** Staff-facing floor name. `displayName` is what website visitors read; the admin always shows the label staff edit. */
+export const floorName = (f: { label: string }) => f.label;

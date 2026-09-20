@@ -90,11 +90,14 @@ export const SEO_ROUTES = [
   { path: '/amenities', label: 'Amenities' },
   { path: '/location', label: 'Location' },
   { path: '/gallery', label: 'Gallery' },
+  { path: '/3d-design', label: '3D design' },
   { path: '/buying', label: 'Buying' },
   { path: '/progress', label: 'Construction progress' },
   { path: '/film', label: 'Film' },
   { path: '/tour', label: 'Building tour' },
   { path: '/tour/penthouse', label: 'Penthouse tour' },
+  { path: '/locations', label: 'Neighbourhoods' },
+  { path: '/insights', label: 'Insights' },
   { path: '/enquire', label: 'Enquire' },
 ] as const;
 

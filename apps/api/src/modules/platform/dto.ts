@@ -36,6 +36,8 @@ import {
   MEDIA_COLLECTIONS,
   MEDIA_PROVENANCES,
   MEDIA_SLOTS,
+  POST_CATEGORIES,
+  SCHEMA_TYPES,
   SEO_DESCRIPTION_MAX,
   SEO_ROUTES,
   SEO_TITLE_MAX,
@@ -653,6 +655,9 @@ export class UpdateFilmDto {
   @IsOptional() @IsNumber() @Min(0) @Max(36000) durationSec?: number;
   @IsOptional() @IsBoolean() published?: boolean;
   @IsOptional() @IsArray() @ArrayMaxSize(60) @ValidateNested({ each: true }) @Type(() => FilmChapterDto) chapters?: FilmChapterDto[];
+  /// §SEO — a VideoObject needs words: what is said, and when it was published.
+  @IsOptional() @IsString() @MaxLength(60000) transcript?: string | null;
+  @IsOptional() @IsDateString() uploadDate?: string | null;
 }
 
 export class UpdateSiteSeoDto {
@@ -667,4 +672,74 @@ export class UpdateSeoPageDto {
   @IsOptional() @IsString() @MaxLength(SEO_DESCRIPTION_MAX * 2) description?: string | null;
   @IsOptional() @IsString() ogImageId?: string | null;
   @IsOptional() @IsBoolean() noindex?: boolean;
+}
+
+// ─── SEO engine ──────────────────────────────────────────────────────────
+
+export class UpdateSeoEntityDto {
+  @IsOptional() @IsString() @MaxLength(SEO_TITLE_MAX) title?: string | null;
+  @IsOptional() @IsString() @MaxLength(SEO_DESCRIPTION_MAX * 2) metaDescription?: string | null;
+  @IsOptional() @IsString() @MaxLength(300) canonicalUrl?: string | null;
+  @IsOptional() @IsString() @MaxLength(SEO_TITLE_MAX) ogTitle?: string | null;
+  @IsOptional() @IsString() @MaxLength(SEO_DESCRIPTION_MAX * 2) ogDescription?: string | null;
+  @IsOptional() @IsString() ogImageId?: string | null;
+  @IsOptional() @IsBoolean() robotsIndex?: boolean;
+  @IsOptional() @IsBoolean() robotsFollow?: boolean;
+  @IsOptional() @IsIn(SCHEMA_TYPES as unknown as string[]) schemaType?: string | null;
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(60, { each: true }) keywords?: string[];
+}
+
+export class UpsertRedirectDto {
+  @IsString() @MaxLength(300) fromPath!: string;
+  @IsString() @MaxLength(300) toPath!: string;
+  @IsOptional() @IsIn([301, 302, 307, 308]) statusCode?: number;
+  @IsOptional() @IsString() @MaxLength(200) reason?: string | null;
+  @IsOptional() @IsBoolean() enabled?: boolean;
+}
+
+export class UpdateSeoIntegrationsDto {
+  @IsOptional() @IsString() @MaxLength(200) gscVerification?: string | null;
+  @IsOptional() @IsString() @MaxLength(200) bingVerification?: string | null;
+  @IsOptional() @IsString() @Matches(/^(G-[A-Z0-9]+)?$/, { message: 'A GA4 id looks like G-XXXXXXX.' }) ga4MeasurementId?: string | null;
+  @IsOptional() @IsString() @Matches(/^(GTM-[A-Z0-9]+)?$/, { message: 'A Tag Manager id looks like GTM-XXXXXX.' }) gtmContainerId?: string | null;
+  @IsOptional() @IsString() @MaxLength(120) organizationName?: string | null;
+  @IsOptional() @IsIn(['Organization', 'RealEstateAgent', 'Corporation', 'LocalBusiness']) organizationType?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(12) @IsString({ each: true }) @MaxLength(300, { each: true }) sameAs?: string[];
+}
+
+export class UpsertLocationPageDto {
+  @IsOptional() @IsString() @Matches(/^[a-z0-9-]+$/, { message: 'A URL uses lower-case letters, numbers and hyphens.' }) @Length(2, 96) slug?: string;
+  @IsOptional() @IsString() @Length(2, 120) name?: string;
+  @IsOptional() @IsString() @MaxLength(80) kicker?: string | null;
+  @IsOptional() @IsString() @MaxLength(160) title?: string | null;
+  @IsOptional() @IsString() @MaxLength(2000) lede?: string | null;
+  @IsOptional() @IsString() @MaxLength(20000) body?: string | null;
+  @IsOptional() @IsString() @MaxLength(120) locality?: string | null;
+  @IsOptional() @IsString() @MaxLength(120) region?: string | null;
+  @IsOptional() @IsString() @Length(2, 2) country?: string;
+  @IsOptional() @IsNumber() @Min(-90) @Max(90) latitude?: number | null;
+  @IsOptional() @IsNumber() @Min(-180) @Max(180) longitude?: number | null;
+  @IsOptional() @IsArray() @ArrayMaxSize(12) @IsString({ each: true }) categories?: string[];
+  @IsOptional() @IsString() heroImageId?: string | null;
+  @IsOptional() @IsBoolean() published?: boolean;
+  @IsOptional() @IsInt() @Min(0) @Max(999) sortOrder?: number;
+}
+
+export class UpsertPostDto {
+  @IsOptional() @IsString() @Matches(/^[a-z0-9-]+$/, { message: 'A URL uses lower-case letters, numbers and hyphens.' }) @Length(2, 96) slug?: string;
+  @IsOptional() @IsString() @Length(2, 160) title?: string;
+  @IsOptional() @IsString() @MaxLength(600) excerpt?: string | null;
+  @IsOptional() @IsString() @MaxLength(60000) body?: string;
+  @IsOptional() @IsIn(POST_CATEGORIES as unknown as string[]) category?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(12) @IsString({ each: true }) @MaxLength(40, { each: true }) tags?: string[];
+  @IsOptional() @IsString() @MaxLength(120) authorName?: string | null;
+  @IsOptional() @IsInt() @Min(1) @Max(120) readMinutes?: number | null;
+  @IsOptional() @IsString() heroImageId?: string | null;
+  @IsOptional() @IsBoolean() published?: boolean;
+}
+
+export class UpdateVideoSeoDto {
+  @IsOptional() @IsString() @MaxLength(60000) transcript?: string | null;
+  @IsOptional() @IsString() @MaxLength(2000) description?: string | null;
+  @IsOptional() @IsDateString() uploadDate?: string | null;
 }

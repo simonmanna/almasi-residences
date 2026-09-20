@@ -16,6 +16,8 @@ interface Report {
   conversion: { leadToViewing: number; viewingToCompleted: number; viewingToReserved: number; reservationToSale: number; leadToSale: number };
   funnel: { status: string; count: number }[];
   bySource: Group[];
+  byLandingPage: Group[];
+  byChannel: Group[];
   byAgent: Group[];
   byType: Group[];
   byCampaign: Group[];
@@ -134,6 +136,19 @@ export default function CrmReports() {
             <CardHead title="Lead sources" icon={<BarChart3 size={18} />} sub="Which channels bring leads — and which bring buyers" />
             <GroupTable rows={data.bySource.map((r) => ({ ...r, label: LEAD_SOURCE_LABEL[r.key as LeadSourceValue] ?? r.label }))} cur={cur} first="Source" />
           </Card>
+
+          {/* §SEO — the join between what search brings and what it sells:
+              which page a lead landed on, and which channel sent them. */}
+          <div className="grid-2 report-grid">
+            <Card>
+              <CardHead title="Traffic channels" icon={<BarChart3 size={18} />} sub="How the visit arrived, from what the website recorded" />
+              <GroupTable rows={data.byChannel} cur={cur} first="Channel" />
+            </Card>
+            <Card>
+              <CardHead title="Landing pages that earn leads" icon={<BarChart3 size={18} />} sub="The first page of the visit that became an enquiry" />
+              <GroupTable rows={data.byLandingPage} cur={cur} first="Landing page" />
+            </Card>
+          </div>
 
           <Card>
             <CardHead title="By salesperson" icon={<Users size={18} />} sub="Workload and outcomes — for coaching, not ranking" />

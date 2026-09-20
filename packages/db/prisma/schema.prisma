@@ -91,6 +91,10 @@ model Development {
   mediaSlots      MediaSlot[]
   specifications  Specification[]
   seoPages        SeoPage[]
+  seoEntities     SeoEntity[]
+  redirects       Redirect[]
+  locationPages   LocationPage[]
+  posts           Post[]
   videos          VideoAsset[]
   enquiries       Enquiry[]
   viewings        Viewing[]
@@ -491,6 +495,9 @@ model Media {
   filmVideos    VideoAsset[]  @relation("FilmVideo")
   filmPosters   VideoAsset[]  @relation("FilmPoster")
   seoImages     SeoPage[]     @relation("SeoImage")
+  seoEntityImages SeoEntity[]   @relation("SeoEntityImage")
+  locationHeroes  LocationPage[] @relation("LocationHero")
+  postHeroes      Post[]         @relation("PostHero")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -685,6 +692,12 @@ model VideoAsset {
   height      Int
 
   chapters VideoChapter[]
+
+  /// §SEO — what a VideoObject needs beyond the file: spoken words for search
+  /// engines, and the caption track a viewer reads.
+  transcript  String? @db.Text
+  captionsKey String?
+  uploadDate  DateTime?
 
   createdAt DateTime @default(now())
 }
@@ -1877,6 +1890,17 @@ model SeoMeta {
   description   String
   ogImageKey    String?
   keywords      String[]
+
+  /// §SEO — search-engine and analytics accounts. Empty means "not connected",
+  /// and the website renders no tag at all rather than an empty one.
+  gscVerification  String?
+  bingVerification String?
+  ga4MeasurementId String?
+  gtmContainerId   String?
+  /// Organization schema: the legal name and the profiles that confirm it.
+  organizationName String?
+  organizationType String  @default("Organization")
+  sameAs           String[]
 }
 
 /// §5.6 — what search engines and link previews read for one public route.
@@ -2205,4 +2229,134 @@ model AdminAuditLog {
   @@index([action, createdAt])
   @@index([entity, entityId])
   @@index([createdAt])
+}
+
+// ─────────────────────────── SEO engine ────────────────────────────
+
+/// Which kind of record a SeoEntity row describes. One engine serves every
+/// entity that can become a page, so a new page type needs no new table.
+enum SeoEntityType {
+  UNIT
+  TYPOLOGY
+  LOCATION_PAGE
+  POST
+  AMENITY
+  GALLERY
+  FLOOR
+}
+
+/// §SEO — the search metadata of one record (a residence, a type, a location
+/// page, an article). Every field is an override: empty means "derive it from
+/// the record", which is what the website does by default.
+model SeoEntity {
+  id            String        @id @default(cuid())
+  developmentId String
+  development   Development   @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  entityType    SeoEntityType
+  entityId      String
+
+  /// Set only where the entity's own slug is not the URL (kept for redirects).
+  slug            String?
+  title           String?
+  metaDescription String?  @db.Text
+  canonicalUrl    String?
+  ogTitle         String?
+  ogDescription   String?  @db.Text
+  ogImageId       String?
+  ogImage         Media?   @relation("SeoEntityImage", fields: [ogImageId], references: [id], onDelete: SetNull)
+  robotsIndex     Boolean  @default(true)
+  robotsFollow    Boolean  @default(true)
+  /// schema.org type the page emits ("Apartment", "Place", "Article"…).
+  schemaType      String?
+  keywords        String[]
+
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@unique([developmentId, entityType, entityId])
+  @@index([developmentId, entityType])
+}
+
+/// §SEO — a 301 (or 302) from an old path. Written by hand in the admin, and
+/// automatically whenever a slug changes, so a shared link never dies.
+model Redirect {
+  id            String      @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  fromPath      String
+  toPath        String
+  statusCode    Int         @default(301)
+  /// Why it exists — "slug changed", "campaign", written by whoever added it.
+  reason        String?
+  enabled       Boolean     @default(true)
+  hits          Int         @default(0)
+  lastHitAt     DateTime?
+  createdById   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([developmentId, fromPath])
+  @@index([developmentId, enabled])
+}
+
+/// §SEO — a neighbourhood or city landing page ("/locations/kimihurura").
+/// Its nearby places come from the landmarks already held by the development,
+/// filtered by the categories chosen here, so nothing is duplicated.
+model LocationPage {
+  id            String      @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  slug          String
+  name          String
+  kicker        String?
+  title         String?
+  lede          String?     @db.Text
+  body          String?     @db.Text
+  /// The area this page speaks about, for the Place schema and the map.
+  locality      String?
+  region        String?
+  country       String      @default("RW")
+  latitude      Float?
+  longitude     Float?
+  /// Landmark categories listed on the page; empty lists every visible one.
+  categories    String[]
+  heroImageId   String?
+  heroImage     Media?      @relation("LocationHero", fields: [heroImageId], references: [id], onDelete: SetNull)
+  published     Boolean     @default(false)
+  sortOrder     Int         @default(0)
+  publishedAt   DateTime?
+  updatedById   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([developmentId, slug])
+  @@index([developmentId, published])
+}
+
+/// §SEO — an article under /insights: buying guides, neighbourhood guides and
+/// the questions buyers actually ask.
+model Post {
+  id            String      @id @default(cuid())
+  developmentId String
+  development   Development @relation(fields: [developmentId], references: [id], onDelete: Cascade)
+  slug          String
+  title         String
+  excerpt       String?     @db.Text
+  /// Markdown, rendered by the website.
+  body          String      @db.Text
+  category      String      @default("Guides")
+  tags          String[]
+  authorName    String?
+  readMinutes   Int?
+  heroImageId   String?
+  heroImage     Media?      @relation("PostHero", fields: [heroImageId], references: [id], onDelete: SetNull)
+  published     Boolean     @default(false)
+  publishedAt   DateTime?
+  updatedById   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([developmentId, slug])
+  @@index([developmentId, published, publishedAt])
 }

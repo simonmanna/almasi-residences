@@ -11,10 +11,12 @@ import styles from './Introduction.module.css';
  * 02 — the statement. Every count in it is read from the live inventory; the
  * words come from the CMS (Homepage → introduction); an empty field renders nothing.
  *
- * A simple, generous layout: a single column on the left of the page with a
- * display headline, a short body, and a pair of CTAs. The image stays as a
- * low-contrast backdrop on the right.
+ * Two columns that do not overlap: the words hold the left on solid dusk, the
+ * render holds the right and is allowed to be bright. Nothing is set over the
+ * facade, so nothing has to be rescued by a scrim. The render here is the close
+ * facade crop — a second, nearer look at the building the hero showed whole.
  */
+const DETAIL_STILL = '/media/introduction-arrival-v2.png';
 export function Introduction({
   title,
   body,
@@ -55,28 +57,17 @@ export function Introduction({
     );
 
 
+  // The ground is "night", not "quiet": this section paints its own dusk
+  // gradient, and the quiet ground's dark walnut ink was being set on top of
+  // it — the headline and all three figures were brown on brown.
   return (
-    <section className={styles.intro} data-ground="quiet" aria-labelledby="intro-title">
-      <div className={styles.media} aria-hidden="true">
-        <Image
-          src="/media/introduction.png"
-          alt=""
-          fill
-          sizes="100vw"
-          quality={82}
-          className={styles.image}
-        />
-      </div>
-      <div className={styles.scrim} aria-hidden="true" />
-
+    <section className={styles.intro} data-ground="night" aria-labelledby="intro-title">
       <div className={`container ${styles.inner}`}>
         <div className={styles.statement}>
-          <RevealText
-            as="p"
-            className="kicker-lg"
-            lines={[`${summary.total} private residences.`]}
-          />
-          {title && <RevealText as="h2" id="intro-title" className="title-sm" lines={[title]} />}
+          {/* The count is the eyebrow; the address is the headline. It used to
+              be the other way round, which read as an accident. */}
+          <p className={`mark ${styles.eyebrow}`}>{summary.total} private residences</p>
+          {title && <RevealText as="h2" id="intro-title" className={styles.title} lines={[title]} />}
           {body && <p className={styles.lead}>{lead}</p>}
           {(primary || secondary) && (
             <div className={styles.ctas}>
@@ -88,8 +79,10 @@ export function Introduction({
                   </span>
                 </Link>
               )}
+              {/* An outlined button beside a solid one read as a disabled
+                  twin on this ground; a ruled line reads as a second choice. */}
               {secondary && (
-                <Link href={secondary.href} className={`btn ${styles.cta}`}>
+                <Link href={secondary.href} className={`link-line ${styles.quietCta}`}>
                   {secondary.label}
                 </Link>
               )}
@@ -97,14 +90,30 @@ export function Introduction({
           )}
           {stats.length > 0 && (
             <dl className={styles.stats}>
-              {stats.map((st, i) => (
-                <div key={st.label} className={`stat ${styles.stat}`} data-reveal style={{ '--reveal-i': i } as React.CSSProperties}>
+              {stats.map((st) => (
+                <div key={st.label} className={`stat ${styles.stat}`}>
                   <dt className="stat__label">{st.label}</dt>
                   <dd className="stat__value">{st.value}</dd>
                 </div>
               ))}
             </dl>
           )}
+        </div>
+
+        <div className={styles.media}>
+          <Image
+            src={DETAIL_STILL}
+            alt="The illuminated entrance and planted glass balconies of Almasi Residence at blue hour"
+            fill
+            sizes="(max-width: 900px) 100vw, 48vw"
+            quality={82}
+            className={styles.image}
+          />
+          <div className={styles.mediaEdge} aria-hidden="true" />
+          <div className={styles.mediaMeta} aria-hidden="true">
+            <span className="mark">The arrival</span>
+            <span>{developmentName}</span>
+          </div>
         </div>
       </div>
     </section>

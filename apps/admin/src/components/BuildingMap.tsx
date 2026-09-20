@@ -1,6 +1,7 @@
 import { STATUS_LABEL, VISIBLE_UNIT_STATUSES, type UnitStatus } from '@avida/types';
 import { code as fmtCode } from '../lib/format';
 import type { BuildingFloor, BuildingUnit } from '../lib/types';
+import { floorName } from '../lib/ref';
 
 const DOT: Record<UnitStatus, string> = {
   AVAILABLE: 'var(--green)',
@@ -50,7 +51,7 @@ export function BuildingMap({
       {shown.map((f) => (
         <div key={f.id} className="floor-row">
           <div className="floor-name">
-            {f.displayName ?? f.label}
+            {floorName(f)}
             {!compact && <small>{f.units.length ? `${f.units.length} residence${f.units.length === 1 ? '' : 's'}` : 'No residences'}{!f.published && ' · hidden'}</small>}
           </div>
           <div className="floor-units">

@@ -43,6 +43,12 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
       progressTitle: 'Rising In|Kimihurura.',
     },
   },
+  featuredSection: {
+    title: 'Selected residences',
+    content: {
+      showFeaturedResidences: true,
+    },
+  },
   locationSection: {
     title: 'Homepage location',
     content: {

@@ -5,6 +5,8 @@ import { AssetsController } from './assets.controller.js';
 import { AuditController } from './audit.controller.js';
 import { BuyersController } from './buyers.controller.js';
 import { ContentController } from './content.controller.js';
+import { LocationPagesController, PostsController } from './editorial.controller.js';
+import { SeoController } from './seo.controller.js';
 import { DashboardController } from './dashboard.controller.js';
 import { EnquiriesController } from './enquiries.controller.js';
 import { FloorsController } from './floors.controller.js';
@@ -50,6 +52,9 @@ import { UsersController } from './users.controller.js';
     AssetsController,
     GalleriesController,
     ContentController,
+    SeoController,
+    LocationPagesController,
+    PostsController,
     LandmarksController,
     UsersController,
     RolesController,

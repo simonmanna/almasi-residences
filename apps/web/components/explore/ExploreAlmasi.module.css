@@ -184,7 +184,7 @@
   position: absolute;
   top: 50%;
   left: clamp(20px, 3.4vw, 56px);
-  width: min(330px, 29vw);
+  width: min(240px, 21vw);
   max-height: calc(100% - 48px);
   padding: 12px 18px;
   border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
@@ -201,7 +201,7 @@
 
 .floor {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   min-height: 52px;
@@ -222,12 +222,6 @@
   font-family: var(--font-display);
   font-size: 1.375rem;
   line-height: 1;
-}
-
-.floorCount {
-  color: var(--ink-muted);
-  font-size: var(--fs-xs);
-  font-variant-numeric: tabular-nums;
 }
 
 .detail {
@@ -391,16 +385,12 @@
   }
   .floor {
     grid-template-columns: auto auto;
-    grid-template-rows: auto auto;
     column-gap: 10px;
     min-width: max-content;
     min-height: 56px;
     padding: 8px 14px;
     border: 1px solid var(--line);
     border-radius: var(--radius-1);
-  }
-  .floor .floorCount {
-    grid-column: 1 / -1;
   }
   .detail {
     position: static;

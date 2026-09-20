@@ -4,7 +4,7 @@ import { STATUS_LABEL, UNIT_STATUSES, VISIBLE_UNIT_STATUSES, type UnitStatus } f
 import { get } from '../lib/api';
 import { area, code as fmtCode, money, STATUS_TONE } from '../lib/format';
 import { useQuery } from '../lib/query';
-import { useCurrency } from '../lib/ref';
+import { floorName, useCurrency } from '../lib/ref';
 import { useSearchState } from '../lib/router';
 import type { BuildingFloor, BuildingUnit } from '../lib/types';
 import { BuildingMap } from '../components/BuildingMap';
@@ -77,7 +77,7 @@ export default function Availability() {
               {shown.map((u) => (
                 <tr key={u.id} data-clickable="true" onClick={() => setOpen(u.id)}>
                   <td className="cell-strong">{fmtCode(u.code)}</td>
-                  <td className="muted">{u.floor.displayName ?? u.floor.label}</td>
+                  <td className="muted">{floorName(u.floor)}</td>
                   <td>{u.typology.name}</td>
                   <td className="num">{u.bedrooms}</td>
                   <td className="num">{area(u.areaSqm)}</td>

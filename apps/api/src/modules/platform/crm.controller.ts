@@ -276,6 +276,13 @@ export class CrmController {
           status: true,
           leadSource: true,
           lostReason: true,
+          // §SEO — how the lead arrived: the page it landed on and what sent
+          // it there. Without these, "we rank well" is never joined to "we sold".
+          landingPath: true,
+          referrer: true,
+          utmSource: true,
+          utmMedium: true,
+          utmCampaign: true,
           createdAt: true,
           contactedAt: true,
           budgetMaxMinor: true,
@@ -389,6 +396,16 @@ export class CrmController {
       },
       funnel: ['NEW', 'CONTACTED', 'QUALIFIED', 'VIEWING_SCHEDULED', 'VIEWED', 'NEGOTIATION', 'RESERVED', 'SOLD'].map((st) => ({ status: st, count: st === 'NEW' ? leads.length : leads.filter((l) => reached(l, st)).length })),
       bySource: group((l) => ({ key: l.leadSource, label: l.leadSource })),
+      // Which pages earn leads, and which channel brought each visitor. Both
+      // are read from what the website captured on the visit, not guessed.
+      byLandingPage: group((l) => {
+        const path = l.landingPath?.trim();
+        return path ? { key: path, label: path } : { key: 'unknown', label: 'Not recorded' };
+      }).slice(0, 40),
+      byChannel: group((l) => {
+        const key = trafficChannel(l);
+        return { key, label: key };
+      }),
       byAgent: group((l) => (l.assignedTo ? { key: l.assignedTo.id, label: l.assignedTo.name } : { key: 'none', label: 'Unassigned' })).map((r) => {
         const mine = leads.filter((l) => (l.assignedTo?.id ?? 'none') === r.key && l.contactedAt);
         return { ...r, medianResponseHours: round1(median(mine.map((l) => (l.contactedAt!.getTime() - l.createdAt.getTime()) / 3_600_000))) };
@@ -419,4 +436,25 @@ export class CrmController {
       trend: [...weeks.values()].sort((a, b) => a.week.localeCompare(b.week)),
     };
   }
+}
+
+/**
+ * §SEO — the channel a visit came from, from what the website recorded: the
+ * campaign tags first (they are explicit), then the referring site, then
+ * nothing, which is a direct visit.
+ */
+function trafficChannel(lead: { utmMedium: string | null; utmSource: string | null; referrer: string | null }): string {
+  const medium = lead.utmMedium?.toLowerCase().trim();
+  if (medium) {
+    if (medium.includes('cpc') || medium.includes('ppc') || medium.includes('paid')) return 'Paid search';
+    if (medium.includes('social')) return 'Social';
+    if (medium.includes('email')) return 'Email';
+    if (medium.includes('organic')) return 'Organic search';
+    return medium;
+  }
+  const referrer = lead.referrer?.toLowerCase() ?? '';
+  if (!referrer) return lead.utmSource ? lead.utmSource : 'Direct';
+  if (/google\.|bing\.|duckduckgo\.|yahoo\.|yandex\./.test(referrer)) return 'Organic search';
+  if (/facebook\.|instagram\.|linkedin\.|twitter\.|x\.com|tiktok\./.test(referrer)) return 'Social';
+  return 'Referral';
 }

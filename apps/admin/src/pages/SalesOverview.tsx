@@ -4,6 +4,7 @@ import { ENQUIRY_STATUSES, humanise, STATUS_LABEL, UNIT_STATUSES, VISIBLE_UNIT_S
 import { get } from '../lib/api';
 import { money, STATUS_TONE } from '../lib/format';
 import { useQuery } from '../lib/query';
+import { floorName } from '../lib/ref';
 import type { Dashboard } from '../lib/types';
 import { Donut, StackBars } from '../components/Charts';
 import { Card, CardHead, ErrorBox, LoadingPage, PageHead, Stat } from '../components/ui';
@@ -41,7 +42,7 @@ export default function SalesOverview() {
     () =>
       (d?.building ?? [])
         .filter((f) => f.units.length)
-        .map((f) => ({ label: f.displayName ?? f.label, parts: VISIBLE_UNIT_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: f.stats[s], color: COLOR[STATUS_TONE[s]]! })) })),
+        .map((f) => ({ label: floorName(f), parts: VISIBLE_UNIT_STATUSES.map((s) => ({ label: STATUS_LABEL[s], value: f.stats[s], color: COLOR[STATUS_TONE[s]]! })) })),
     [d],
   );
 

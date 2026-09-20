@@ -324,7 +324,9 @@ export class PresentationController {
       const duration = dto.durationSec ?? (await this.prisma.client.videoAsset.findFirst({ where: { developmentId }, select: { durationSec: true } }))?.durationSec ?? Infinity;
       if (dto.chapters.some((c) => c.startSec > duration)) throw new BadRequestException('A chapter starts after the end of the film.');
     }
-    const { chapters, ...fields } = dto;
+    const { chapters, uploadDate, ...rest } = dto;
+    // The date arrives as a string from the form; the column is a timestamp.
+    const fields = { ...rest, ...(uploadDate === undefined ? {} : { uploadDate: uploadDate ? new Date(uploadDate) : null }) };
     const existing = await this.prisma.client.videoAsset.findFirst({ where: { developmentId }, orderBy: { createdAt: 'asc' } });
     const film = await this.prisma.client.$transaction(async (tx) => {
       const row = existing

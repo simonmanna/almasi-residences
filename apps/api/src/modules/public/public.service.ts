@@ -662,7 +662,23 @@ export class PublicService {
   async seo() {
     const developmentId = await this.dev.id();
     const [site, pages] = await Promise.all([
-      this.prisma.client.seoMeta.findUnique({ where: { developmentId }, select: { title: true, description: true, keywords: true } }),
+      this.prisma.client.seoMeta.findUnique({
+        where: { developmentId },
+        select: {
+          title: true,
+          description: true,
+          keywords: true,
+          // §SEO — public by nature: a verification token is a meta tag and a
+          // measurement id ships in the page's own script.
+          gscVerification: true,
+          bingVerification: true,
+          ga4MeasurementId: true,
+          gtmContainerId: true,
+          organizationName: true,
+          organizationType: true,
+          sameAs: true,
+        },
+      }),
       this.prisma.client.seoPage.findMany({ where: { developmentId }, select: { path: true, title: true, description: true, noindex: true, ogImage: true } }),
     ]);
     return {

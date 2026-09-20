@@ -22,6 +22,7 @@ import { AuditService, diff } from '../../common/audit.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { boolOrUndefined, csvList, money, numberOrUndefined, pageOf, paged, rethrowPrisma } from '../../common/http.js';
 import { PrismaService } from '../../common/prisma.service.js';
+import { residenceSlug } from '../public/public.service.js';
 import { PublicSync } from '../../common/public-sync.service.js';
 import { StorageService } from '../../common/storage.service.js';
 import { assertCan, defined, requireNonNull, toDate, type Actor } from './actor.js';
@@ -437,6 +438,19 @@ export class ResidencesService {
         return u;
       })
       .catch((e) => rethrowPrisma(e, { unique: `Residence code ${dto.code} is already in use.` }));
+
+    // §SEO — the code is the URL. Renaming a residence would otherwise turn
+    // every shared link, brochure QR code and indexed result into a 404.
+    if (after.code !== before.code) {
+      const fromPath = `/residences/${residenceSlug(before.code)}`;
+      const toPath = `/residences/${residenceSlug(after.code)}`;
+      await this.prisma.client.redirect.upsert({
+        where: { developmentId_fromPath: { developmentId, fromPath } },
+        create: { developmentId, fromPath, toPath, statusCode: 301, reason: `${before.code} was renamed ${after.code}`, createdById: actor.id },
+        update: { toPath, enabled: true },
+      });
+      await this.prisma.client.redirect.updateMany({ where: { developmentId, toPath: fromPath }, data: { toPath } });
+    }
 
     const changes = diff(before as unknown as Record<string, unknown>, after as unknown as Record<string, unknown>);
     changes.keys = changes.keys.filter((k) => k !== 'updatedAt');

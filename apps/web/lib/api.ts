@@ -133,8 +133,103 @@ export interface FilmDto {
 }
 
 export interface SeoDto {
-  site: { title: string; description: string; keywords: string[] } | null;
+  site:
+    | ({ title: string; description: string; keywords: string[] } & {
+        /** §SEO — the accounts the admin connected; every one may be null. */
+        gscVerification: string | null;
+        bingVerification: string | null;
+        ga4MeasurementId: string | null;
+        gtmContainerId: string | null;
+        organizationName: string | null;
+        organizationType: string | null;
+        sameAs: string[];
+      })
+    | null;
   pages: Record<string, { title: string | null; description: string | null; noindex: boolean; ogImage: PublicMediaDto | null }>;
+}
+
+/** §SEO — one record's metadata overrides. Every field may be empty: the page derives it. */
+export interface SeoEntityDto {
+  title: string | null;
+  description: string | null;
+  canonicalUrl: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  ogImage: PublicMediaDto | null;
+  robotsIndex: boolean;
+  robotsFollow: boolean;
+  schemaType: string;
+  keywords: string[];
+}
+
+export interface RedirectDto {
+  fromPath: string;
+  toPath: string;
+  statusCode: number;
+}
+
+export interface LocationPageDto {
+  id: string;
+  slug: string;
+  name: string;
+  kicker: string | null;
+  title: string | null;
+  lede: string | null;
+  locality: string | null;
+  region: string | null;
+  country: string;
+  categories: string[];
+  published: boolean;
+  hero: PublicMediaDto | null;
+}
+
+export interface LocationPageDetailDto extends LocationPageDto {
+  body: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  landmarks: {
+    id: string;
+    name: string;
+    category: string;
+    latitude: number;
+    longitude: number;
+    distanceM: number | null;
+    driveMinutes: number | null;
+    walkMinutes: number | null;
+  }[];
+  seo: SeoEntityDto | null;
+}
+
+export interface PostDto {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  category: string;
+  tags: string[];
+  authorName: string | null;
+  readMinutes: number | null;
+  publishedAt: string | null;
+  updatedAt: string;
+  hero: PublicMediaDto | null;
+}
+
+export interface PostDetailDto extends PostDto {
+  body: string;
+  seo: SeoEntityDto | null;
+  related: PostDto[];
+}
+
+export interface PublicVideoDto {
+  key: string;
+  label: string;
+  description: string | null;
+  durationSec: number;
+  transcript: string | null;
+  uploadDate: string;
+  video: PublicMediaDto | null;
+  poster: PublicMediaDto | null;
+  chapters: { startSec: number; label: string; place: string | null }[];
 }
 
 export interface TypologyCardDto {
@@ -426,6 +521,19 @@ export const getMediaSlotsSafe = () => getMediaSlots().catch((): MediaSlotsDto =
 export const getWalkthrough = (slug: string) => get<WalkthroughDto>(`/tours/${encodeURIComponent(slug)}`, ['presentation', 'media']);
 export const getFilm = () => get<FilmDto>('/film', ['presentation', 'media']);
 export const getSeo = () => get<SeoDto>('/seo', ['seo', 'media']);
+
+/** §SEO — metadata overrides for one kind of record, keyed by the record's id. */
+export const getSeoEntities = (type: 'UNIT' | 'TYPOLOGY' | 'LOCATION_PAGE' | 'POST' | 'AMENITY' | 'GALLERY' | 'FLOOR') =>
+  get<Record<string, SeoEntityDto>>(`/seo/entities/${type}`, ['seo', 'media']);
+
+/** Old paths that must still arrive somewhere. Read by the middleware, cached by tag. */
+export const getRedirects = () => get<RedirectDto[]>('/redirects', ['seo'], 300);
+
+export const getLocationPages = () => get<LocationPageDto[]>('/location-pages', ['content', 'media']);
+export const getLocationPage = (slug: string) => get<LocationPageDetailDto>(`/location-pages/${encodeURIComponent(slug)}`, ['content', 'media', 'seo']);
+export const getInsights = (limit?: number) => get<PostDto[]>(`/insights${limit ? `?limit=${limit}` : ''}`, ['content', 'media']);
+export const getInsight = (slug: string) => get<PostDetailDto>(`/insights/${encodeURIComponent(slug)}`, ['content', 'media', 'seo']);
+export const getVideos = () => get<PublicVideoDto[]>('/videos', ['presentation', 'media']);
 export const getTypologyCards = () => get<TypologyCardDto[]>('/typology-cards', ['inventory', 'media']);
 
 /** A residence card: what the featured section and residence lists need. */
@@ -433,6 +541,9 @@ export type PublicResidenceCardDto = Pick<
   PublicResidenceDto,
   'id' | 'code' | 'label' | 'slug' | 'floor' | 'bedrooms' | 'bathrooms' | 'areaSqm' | 'status' | 'priceMinor' | 'currency' | 'featured' | 'shortDescription' | 'cover'
 > & { type: { id: string; slug: string; name: string; isPenthouse: boolean } };
+
+/** Every residence as a card — the cheap read the sitemap and lists need. */
+export const getResidenceCards = () => get<PublicResidenceCardDto[]>('/residences', ['inventory', 'media'], 60);
 
 /** §48 — residences the admin marked as featured. Never a list in code. */
 export const getFeatured = () => get<PublicResidenceCardDto[]>('/residences/featured', ['inventory', 'media'], 60);

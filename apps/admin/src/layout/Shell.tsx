@@ -190,6 +190,11 @@ export function Shell({ children }: { children: ReactNode }) {
   const current = navFor(path);
 
   useEffect(() => setMenuOpen(false), [path]);
+  // Navigating into a collapsed group opens it once; after that the user's toggle wins.
+  useEffect(() => {
+    const group = NAV.find((g) => g.items.some((i) => i === current));
+    if (group && collapsed[group.title]) setCollapsed((c) => ({ ...c, [group.title]: false }));
+  }, [path]);
   useEffect(() => {
     try {
       localStorage.setItem('admin:nav', JSON.stringify(collapsed));
@@ -212,7 +217,7 @@ export function Shell({ children }: { children: ReactNode }) {
           {NAV.map((group) => {
             const items = group.items.filter((i) => !i.needs || can(i.needs, i.min));
             if (!items.length) return null;
-            const closed = collapsed[group.title] && !items.some((i) => i === current);
+            const closed = !!collapsed[group.title];
             return (
               <div key={group.title} className="nav-group">
                 {group.title !== 'Overview' && (

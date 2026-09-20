@@ -255,9 +255,6 @@ export function ExploreAlmasi({
             >
               <span className={styles.floorMark}>All</span>
               <span>Whole building</span>
-              <span className={styles.floorCount}>
-                {summary.available} of {summary.total}
-              </span>
             </button>
             {floors.map((f) => (
               <button
@@ -269,9 +266,6 @@ export function ExploreAlmasi({
               >
                 <span className={styles.floorMark}>{f.mark}</span>
                 <span>{floorName(f)}</span>
-                <span className={styles.floorCount}>
-                  {f.total > 0 ? `${f.available} of ${f.total}` : 'Parking'}
-                </span>
               </button>
             ))}
           </div>

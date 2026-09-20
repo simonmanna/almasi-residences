@@ -346,7 +346,15 @@ export const CONTENT_PAGES: ContentPageDef[] = [
       { key: 'progressTitle', label: 'Construction progress title', type: 'text', help: 'A line break is written as “|”.' },
     ],
   },
-{
+  {
+    key: 'featuredSection',
+    title: 'Selected residences',
+    description: 'The “Selected” residences section of the homepage. Which residences appear in it is set by marking them featured under Property → Residences.',
+    fields: [
+      { key: 'showFeaturedResidences', label: 'Show selected residences', type: 'boolean', help: 'Toggle to show/hide the selected (featured) residences section on the homepage.' },
+    ],
+  },
+  {
     key: 'locationSection',
     title: 'Homepage location',
     description: 'The location section of the homepage. Its nearby places and distances are managed under Website → Location.',

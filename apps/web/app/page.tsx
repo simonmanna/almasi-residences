@@ -69,6 +69,8 @@ export default async function HomePage() {
     href: home('ctaSecondaryHref') || '/enquire#viewing',
   };
   const showNearbyPlaces = pages.locationSection?.showNearbyPlaces === true || copy(pages, 'locationSection', 'showNearbyPlaces') === 'true';
+  // Website → Selected Residence. Absent (never saved) means shown, as it always was.
+  const showFeatured = pages.featuredSection?.showFeaturedResidences !== false && copy(pages, 'featuredSection', 'showFeaturedResidences') !== 'false';
 
   return (
     <main id="main">
@@ -79,12 +81,12 @@ export default async function HomePage() {
         subtitle={home('heroSubtitle')}
         place={dev ? `${dev.city}, ${dev.country === 'RW' ? 'Rwanda' : dev.country}` : ''}
         primary={primaryCta}
-        secondary={secondaryCta}
+        handover={handover}
       />
       <Introduction handover={handover} title={homeHeading('introTitle')} body={home('introBody')} kicker={titleCaseHeading(home('heroKicker'))} developmentName={dev?.name ?? ''} buildingConfig={dev?.buildingConfig} primary={primaryCta} secondary={secondaryCta} />
       <ExploreAlmasi />
       <ResidencesPreview cards={cards} kicker={homeHeading('residencesKicker')} title={homeHeading('residencesTitle')} />
-      <FeaturedResidences items={featured} />
+      {showFeatured && <FeaturedResidences items={featured} />}
       <ExperienceStory stations={story?.stations ?? []} title={homeHeading('storyTitle')} />
       <AmenityExperience
         amenities={amenities.length ? amenities : (dev?.amenities ?? [])}

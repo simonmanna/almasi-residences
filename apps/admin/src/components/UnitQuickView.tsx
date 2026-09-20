@@ -2,6 +2,7 @@ import { ArrowRight, Bath, BedDouble, Compass, Eye, Frame, Images, Inbox, Maximi
 import { get } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { area, code as fmtCode, date, money, ORIENTATION_TEXT } from '../lib/format';
+import { floorName } from '../lib/ref';
 import { useQuery } from '../lib/query';
 import { Link } from '../lib/router';
 import type { ResidenceDetail } from '../lib/types';
@@ -23,7 +24,7 @@ export function UnitQuickView({ id, onClose }: { id: string; onClose: () => void
   return (
     <Drawer
       title={u ? `Residence ${fmtCode(u.code)}` : 'Residence'}
-      sub={u && `${u.floor.displayName ?? u.floor.label} · ${u.typology.name}`}
+      sub={u && `${floorName(u.floor)} · ${u.typology.name}`}
       onClose={onClose}
       footer={
         <>

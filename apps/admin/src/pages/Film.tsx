@@ -23,6 +23,9 @@ interface FilmData {
   media: MediaView | null;
   posterMedia: MediaView | null;
   chapters: Chapter[];
+  /** §SEO — what a VideoObject needs beyond the file itself. */
+  transcript: string | null;
+  uploadDate: string | null;
 }
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -44,7 +47,7 @@ export default function Film() {
   const [busy, setBusy] = useState(false);
   if (error) return <ErrorBox error={error} onRetry={refetch} />;
   if (data === undefined) return <LoadingPage />;
-  const f: FilmData = draft ?? data ?? { id: '', label: 'The film', description: null, durationSec: 0, published: false, media: null, posterMedia: null, chapters: [] };
+  const f: FilmData = draft ?? data ?? { id: '', label: 'The film', description: null, durationSec: 0, published: false, media: null, posterMedia: null, chapters: [], transcript: null, uploadDate: null };
   const set = (patchValue: Partial<FilmData>) => setDraft({ ...f, ...patchValue });
 
   const save = async () => {
@@ -58,6 +61,8 @@ export default function Film() {
         mediaId: f.media?.id ?? null,
         posterMediaId: f.posterMedia?.id ?? null,
         chapters: f.chapters.filter((c) => c.label.trim()).map((c) => ({ ...c, place: c.place || null })),
+        transcript: f.transcript?.trim() || null,
+        uploadDate: f.uploadDate || null,
       });
       toast.success('Film saved. The website updates straight away.');
       setDraft(null);
@@ -92,6 +97,15 @@ export default function Film() {
           <Field label="Title"><Input value={f.label} disabled={!editable} onChange={(e) => set({ label: e.target.value })} /></Field>
           <Field label="Description"><Textarea rows={3} value={f.description ?? ''} disabled={!editable} onChange={(e) => set({ description: e.target.value })} /></Field>
           <Field label="Length (seconds)" hint="Read from the file when it loads."><NumberInput value={f.durationSec} disabled={!editable} onChange={(v) => set({ durationSec: v ?? 0 })} suffix="s" /></Field>
+          <Field label="First published" hint="The date the film went online. Search engines print it beside the result.">
+            <Input type="date" value={f.uploadDate ? f.uploadDate.slice(0, 10) : ''} disabled={!editable} onChange={(e) => set({ uploadDate: e.target.value || null })} />
+          </Field>
+          {/* §SEO — a page that is a film has no text to read. The transcript
+              is the only thing a search engine can index, and it is what a
+              visitor who cannot hear reads instead. */}
+          <Field label="Transcript" hint="What is said in the film, as plain text. Published as structured data, not shown on the page.">
+            <Textarea rows={8} value={f.transcript ?? ''} disabled={!editable} onChange={(e) => set({ transcript: e.target.value })} />
+          </Field>
           <Toggle checked={f.published} disabled={!editable} onChange={(v) => set({ published: v })} label="Show the Film page on the website" />
         </Card>
       </div>

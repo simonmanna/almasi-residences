@@ -5,7 +5,7 @@ import { get, patch, post } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { code as fmtCode, date, money } from '../lib/format';
 import { invalidate, useQuery } from '../lib/query';
-import { useTeam } from '../lib/ref';
+import { floorName, useTeam } from '../lib/ref';
 import { Link, useSearchState } from '../lib/router';
 import type { Paged, ResidenceRow } from '../lib/types';
 import { useToast } from '../components/Toast';
@@ -126,7 +126,7 @@ export default function Reservations() {
                   <tr key={r.id}>
                     <td>
                       <Link to={`/residences/${r.unit.id}`}><strong>{fmtCode(r.unit.code)}</strong></Link>
-                      <div className="muted small">{r.unit.floor.displayName ?? r.unit.floor.label} · {money(r.unit.priceMinor, r.unit.currency)}</div>
+                      <div className="muted small">{floorName(r.unit.floor)} · {money(r.unit.priceMinor, r.unit.currency)}</div>
                     </td>
                     <td className="small">{r.buyer ? <Link to={`/buyers/${r.buyer.id}`}>{r.buyer.fullName}</Link> : r.enquiry ? <Link to={`/enquiries?open=${r.enquiry.id}`}>{r.enquiry.name}</Link> : <span className="faint">—</span>}</td>
                     <td className="small">

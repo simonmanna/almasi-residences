@@ -21,35 +21,47 @@
   will-change: clip-path;
 }
 
+/* The wide still is composed for this frame, so the resting view needs no
+   corrective zoom. Motion grows from the building rather than the copy space. */
 .mediaInner {
   position: absolute;
   inset: 0;
-  transform: scale(1.04);
-  /* Every push in grows down from the name board, never over it. */
-  transform-origin: 50% 12%;
+  transform: scale(1);
+  transform-origin: 68% 48%;
   will-change: transform;
 }
 
-/* Never quite still: a slow push in and out across half a minute. */
+/* Never quite still: a slow push in and out across half a minute, kept small
+   enough that the building stays whole at both ends of it. */
 .drift {
   position: absolute;
   inset: 0;
-  transform-origin: 50% 12%;
+  transform-origin: 68% 48%;
   animation: drift 32s var(--ease-in-out) infinite alternate;
   will-change: transform;
 }
 
-/* Overscanned so the pointer offset never shows an edge. */
+/* A small overscan absorbs the pointer parallax without revealing an edge. */
 .parallax {
   position: absolute;
-  inset: -24px;
+  inset: -14px;
   will-change: transform;
 }
 
+/* Purpose-built panoramic art direction: no blur fill or visible seams. */
 .image {
   object-fit: cover;
-  /* Keep the name board and the lobby in frame as the viewport narrows. */
-  object-position: 50% 30%;
+  object-position: 50% 50%;
+}
+
+/* First-paint ground while the optimized hero arrives. */
+.sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(80% 68% at 82% 48%, #314967 0%, transparent 74%),
+    linear-gradient(to bottom, #10263F 0%, #1D3E61 46%, #3B3240 76%, #16100D 100%);
 }
 
 /* The film sits over the poster and the glows, and appears only once it plays. */
@@ -84,29 +96,48 @@
 
 /* Light over nothing looks like a stain: the glows wait for the render. */
 .parallax:not([data-loaded]) .windows,
+.parallax:not([data-loaded]) .bloom,
 .parallax:not([data-loaded]) .sun {
   visibility: hidden;
 }
 
-/* The interiors breathing: warm light over the glass, lifted in soft-light. */
+/* The interiors breathing. One centred pool used to light the middle of the
+   facade and leave both wings dull; this lays warm light along the whole run
+   of the building — left wing, corner, right wing and the lobby beneath it —
+   so the whole thing reads as lit from within. */
 .windows {
   position: absolute;
   inset: 0;
   pointer-events: none;
   mix-blend-mode: soft-light;
   background:
-    radial-gradient(38% 34% at 50% 48%, rgba(255, 196, 120, 0.75), rgba(255, 196, 120, 0) 70%),
-    radial-gradient(20% 16% at 50% 80%, rgba(255, 180, 100, 0.8), rgba(255, 180, 100, 0) 70%);
+    radial-gradient(46% 44% at 72% 50%, rgba(255, 201, 130, 0.42), rgba(255, 201, 130, 0) 76%),
+    radial-gradient(30% 17% at 68% 78%, rgba(255, 184, 104, 0.48), rgba(255, 184, 104, 0) 74%);
   animation: breathe 7s var(--ease-in-out) infinite alternate;
 }
 
-/* The low sun, bottom right of the render; only where the frame still holds it. */
+/* A second, gentler pass in screen: soft-light alone deepens as much as it
+   lifts, and the far wings needed lifting. */
+.bloom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.4;
+  background:
+    radial-gradient(42% 40% at 73% 54%, rgba(255, 186, 112, 0.22), rgba(255, 186, 112, 0) 74%),
+    radial-gradient(24% 16% at 69% 80%, rgba(255, 176, 98, 0.26), rgba(255, 176, 98, 0) 72%);
+  animation: breathe 9s var(--ease-in-out) infinite alternate-reverse;
+}
+
+/* The low sun, off the right shoulder of the building, now that the whole
+   render sits in frame rather than a crop of its middle. */
 .sun {
   position: absolute;
   inset: 0;
   pointer-events: none;
   mix-blend-mode: screen;
-  background: radial-gradient(16% 22% at 91.5% 61%, rgba(255, 170, 90, 0.55), rgba(255, 140, 60, 0.12) 45%, rgba(255, 140, 60, 0) 72%);
+  background: radial-gradient(18% 24% at 92% 54%, rgba(255, 170, 90, 0.34), rgba(255, 140, 60, 0.08) 46%, rgba(255, 140, 60, 0) 74%);
   animation: flare 9s var(--ease-in-out) infinite alternate;
 }
 
@@ -128,18 +159,29 @@
   );
 }
 
-/* Legibility: the bottom third and the nav strip, then a soft vignette so the
-   bright sky never competes with the headline. */
+/* Legibility. The headline lives in the left column, so that column is given a
+   true dark to sit on rather than whatever the render happens to put there:
+   an editorial left wash that is opaque under the words and gone by the time
+   it reaches the building. The nav strip and the foot keep their own passes. */
 .scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(to top, rgb(var(--shade) / 0.88) 0%, rgb(var(--shade) / 0.5) 30%, rgb(var(--shade) / 0.12) 52%, rgb(var(--shade) / 0) 66%),
-    linear-gradient(to right, rgb(var(--shade) / 0.42) 0%, rgb(var(--shade) / 0) 48%),
-    linear-gradient(to left, rgb(var(--shade) / 0.38) 0%, rgb(var(--shade) / 0) 34%),
-    linear-gradient(to bottom, rgb(var(--shade) / 0.55) 0%, rgb(var(--shade) / 0) 22%),
-    radial-gradient(120% 90% at 50% 45%, rgb(var(--shade) / 0) 55%, rgb(var(--shade) / 0.45) 100%);
+    /* the reading column */
+    linear-gradient(
+      to right,
+      rgb(var(--shade) / 0.78) 0%,
+      rgb(var(--shade) / 0.68) 20%,
+      rgb(var(--shade) / 0.42) 36%,
+      rgb(var(--shade) / 0.16) 50%,
+      rgb(var(--shade) / 0) 64%
+    ),
+    /* the foot, where the place and the scroll cue sit */
+    linear-gradient(to top, rgb(var(--shade) / 0.72) 0%, rgb(var(--shade) / 0.24) 20%, rgb(var(--shade) / 0) 40%),
+    /* the nav strip — kept shallow so the crown and the name board stay lit */
+    linear-gradient(to bottom, rgb(var(--shade) / 0.42) 0%, rgb(var(--shade) / 0) 14%),
+    radial-gradient(130% 95% at 62% 45%, rgb(var(--shade) / 0) 66%, rgb(var(--shade) / 0.3) 100%);
 }
 
 /* Film grain, so the CGI sits like a photograph. */
@@ -155,7 +197,7 @@
 
 @keyframes drift {
   from { transform: scale(1) translate3d(0, 0, 0); }
-  to { transform: scale(1.06) translate3d(-0.8%, 0.6%, 0); }
+  to { transform: scale(1.025) translate3d(-0.5%, 0.4%, 0); }
 }
 
 @keyframes breathe {
@@ -218,23 +260,38 @@
   margin-right: -0.42em;
 }
 
+/* One column, left, bottom-aligned: title, lede, the way in, the four facts.
+   The old two-column split put the buttons in a ragged stack out on the right,
+   away from the headline they belonged to. */
 .content {
   position: absolute;
   inset: auto 0 0 0;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   align-items: end;
-  gap: 32px;
-  padding-bottom: clamp(92px, 12vh, 140px);
+  /* Clears the facts panel that now sits along the foot of the frame. */
+  padding-bottom: clamp(188px, 26vh, 248px);
+}
+
+.eyebrow {
+  color: var(--accent);
+  letter-spacing: 0.34em;
+  margin: 0 0 clamp(14px, 1.6vw, 22px);
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: var(--fs-mega);
-  line-height: 0.84;
-  letter-spacing: -0.045em;
+  /* Sized so the whole building stays the picture and the words stay the
+     message — the reference gives the headline about a third of the frame. */
+  font-size: clamp(2.75rem, 0.9rem + 5.6vw, 6.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
   min-width: 0;
+  max-width: 15ch;
+}
+
+.accentLine {
+  color: var(--accent);
 }
 
 .line {
@@ -250,13 +307,12 @@
 .aside {
   display: grid;
   justify-items: start;
-  gap: 28px;
-  padding-bottom: 1.4vw;
-  margin-left: clamp(48px, 9vw, 176px);
+  gap: clamp(18px, 2vw, 26px);
+  margin-top: clamp(20px, 2.4vw, 34px);
 }
 
 .lede {
-  max-width: 26ch;
+  max-width: 34ch;
   font-size: var(--fs-lead);
   line-height: 1.45;
 }
@@ -264,7 +320,91 @@
 .ctas {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(16px, 2vw, 30px);
+}
+
+/* The second action is an outlined pill beside the solid one, as in the
+   reference — a play cap, then the words. */
+.watch {
   gap: 12px;
+  padding-left: 10px;
+  border-color: rgb(var(--on-media) / 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.play {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  padding-left: 2px;
+}
+
+/* ─── The facts panel ──────────────────────────────────────────────
+   A single smoked-glass bar along the foot of the frame, four cells divided by
+   hairlines. It sits over the render on purpose: it is the one place on the
+   page where a panel over photography earns its keep, because it is carrying
+   the numbers a buyer is scanning for. */
+.panelWrap {
+  position: absolute;
+  inset: auto 0 clamp(64px, 8vh, 96px) 0;
+  z-index: 2;
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: repeat(var(--fact-count, 4), minmax(0, 1fr));
+  max-width: 44rem;
+  margin: 0;
+  border: 1px solid rgb(var(--on-media) / 0.18);
+  border-radius: var(--radius-card);
+  background: rgb(var(--shade) / 0.58);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  box-shadow: 0 24px 60px -20px rgb(var(--shade) / 0.7);
+  overflow: hidden;
+}
+
+.cell {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: clamp(16px, 1.8vw, 22px) clamp(8px, 1.4vw, 18px);
+  text-align: center;
+}
+
+.cell + .cell {
+  border-left: 1px solid rgb(var(--on-media) / 0.14);
+}
+
+.cellIcon {
+  display: block;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+
+.cellValue {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 0.9rem + 0.7vw, 1.625rem);
+  line-height: 1.1;
+  color: var(--ink);
+  font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap;
+}
+
+.cellLabel {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.16em;
+  color: var(--ink-muted);
 }
 
 .foot {
@@ -352,19 +492,154 @@
 @media (prefers-reduced-motion: reduce) {
   .drift,
   .windows,
+  .bloom,
   .sun,
   .grain { animation: none; }
   .sheen { display: none; }
 }
 
 @media (max-width: 860px) {
-  .content {
-    grid-template-columns: 1fr;
-    gap: 24px;
-    padding-bottom: 96px;
-  }
-  .aside { padding-bottom: 0; margin-left: 0; }
-  /* Centre on the name board, which sits a little left of the render's middle. */
-  .image { object-position: 46% 30%; }
   .foot :global(.cgi-note) { display: none; }
+}
+
+/* ─── Portrait ─────────────────────────────────────────────────────
+   A landscape render cropped to a portrait aspect shows about a third of its
+   width — a wall of balconies, no silhouette, no sky, and the headline set on
+   lit glass. So the two separate: the render takes a band across the top and
+   keeps its proportions, and the words sit beneath it on solid ground. This is
+   the same 900px line at which every other section drops to one column. */
+@media (max-width: 900px) {
+  /* On portrait screens the panoramic still becomes an uncropped cinematic
+     band above the copy. The viewport cap trims only a little sky/road. */
+  .media {
+    inset: 0 0 auto 0;
+    width: 100%;
+    height: min(38svh, 42.85vw);
+    max-height: none;
+  }
+
+  /* No overscan in the self-contained band. */
+  .parallax {
+    inset: 0;
+  }
+
+  /* The scrim is a child of the band, so these stops are read against the
+     band's own height, not the viewport's. The band dissolves into the
+     section's ground at its foot instead of ending on a seam. */
+  .scrim {
+    background:
+      linear-gradient(to top, rgb(var(--shade)) 0%, rgb(var(--shade) / 0.62) 16%, rgb(var(--shade) / 0) 44%),
+      linear-gradient(to bottom, rgb(var(--shade) / 0.55) 0%, rgb(var(--shade) / 0) 20%);
+  }
+
+  /* Keep the complete building and the left breathing room visible. */
+  .image {
+    object-fit: cover;
+    object-position: 52% 50%;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .content {
+    /* Clears the two-row panel, which in turn clears the foot line under it. */
+    padding-bottom: clamp(266px, 32vh, 306px);
+  }
+
+  .title {
+    font-size: clamp(2.25rem, 1.4rem + 5.4vw, 3.5rem);
+    max-width: 100%;
+  }
+
+  /* Four cells across a phone would set each number at eight characters wide,
+     so they pair off instead, and each cell tightens to keep the panel to a
+     third of what the copy above it needs. */
+  /* Sits clear of the place line and the scroll cue, which run the full width
+     of the foot on a phone rather than tucking into a corner. The cue itself
+     shortens: it is a hint, and it was the tallest thing down there. */
+  .panelWrap {
+    inset: auto 0 72px 0;
+  }
+
+  .cue {
+    height: 26px;
+  }
+
+  .panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 100%;
+  }
+
+  .cell {
+    gap: 3px;
+    padding: 12px 10px;
+  }
+
+  .cellIcon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cellValue {
+    font-size: 1.0625rem;
+  }
+
+  .cellLabel {
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+  }
+
+  .cell:nth-child(odd) + .cell {
+    border-left: 1px solid rgb(var(--on-media) / 0.14);
+  }
+
+  .cell:nth-child(n + 3) {
+    border-top: 1px solid rgb(var(--on-media) / 0.14);
+  }
+
+  .cell:nth-child(3) {
+    border-left: 0;
+  }
+
+  .lede {
+    max-width: 100%;
+    font-size: 1.0625rem;
+  }
+
+  .aside {
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .eyebrow {
+    letter-spacing: 0.26em;
+    margin-bottom: 10px;
+  }
+
+  .ctas {
+    gap: 12px;
+  }
+}
+
+/* Short phones: the copy is bottom-anchored and grows upward, so on a small
+   viewport it starts climbing into the render. The band gives way first. */
+@media (max-width: 420px), (max-height: 760px) and (max-width: 900px) {
+  .media {
+    height: min(26svh, 42.85vw);
+  }
+
+  .title {
+    font-size: clamp(2rem, 1.2rem + 5vw, 2.75rem);
+  }
+
+  .lede {
+    font-size: 1rem;
+  }
+
+  .content {
+    padding-bottom: clamp(258px, 35vh, 282px);
+  }
+
+  .panelWrap {
+    inset: auto 0 64px 0;
+  }
 }

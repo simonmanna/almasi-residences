@@ -1,9 +1,11 @@
-import { BadRequestException, Controller, Get, Headers, Param, Query, Res, UseInterceptors, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, HttpCode, Param, Post, Query, Res, UseInterceptors, UnauthorizedException } from '@nestjs/common';
+import { SEO_ENTITY_TYPES, type SeoEntityType } from '@avida/types';
 import { PreviewInterceptor, verifyPreviewToken } from '../../common/preview.js';
 import { NoStore } from '../../common/cache-control.decorator.js';
 import { PublicCache } from '../../common/cache-control.decorator.js';
 import { BrochureService } from './brochure.service.js';
 import { PublicService, type PublicResidenceFilter } from './public.service.js';
+import { SeoPublicService } from './seo-public.service.js';
 import type { FastifyReply } from 'fastify';
 
 /**
@@ -17,6 +19,7 @@ export class PublicController {
   constructor(
     private readonly svc: PublicService,
     private readonly brochures: BrochureService,
+    private readonly seoSvc: SeoPublicService,
   ) {}
 
   @Get('property')
@@ -139,6 +142,68 @@ export class PublicController {
   @PublicCache()
   page(@Param('key') key: string) {
     return this.svc.page(key);
+  }
+
+  // ─── SEO engine ────────────────────────────────────────────────────────
+
+  /** Every live redirect, so the website can answer an old link itself. */
+  @Get('redirects')
+  @PublicCache()
+  redirects() {
+    return this.seoSvc.redirects();
+  }
+
+  /**
+   * The website tells us it served one, so the admin's hit count is what
+   * visitors actually followed rather than what was configured.
+   */
+  @Post('redirects/hit')
+  @HttpCode(202)
+  @NoStore()
+  async redirectHit(@Body() body: { path?: unknown }) {
+    const path = typeof body?.path === 'string' ? body.path.slice(0, 300) : '';
+    if (!path.startsWith('/')) throw new BadRequestException('A redirect is recorded by its path.');
+    await this.seoSvc.recordRedirectHit(path);
+  }
+
+  /** The metadata overrides of one kind of record, keyed by its id. */
+  @Get('seo/entities/:type')
+  @PublicCache()
+  seoEntities(@Param('type') type: string) {
+    if (!(SEO_ENTITY_TYPES as readonly string[]).includes(type)) throw new BadRequestException('No such kind of page');
+    return this.seoSvc.entities(type as SeoEntityType);
+  }
+
+  @Get('location-pages')
+  @PublicCache()
+  locationPages() {
+    return this.seoSvc.locationPages();
+  }
+
+  @Get('location-pages/:slug')
+  @PublicCache()
+  locationPage(@Param('slug') slug: string) {
+    return this.seoSvc.locationPage(slug);
+  }
+
+  @Get('insights')
+  @PublicCache()
+  insights(@Query('limit') limit?: string) {
+    const n = Number(limit);
+    return this.seoSvc.posts(Number.isFinite(n) && n > 0 ? Math.min(n, 100) : undefined);
+  }
+
+  @Get('insights/:slug')
+  @PublicCache()
+  insight(@Param('slug') slug: string) {
+    return this.seoSvc.post(slug);
+  }
+
+  /** The films, with the transcript and duration a VideoObject needs. */
+  @Get('videos')
+  @PublicCache()
+  videos() {
+    return this.seoSvc.videos();
   }
 
   @Get('faqs')

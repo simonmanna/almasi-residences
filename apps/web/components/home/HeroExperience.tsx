@@ -5,13 +5,76 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { formatMoney } from '@avida/types';
 import { useIsoLayoutEffect } from '../../lib/motion';
 import { Magnetic } from '../ui/Magnetic';
-import { heroFilm } from '../../lib/hero-film';
+import { RESIDENCE_TYPES } from '../../lib/residences';
+import { useInventory } from '../providers/InventoryProvider';
 import { HeroFilm } from './HeroFilm';
 import styles from './HeroExperience.module.css';
 
 const INTRO_KEY = 'almasi:intro-seen';
+
+/**
+ * The opening frame: the whole building on its corner at dusk, crown to
+ * entrance, with open sky down the left where the headline sits. Nothing is
+ * cropped away — the silhouette is the first thing a buyer should see.
+ */
+const HERO_STILL = '/media/hero-wide-v2.png';
+
+/** Thin line icons for the facts panel. One stroke weight, one 24-unit box. */
+const icons = {
+  building: (
+    <>
+      <path d="M4 21h16M6 21V5.5A1.5 1.5 0 0 1 7.5 4h6A1.5 1.5 0 0 1 15 5.5V21M15 10h2.5A1.5 1.5 0 0 1 19 11.5V21" />
+      <path d="M9 8h3M9 12h3M9 16h3" />
+    </>
+  ),
+  bed: (
+    <>
+      <path d="M3 18V7M3 12h18v6M21 18v-4.5A1.5 1.5 0 0 0 19.5 12" />
+      <path d="M6.5 12V9.5A1.5 1.5 0 0 1 8 8h8a1.5 1.5 0 0 1 1.5 1.5V12" />
+    </>
+  ),
+  tag: (
+    <>
+      <path d="M11.2 3.5H20v8.8l-8.6 8.6a1.6 1.6 0 0 1-2.3 0l-6.5-6.5a1.6 1.6 0 0 1 0-2.3Z" />
+      <circle cx="16.2" cy="7.8" r="1.4" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="15" rx="1.6" />
+      <path d="M3.5 10h17M8 3.5v4M16 3.5v4" />
+    </>
+  ),
+};
+
+/** "1, 2 & 3" is read from what is actually built, not written into the CMS. */
+const BEDROOM_COUNTS = [
+  { type: 'one-bedroom', label: '1' },
+  { type: 'two-bedroom', label: '2' },
+  { type: 'three-bedroom', label: '3' },
+] as const;
+
+function Icon({ name }: { name: keyof typeof icons }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {icons[name]}
+    </svg>
+  );
+}
 
 const chars = (text: string) =>
   [...text].map((c, i) => (
@@ -41,7 +104,7 @@ export function HeroExperience({
   subtitle,
   place,
   primary,
-  secondary,
+  handover,
 }: {
   kicker: string;
   title: string;
@@ -49,10 +112,36 @@ export function HeroExperience({
   /** "Kimihurura, Kigali" — from the property record. */
   place: string;
   primary: { label: string; href: string };
-  secondary: { label: string; href: string };
+  /** "Q2 2028" — already formatted by the page. */
+  handover?: string | null;
 }) {
   const [lineA, ...rest] = title.trim().split(/\s+/);
   const lineB = rest.join(' ');
+  const { summary, currency } = useInventory();
+
+  /**
+   * The panel along the foot of the frame: the four facts a buyer looks for
+   * before they look at anything else. Each is read live — an unpriced or
+   * unconfigured development shows fewer cells rather than a placeholder.
+   */
+  const priceFrom = RESIDENCE_TYPES.map((t) => summary.byType[t].priceFromMinor).filter(
+    (p): p is number => p !== null,
+  );
+  const bedrooms = BEDROOM_COUNTS.filter((b) => summary.byType[b.type].total > 0).map((b) => b.label);
+  const bedroomText =
+    bedrooms.length > 1 ? `${bedrooms.slice(0, -1).join(', ')} & ${bedrooms.at(-1)}` : bedrooms[0] ?? '';
+  const facts = [
+    summary.total ? { icon: 'building' as const, value: String(summary.total), label: 'Residences' } : null,
+    bedroomText ? { icon: 'bed' as const, value: bedroomText, label: 'Bedroom units' } : null,
+    priceFrom.length
+      ? {
+          icon: 'tag' as const,
+          value: formatMoney({ amountMinor: Math.min(...priceFrom), currency }),
+          label: 'Price from',
+        }
+      : null,
+    handover ? { icon: 'calendar' as const, value: handover, label: 'Handover' } : null,
+  ].filter((f): f is { icon: keyof typeof icons; value: string; label: string } => f !== null);
   const root = useRef<HTMLElement>(null);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   // Decided once per mount. React's development double-run of effects must not
@@ -102,7 +191,7 @@ export function HeroExperience({
           // choreography is unchanged, the waiting is not.
           .to(q('[data-intro-copy]'), { opacity: 0, y: -18, duration: 0.7, ease: 'power2.in' }, 2.2)
           .to(q('[data-aperture]'), { clipPath: 'inset(0% 0% 0% 0%)', duration: 2.0, ease: 'expo.inOut' }, 2.4)
-          .fromTo(q('[data-media-inner]'), { scale: 1.45 }, { scale: 1.04, duration: 3.4, ease: 'power3.out' }, 2.4)
+          .fromTo(q('[data-media-inner]'), { scale: 1.32 }, { scale: 1, duration: 3.4, ease: 'power3.out' }, 2.4)
           .fromTo(q('[data-glow]'), { opacity: 0 }, { opacity: 1, duration: 2.4, ease: 'power2.out', stagger: 0.25 }, 3.0)
           .fromTo(q('[data-sheen]'), { xPercent: -100 }, { xPercent: 100, duration: 2.6, ease: 'power2.inOut' }, 2.9)
           .set(q('[data-intro]'), { autoAlpha: 0 }, 4.1)
@@ -110,7 +199,7 @@ export function HeroExperience({
           .from(q('[data-hero-fade]'), { opacity: 0, y: 18, duration: 1.1, stagger: 0.08 }, 4.0);
       } else {
         tl.set(q('[data-intro]'), { autoAlpha: 0 })
-          .fromTo(q('[data-media-inner]'), { scale: 1.18 }, { scale: 1.04, duration: 2.6, ease: 'power3.out' }, 0)
+          .fromTo(q('[data-media-inner]'), { scale: 1.12 }, { scale: 1, duration: 2.6, ease: 'power3.out' }, 0)
           .fromTo(q('[data-glow]'), { opacity: 0 }, { opacity: 1, duration: 2.2, ease: 'power2.out', stagger: 0.25 }, 0.3)
           .fromTo(q('[data-sheen]'), { xPercent: -100 }, { xPercent: 100, duration: 2.4, ease: 'power2.inOut' }, 0.4)
           .from(q('[data-hero-line]'), { yPercent: 110, duration: 1.4, stagger: 0.1 }, 0.15)
@@ -187,12 +276,15 @@ export function HeroExperience({
         <div className={styles.aperture} data-aperture>
           <div className={styles.mediaInner} data-media-inner>
             <div className={styles.drift}>
-              <div className={styles.parallax} data-parallax>
+              {/* Painted dusk under the contained render, so the frame is full
+                of evening at every aspect ratio. */}
+            <div className={styles.sky} aria-hidden="true" />
+            <div className={styles.parallax} data-parallax>
                 <Image
-                  src={heroFilm.poster}
-                  alt="Almasi Residence at dusk: five storeys of lit, glass-fronted apartments with planted balconies above a street-level lobby"
+                  src={HERO_STILL}
+                  alt="Almasi Residence at dusk, seen from the street corner: five storeys of lit, glass-fronted apartments with planted balconies above a street-level lobby, against an evening sky"
                   fill
-                  priority
+                  preload
                   sizes="100vw"
                   quality={82}
                   className={styles.image}
@@ -201,6 +293,7 @@ export function HeroExperience({
                   }}
                 />
                 <div className={styles.windows} data-glow aria-hidden="true" />
+                <div className={styles.bloom} data-glow aria-hidden="true" />
                 <div className={styles.sun} data-glow aria-hidden="true" />
                 <HeroFilm paused={filmPaused} onPlaying={() => setFilmPlaying(true)} />
               </div>
@@ -222,12 +315,19 @@ export function HeroExperience({
       </div>
 
       <div className={`container ${styles.content}`} data-hero-content>
+        {kicker && (
+          <p className={`mark ${styles.eyebrow}`} data-hero-fade>
+            {kicker}
+          </p>
+        )}
         <h1 id="hero-title" className={styles.title}>
           <span className={styles.line}>
             <span data-hero-line>{lineA}</span>
           </span>
           <span className={styles.line}>
-            <span data-hero-line className="italic">
+            {/* The second line carries the accent, as the reference does: the
+                name states itself, the accent makes it sing. */}
+            <span data-hero-line className={`italic ${styles.accentLine}`}>
               {lineB}
             </span>
           </span>
@@ -236,29 +336,51 @@ export function HeroExperience({
           <p className={styles.lede} data-hero-fade>
             {subtitle}
           </p>
+          {/* One way in, and one quiet alternative. A third button only made the
+              two that matter harder to see. */}
           <div className={styles.ctas} data-hero-fade>
-            <Magnetic>
-              <Link href="/3d-design" className="btn btn--solid">
-                Experience Almasi in 3D
-              </Link>
-            </Magnetic>
             {primary.label && primary.href && (
               <Magnetic>
-                <Link href={primary.href} className="btn btn--ghost">
+                <Link href={primary.href} className="btn btn--solid">
                   {primary.label}
+                  <span aria-hidden="true" className="btn-arrow">
+                    →
+                  </span>
                 </Link>
               </Magnetic>
             )}
-            {secondary.label && secondary.href && (
-              <Magnetic>
-                <Link href={secondary.href} className="btn btn--ghost">
-                  {secondary.label}
-                </Link>
-              </Magnetic>
-            )}
+            {/* The 3D walkthrough is what this development has and its
+                neighbours do not, so it keeps its place here. "Book a viewing"
+                does not: the nav and the sticky bar both already offer it. */}
+            <Link href="/3d-design" className={`btn ${styles.watch}`}>
+              <span className={styles.play} aria-hidden="true">
+                <svg viewBox="0 0 12 14" width="9" height="11" fill="currentColor" focusable="false">
+                  <path d="M0 0.8v12.4a.8.8 0 0 0 1.22.68l10-6.2a.8.8 0 0 0 0-1.36l-10-6.2A.8.8 0 0 0 0 .8Z" />
+                </svg>
+              </span>
+              Experience in 3D
+            </Link>
           </div>
         </div>
       </div>
+
+      {/* The facts panel along the foot of the frame: four numbers a buyer can
+          take in before they have read a word of the copy. */}
+      {facts.length > 0 && (
+        <div className={`container ${styles.panelWrap}`} data-hero-fade>
+          <dl className={styles.panel} style={{ '--fact-count': facts.length } as React.CSSProperties}>
+            {facts.map((f) => (
+              <div key={f.label} className={styles.cell}>
+                <span className={styles.cellIcon}>
+                  <Icon name={f.icon} />
+                </span>
+                <dd className={styles.cellValue}>{f.value}</dd>
+                <dt className={styles.cellLabel}>{f.label}</dt>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
 
       <div className={styles.foot} data-hero-fade>
         <span className="mark">{place}</span>

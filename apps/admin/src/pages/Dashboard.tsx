@@ -27,6 +27,7 @@ import { STATUS_LABEL, type UnitStatus } from '@avida/types';
 import { get, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { ago, area, code as fmtCode, date, money, STATUS_TONE } from '../lib/format';
+import { floorName } from '../lib/ref';
 import { useQuery } from '../lib/query';
 import { Link, navigate } from '../lib/router';
 import type { BuildingFloor, Dashboard as DashboardData, Paged, ResidenceRow } from '../lib/types';
@@ -63,7 +64,7 @@ function ResidencesPreview() {
   return (
     <Card>
       <CardHead title="All residences" icon={<Building2 size={19} />}>
-        <Select className="sm" value={floorId} onChange={(e) => setFloorId(e.target.value)} placeholder="All floors" options={(floors ?? []).map((f) => ({ value: f.id, label: f.displayName ?? f.label }))} />
+        <Select className="sm" value={floorId} onChange={(e) => setFloorId(e.target.value)} placeholder="All floors" options={(floors ?? []).map((f) => ({ value: f.id, label: floorName(f) }))} />
         <Select className="sm" value={typologyId} onChange={(e) => setTypologyId(e.target.value)} placeholder="All types" options={(types ?? []).map((t) => ({ value: t.id, label: t.name }))} />
         <Select className="sm" value={status} onChange={(e) => setStatus(e.target.value)} placeholder="All statuses" options={Object.entries(STATUS_LABEL).map(([v, l]) => ({ value: v, label: l }))} />
         {can('residence.edit') && (
@@ -93,7 +94,7 @@ function ResidencesPreview() {
               <tr key={r.id} data-clickable="true" onClick={() => navigate(`/residences/${r.id}`)}>
                 <td>{r.cover ? <MediaImg m={r.cover} thumb className="thumb" sizes="60px" /> : <span className="thumb-empty"><Building2 size={15} /></span>}</td>
                 <td className="cell-strong">{fmtCode(r.code)}</td>
-                <td className="muted">{r.floor.displayName ?? r.floor.label}</td>
+                <td className="muted">{floorName(r.floor)}</td>
                 <td>{r.typology.name}</td>
                 <td className="num">{r.bedrooms}</td>
                 <td className="num">{area(r.areaSqm)}</td>
@@ -129,7 +130,7 @@ function FloorOverview({ floors, onOpen }: { floors: BuildingFloor[]; onOpen: (i
   return (
     <Card>
       <CardHead title="Floor overview" icon={<Layers size={18} />}>
-        <Select className="sm" value={floorId} onChange={(e) => setFloorId(e.target.value)} options={residential.map((f) => ({ value: f.id, label: f.displayName ?? f.label }))} />
+        <Select className="sm" value={floorId} onChange={(e) => setFloorId(e.target.value)} options={residential.map((f) => ({ value: f.id, label: floorName(f) }))} />
       </CardHead>
       <div className="card-body stack-sm">
         <div className="plan">
