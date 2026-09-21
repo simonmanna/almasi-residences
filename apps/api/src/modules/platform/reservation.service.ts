@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { Prisma, UnitStatus } from '@avida/db';
 import { DEFAULT_HOLD_DAYS } from '@avida/types';
 import { CrmService } from '../../common/crm.service.js';
+import { rethrowPrisma } from '../../common/http.js';
 import { PrismaService } from '../../common/prisma.service.js';
 
 type Tx = Prisma.TransactionClient;
@@ -64,7 +65,7 @@ export class ReservationService {
         previousStatus: unit.status,
       },
       include: reservationInclude,
-    });
+    }).catch((e: unknown) => rethrowPrisma(e, { unique: `${unit.code} already has an active reservation.` }));
     await tx.unitStatusLog.create({ data: { unitId: unit.id, from: unit.status, to: 'BOOKED', actor: actorId, note: `Reserved until ${heldUntil.toISOString().slice(0, 10)}` } });
     if (input.enquiryId) {
       const lead = await tx.enquiry.findUniqueOrThrow({ where: { id: input.enquiryId } });

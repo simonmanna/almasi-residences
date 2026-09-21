@@ -1,9 +1,10 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import Redis from 'ioredis';
 import { request } from '@playwright/test';
 import { ACCOUNTS, authFile, SEED_PASSWORD } from './admin-api';
+import { assertLocalTarget, sessionFromState, sweepFixtures } from './fixtures.mjs';
 
 const API = process.env.E2E_API_URL ?? 'http://localhost:3011';
 
@@ -53,6 +54,7 @@ async function stillValid(file: string): Promise<boolean> {
  * real session cookie and a real CSRF token rather than a back door.
  */
 export default async function globalSetup(): Promise<void> {
+  assertLocalTarget();
   await clearRateLimits();
 
   for (const [role, email] of Object.entries(ACCOUNTS)) {
@@ -74,4 +76,9 @@ export default async function globalSetup(): Promise<void> {
     await writeFile(file, JSON.stringify(await ctx.storageState(), null, 2));
     await ctx.dispose();
   }
+
+  // A crashed or cancelled run leaves fixtures on the public site; clear them first.
+  const owner = JSON.parse(await readFile(authFile('owner'), 'utf8'));
+  const removed = await sweepFixtures(API, sessionFromState(owner));
+  if (removed.length) console.log(`E2E setup swept ${removed.length} leftover fixture(s): ${removed.join(', ')}`);
 }

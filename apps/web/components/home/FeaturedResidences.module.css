@@ -1,51 +1,46 @@
 /**
- * The selected residences read as an editorial spread, not as a second copy of
- * the residence-type grid above them. Wide frames, alternating sides, one
- * residence at a time — a curated choice should not look like a catalogue.
+ * The selected residences sit side by side as a compact row of cards, so a
+ * curated choice reads at a glance instead of costing a screen per residence.
  */
 .section {
   background-color: var(--surface-sunk);
 }
 
 .head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: end;
-  gap: 32px;
-  margin-bottom: clamp(32px, 4vw, 64px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin-bottom: clamp(24px, 3vw, 40px);
 }
 
 .kicker {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .aside {
   display: grid;
   justify-items: start;
-  gap: 18px;
 }
 
 .grid {
   display: grid;
-  gap: clamp(48px, 7vw, 112px);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: clamp(20px, 2.5vw, 32px);
 }
 
 .card {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(24px, 4vw, 64px);
-}
-
-/* Every second residence turns around, so the eye travels down the page. */
-.item:nth-child(even) .card > :first-child {
-  order: 2;
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+  height: 100%;
 }
 
 .media {
   border-radius: var(--radius-media);
   position: relative;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background-color: var(--surface-sunk);
 }
@@ -58,32 +53,36 @@
 
 .text {
   display: grid;
-  gap: 12px;
+  align-content: start;
+  gap: 6px;
 }
 
 .size {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 1.1rem + 1vw, 2.125rem);
+  font-size: clamp(1.125rem, 1rem + 0.4vw, 1.375rem);
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 
 .line {
-  max-width: 44ch;
   color: var(--ink-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .meta {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 16px;
+  margin-top: 8px;
   border-top: 1px solid var(--line);
 }
 
 .meta div {
   display: grid;
   gap: 2px;
-  padding-top: 14px;
+  padding-top: 10px;
 }
 
 .meta dt {
@@ -96,13 +95,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 900px) {
-  .head { grid-template-columns: 1fr; }
-  .card { grid-template-columns: 1fr; gap: 24px; }
-  .item:nth-child(even) .card > :first-child { order: 0; }
-  .media { aspect-ratio: 4 / 3; }
-}
-
 .cta {
-  margin-top: 16px;
+  margin-top: 10px;
 }

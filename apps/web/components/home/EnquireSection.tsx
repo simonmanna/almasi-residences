@@ -33,7 +33,7 @@ export async function EnquireSection({
   const body = copy(pages, 'contact', 'enquireBody');
 
   return (
-    <section id={id} className={`section ${styles.section}`} data-ground={ground} data-hide-sticky-cta aria-labelledby={`${id}-title`}>
+    <section id={id} className={`section ${styles.section}${compact ? ` ${styles.compact}` : ''}`} data-ground={ground} data-hide-sticky-cta aria-labelledby={`${id}-title`}>
       <div className={`container ${styles.layout}`}>
         <div className={styles.text}>
           <p className={`mark ${styles.kicker}${compact ? ' kicker-lg' : ''}`}>Enquire</p>

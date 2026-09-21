@@ -105,6 +105,7 @@ export default async function HomePage() {
           lede={copy(pages, 'locationSection', 'lede')}
           note={copy(pages, 'locationSection', 'note')}
           ground="night"
+          limit={6}
         />
       )}
       <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} ground="quiet" />

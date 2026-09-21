@@ -62,6 +62,8 @@
   font-weight: 500;
   font-variant-caps: all-small-caps;
   letter-spacing: 0.14em;
+  /* A two-line label pushes into its neighbours; the menu takes over instead. */
+  white-space: nowrap;
 }
 
 .link::after {
@@ -122,7 +124,8 @@
   width: 14px;
 }
 
-@media (max-width: 1100px) {
+/* The full row (brand, seven labels, actions) needs about 1180px. */
+@media (max-width: 1200px) {
   .links { display: none; }
   .menuButton { display: inline-flex; }
 }

@@ -43,7 +43,7 @@ export function FeaturedResidences({ items }: { items: PublicResidenceCardDto[] 
               <li key={r.id} className={styles.item} data-reveal>
                 <Link href={`/residences/${r.slug}`} className={styles.card} data-cursor="View">
                   <Reveal className={styles.media}>
-                    <SceneImage media={card.cover} sizes="(max-width: 900px) 100vw, 55vw" label={`Residence ${r.label}`} />
+                    <SceneImage media={card.cover} sizes="(max-width: 700px) 100vw, 33vw" label={`Residence ${r.label}`} />
                   </Reveal>
                   <div className={styles.text}>
                     <p className="eyebrow">{TYPE_TEXT[r.type]}</p>

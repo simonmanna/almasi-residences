@@ -32,11 +32,19 @@
 
 {$SCHEME}://admin.{$DOMAIN} {
 	import common
-	root * /srv/admin
-	header X-Frame-Options DENY
-	header X-Content-Type-Options nosniff
-	try_files {path} /index.html
-	file_server
+	# The admin talks to the API through its own origin. The CSRF cookie is
+	# read by admin JavaScript, which only works when the API sets it on this
+	# host; a cookie set by api.{$DOMAIN} is invisible to document.cookie here.
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+	handle {
+		root * /srv/admin
+		header X-Frame-Options DENY
+		header X-Content-Type-Options nosniff
+		try_files {path} /index.html
+		file_server
+	}
 }
 
 # MinIO's S3 API is the object store. Public media is read from here,

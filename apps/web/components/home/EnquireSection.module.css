@@ -55,3 +55,43 @@
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
 }
+
+/* Inline on other pages: channels pair up and the form tightens, so the
+   enquiry costs roughly one screen instead of two. */
+.compact {
+  padding-block: clamp(40px, 4.5vw, 72px);
+}
+
+.compact .layout {
+  gap: clamp(28px, 4vw, 64px);
+}
+
+.compact .text {
+  gap: 16px;
+}
+
+.compact .channels {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+  margin-top: 0;
+}
+
+.compact .channels li {
+  grid-template-columns: 1fr;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  gap: 2px;
+  padding: 10px 0;
+}
+
+.compact .channels .label {
+  padding-top: 0;
+}
+
+.compact .form {
+  padding: clamp(20px, 2.2vw, 32px);
+}
+
+@media (max-width: 560px) {
+  .compact .channels { grid-template-columns: 1fr; }
+}

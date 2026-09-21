@@ -22,19 +22,19 @@ test.describe('presentation comes from the admin', () => {
 
   test('P1. a placement change reaches the page that shows it, and an empty placement is a neutral frame', async () => {
     const slots = await api.get<{ key: string; image: { id: string; title: string | null } | null }[]>('/admin/slots');
-    const hero = slots.find((s) => s.key === 'page-amenities')!;
+    const hero = slots.find((s) => s.key === 'home-film-teaser')!;
     const original = hero.image?.id ?? null;
     try {
-      await api.put('/admin/slots/page-amenities', { imageId: null });
-      const neutral = await eventually(async () => (await html('/amenities')).includes('Amenities page header: image to follow'));
+      await api.put('/admin/slots/home-film-teaser', { imageId: null });
+      const neutral = await eventually(async () => (await html('/')).includes('Film teaser: image to follow'));
       expect(neutral, 'an empty placement should render the neutral frame, not a substitute').toBeTruthy();
 
       const pub = await publicJson<Record<string, { image: unknown }>>('/media-slots');
-      expect(pub['page-amenities']!.image).toBeNull();
+      expect(pub['home-film-teaser']!.image).toBeNull();
     } finally {
-      await api.put('/admin/slots/page-amenities', { imageId: original });
+      await api.put('/admin/slots/home-film-teaser', { imageId: original });
     }
-    const back = await eventually(async () => !(await html('/amenities')).includes('Amenities page header: image to follow'));
+    const back = await eventually(async () => !(await html('/')).includes('Film teaser: image to follow'));
     expect(back).toBeTruthy();
   });
 

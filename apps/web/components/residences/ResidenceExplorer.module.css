@@ -288,6 +288,25 @@
 .rowActions { width: 1%; }
 .rowActions > a { display: flex; justify-content: center; width: 100%; min-width: 92px; }
 .rowActions > a + a { margin-top: 6px; }
+.shortlistActions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.shortlistActions button {
+  min-height: 24px;
+  padding: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  white-space: nowrap;
+}
+.shortlistActions button[aria-pressed='true'] { color: var(--accent); text-decoration-color: currentColor; }
+.shortlistActions button:hover, .shortlistActions button:focus-visible { color: var(--accent); }
 .tour3d {
   display: inline-flex;
   align-items: center;
@@ -402,6 +421,7 @@
   }
   .rowActions > a { width: auto; }
   .rowActions > a + a { margin-top: 0; }
+  .shortlistActions { margin-top: 0; align-items: center; }
 }
 
 @media (max-width: 400px) {

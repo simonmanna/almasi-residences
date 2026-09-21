@@ -28,6 +28,7 @@ export function LocationExperience({
   note,
   id = 'location',
   ground = 'quiet',
+  limit,
 }: {
   landmarks: LandmarkDto[];
   latitude: number;
@@ -38,10 +39,13 @@ export function LocationExperience({
   note: string;
   id?: string;
   ground?: 'stone' | 'quiet' | 'night';
+  /** Lists only the nearest few until the visitor asks for the rest. */
+  limit?: number;
 }) {
   const [active, setActive] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const contact = useContact();
 
   const sorted = useMemo(
@@ -57,6 +61,8 @@ export function LocationExperience({
   }, [sorted]);
 
   const shown = filter ? sorted.filter((l) => l.category === filter) : sorted;
+  const capped = limit && !expanded && shown.length > limit;
+  const listed = capped ? shown.slice(0, limit) : shown;
 
   // A pin that has just been filtered away must not stay pinned open.
   const inView = (landmarkId: string | null) =>
@@ -104,7 +110,7 @@ export function LocationExperience({
           )}
 
           <ul className={styles.list} aria-label="Nearby, by distance">
-            {shown.map((l) => (
+            {listed.map((l) => (
               <li key={l.id}>
                 <button
                   type="button"
@@ -127,6 +133,12 @@ export function LocationExperience({
               </li>
             ))}
           </ul>
+
+          {limit && shown.length > limit && (
+            <button type="button" className={`link-line ${styles.more}`} aria-expanded={expanded} onClick={() => setExpanded((e) => !e)}>
+              {expanded ? 'Show fewer' : `Show all ${shown.length}`}
+            </button>
+          )}
 
           {note && <p className="caption">{note}</p>}
           <a

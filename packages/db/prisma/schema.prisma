@@ -3,7 +3,7 @@
 generator client {
   provider        = "prisma-client-js"
   output          = "../generated/client"
-  previewFeatures = ["postgresqlExtensions"]
+  previewFeatures = ["postgresqlExtensions", "partialIndexes"]
 }
 
 // Prisma 7 removed `url` from the datasource block: the connection is supplied
@@ -1726,6 +1726,8 @@ model Reservation {
 
   @@index([developmentId, status])
   @@index([unitId, status])
+  /// At most one live hold per residence, whatever path creates it.
+  @@unique([unitId], map: "Reservation_one_active_per_unit", where: raw("status = 'ACTIVE'"))
   @@index([heldUntil])
 }
 

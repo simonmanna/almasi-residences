@@ -35,7 +35,7 @@ export class CreateEnquiryDto {
   @IsOptional() @IsString() @MaxLength(60) source?: string;
 
   /** §15.2 — for a viewing: the day the visitor would like (YYYY-MM-DD) and a part of the day. */
-  @IsOptional() @Matches(/^d{4}-d{2}-d{2}$/, { message: 'A viewing day is written YYYY-MM-DD.' }) viewingDate?: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'A viewing day is written YYYY-MM-DD.' }) viewingDate?: string;
 
   @IsOptional() @IsIn(VIEWING_SLOTS.map((v) => v.key)) viewingSlot?: string;
 

@@ -6,7 +6,7 @@
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
   align-items: start;
-  gap: clamp(40px, 6vw, 112px);
+  gap: clamp(32px, 5vw, 80px);
 }
 
 .kicker {
@@ -15,7 +15,7 @@
 
 .text {
   display: grid;
-  gap: 24px;
+  gap: 18px;
 }
 
 /* ─── Category filter ──────────────────────────────────────── */
@@ -79,7 +79,7 @@
 
 .list {
   display: grid;
-  margin-top: 16px;
+  margin-top: 8px;
   border-top: 1px solid var(--line);
 }
 
@@ -92,7 +92,7 @@
   align-items: baseline;
   column-gap: 12px;
   width: 100%;
-  padding: 14px 8px 14px 6px;
+  padding: 10px 8px 10px 6px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   transition:
@@ -139,7 +139,8 @@
 .cat { grid-area: cat; }
 .time { grid-area: time; justify-self: end; font-variant-numeric: tabular-nums; }
 
-.maps {
+.maps,
+.more {
   justify-self: start;
 }
 

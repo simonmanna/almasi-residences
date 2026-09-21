@@ -173,7 +173,7 @@ services:
       <<: *build
       target: caddy
       args:
-        VITE_API_URL: ${SCHEME}://api.${DOMAIN}
+        VITE_API_URL: ${SCHEME}://admin.${DOMAIN}
     image: avida-caddy
     restart: unless-stopped
     environment:

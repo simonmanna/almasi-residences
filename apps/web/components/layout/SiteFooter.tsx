@@ -113,14 +113,18 @@ export async function SiteFooter() {
               <li>
                 <Link href="/enquire#viewing">Book a viewing</Link>
               </li>
-              {socials.map(([k, url]) => (
-                <li key={k}>
-                  <a href={url} target="_blank" rel="noopener noreferrer">
-                    {SOCIAL_LABEL[k] ?? k}
-                  </a>
-                </li>
-              ))}
             </ul>
+            {socials.length > 0 && (
+              <ul className={styles.socials} aria-label="Social media">
+                {socials.map(([k, url]) => (
+                  <li key={k}>
+                    <a href={url} target="_blank" rel="noopener noreferrer">
+                      {SOCIAL_LABEL[k] ?? k}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
             <EnquireButton request={{ source: 'footer' }}>Enquire</EnquireButton>
 
           </div>
