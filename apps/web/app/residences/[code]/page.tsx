@@ -57,7 +57,12 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
   const pub = data.residence;
   const r = toResidence(pub);
   const where = `${data.property.city}, ${data.property.country === 'RW' ? 'Rwanda' : data.property.country}`;
-  const derivedTitle = `${r.bedrooms} bedroom ${TYPE_TEXT[r.type].toLowerCase()} in ${where} | Residence ${r.label}`;
+  // "One bedroom" already says the number, so naming both read "1 bedroom one
+  // bedroom" in every search result.
+  const derivedTitle =
+    r.type === 'penthouse'
+      ? `${r.bedrooms} bedroom penthouse in ${where} | Residence ${r.label}`
+      : `${r.bedrooms} bedroom apartment in ${where} | Residence ${r.label}`;
   const derivedDescription =
     pub?.shortDescription ??
     `${TYPE_TEXT[r.type]} residence ${r.label}: ${r.areaSqm} m² on ${r.floorLabel.toLowerCase()}, facing ${ORIENTATION_TEXT[r.orientation].toLowerCase()}. ${STATUS_TEXT[r.publicStatus]}.`;
