@@ -25,7 +25,7 @@ import { PrismaService } from '../../common/prisma.service.js';
 import { residenceSlug } from '../public/public.service.js';
 import { PublicSync } from '../../common/public-sync.service.js';
 import { StorageService } from '../../common/storage.service.js';
-import { assertCan, defined, requireNonNull, toDate, type Actor } from './actor.js';
+import { assertCan, defined, requireNonNull, requirePresent, toDate, type Actor } from './actor.js';
 import type {
   BulkResidenceDto,
   CreateResidenceDto,
@@ -286,6 +286,7 @@ export class ResidencesService {
   // ─── Create & edit ─────────────────────────────────────────────────────
 
   async create(dto: CreateResidenceDto, actor: Actor, req?: FastifyRequest) {
+    requirePresent(dto, ['code', 'floorId', 'typologyId', 'bedrooms', 'bathrooms', 'areaSqm', 'priceMinor', 'orientation']);
     const developmentId = await this.dev.id();
     const code = dto.code.trim();
     await this.assertCodeFree(developmentId, code);
@@ -780,24 +781,30 @@ export class ResidencesService {
   }
 
   private async ownedFloor(id: string, developmentId: string) {
+    // `id: undefined` is no filter at all — it would quietly match the first
+    // floor in the property, so an absent id is refused before the query.
+    if (!id) throw new BadRequestException('Choose a floor.');
     const floor = await this.prisma.client.floor.findFirst({ where: { id, building: { developmentId } } });
     if (!floor) throw new BadRequestException('That floor does not belong to this property.');
     return floor;
   }
 
   private async ownedTypology(id: string, developmentId: string) {
+    if (!id) throw new BadRequestException('Choose a residence type.');
     const t = await this.prisma.client.typology.findFirst({ where: { id, developmentId } });
     if (!t) throw new BadRequestException('That residence type does not belong to this property.');
     return t;
   }
 
   private async ownedPlan(id: string, developmentId: string) {
+    if (!id) throw new BadRequestException('Choose a payment plan.');
     const p = await this.prisma.client.paymentPlan.findFirst({ where: { id, developmentId } });
     if (!p) throw new BadRequestException('That payment plan does not belong to this property.');
     return p;
   }
 
   private async ownedBuyer(id: string, developmentId: string) {
+    if (!id) throw new BadRequestException('Choose a buyer.');
     const b = await this.prisma.client.buyer.findFirst({ where: { id, developmentId } });
     if (!b) throw new BadRequestException('That buyer does not belong to this property.');
     return b;

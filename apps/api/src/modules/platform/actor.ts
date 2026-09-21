@@ -41,6 +41,25 @@ export function requireNonNull<T extends object>(dto: T, keys: (keyof T)[]): voi
   }
 }
 
+/**
+ * The fields a create must carry.
+ *
+ * A create DTO extends its update counterpart, and class-validator's inherited
+ * `@IsOptional()` wins over anything the child adds: an absent required field
+ * therefore passes the pipe, where Prisma either fails (a 500) or — for a
+ * relation id — matches the first row in the property, because `id: undefined`
+ * is no filter at all. Refuse it here instead.
+ */
+export function requirePresent<T extends object>(dto: T, keys: (keyof T)[]): void {
+  const missing = keys.filter((k) => {
+    const v = (dto as Record<string, unknown>)[k as string];
+    return v === undefined || v === null || v === '';
+  });
+  if (missing.length) {
+    throw new BadRequestException(`These are needed: ${missing.map(String).join(', ')}.`);
+  }
+}
+
 export function toDate(value: string | null | undefined): Date | null | undefined {
   if (value === undefined) return undefined;
   if (value === null || value === '') return null;

@@ -266,7 +266,9 @@ export function KigaliMap({
         onPointerCancel={endDrag}
         onDoubleClick={() => zoom(1.6)}
       >
-        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-labelledby="kigali-map-title">
+        {/* A group, not an image: the landmarks inside it are buttons, and an
+            image may not contain anything a keyboard can reach. */}
+        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="group" aria-labelledby="kigali-map-title">
           {/* One interpolated string, not a mix of text and expressions: React
               serialises a multi-child <title> differently on the server and
               the client, which fails hydration. */}

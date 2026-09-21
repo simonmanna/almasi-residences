@@ -20,7 +20,7 @@ import { PrismaService } from '../../common/prisma.service.js';
 import { PublicSync } from '../../common/public-sync.service.js';
 import { StorageService } from '../../common/storage.service.js';
 import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
-import { actorOf, defined, requireNonNull } from './actor.js';
+import { actorOf, defined, requireNonNull, requirePresent } from './actor.js';
 import { CreateRoomDto, IdsDto, UpdateRoomDto } from './dto.js';
 
 /** §47 — rooms and spaces inside a residence. */
@@ -69,6 +69,7 @@ export class RoomsController {
   @Post('residences/:unitId/rooms')
   @RequirePermission('room.edit')
   async create(@Param('unitId') unitId: string, @Body() dto: CreateRoomDto, @Req() req: AdminRequest) {
+    requirePresent(dto, ['name', 'type']);
     const unit = await this.ownedUnit(unitId);
     const max = await this.prisma.client.room.aggregate({ where: { unitId }, _max: { sortOrder: true } });
     const room = await this.prisma.client.room.create({

@@ -389,6 +389,10 @@
 }
 
 .cellValue {
+  /* The number sits above its label whatever order the markup needs. */
+  order: 1;
+  display: grid;
+  justify-items: center;
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(1.125rem, 0.9rem + 0.7vw, 1.625rem);
@@ -399,6 +403,7 @@
 }
 
 .cellLabel {
+  order: 2;
   font-family: var(--font-ui);
   font-size: 0.75rem;
   font-weight: 500;

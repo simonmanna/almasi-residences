@@ -370,12 +370,16 @@ export function HeroExperience({
         <div className={`container ${styles.panelWrap}`} data-hero-fade>
           <dl className={styles.panel} style={{ '--fact-count': facts.length } as React.CSSProperties}>
             {facts.map((f) => (
+              // A description list holds a term and its description in that
+              // order; the value reads first on screen, which CSS arranges.
               <div key={f.label} className={styles.cell}>
-                <span className={styles.cellIcon}>
-                  <Icon name={f.icon} />
-                </span>
-                <dd className={styles.cellValue}>{f.value}</dd>
                 <dt className={styles.cellLabel}>{f.label}</dt>
+                <dd className={styles.cellValue}>
+                  <span className={styles.cellIcon} aria-hidden="true">
+                    <Icon name={f.icon} />
+                  </span>
+                  {f.value}
+                </dd>
               </div>
             ))}
           </dl>

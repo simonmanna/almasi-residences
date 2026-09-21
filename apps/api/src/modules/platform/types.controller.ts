@@ -19,7 +19,7 @@ import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { PublicSync } from '../../common/public-sync.service.js';
 import { AdminGuard, RequirePermission, type AdminRequest } from '../admin/admin.guard.js';
-import { actorOf, defined, requireNonNull } from './actor.js';
+import { actorOf, defined, requireNonNull, requirePresent } from './actor.js';
 import { CreateFeatureDto, CreateTypologyDto, IdsDto, UpdateFeatureDto, UpdateTypologyDto } from './dto.js';
 
 const slugify = (s: string) =>
@@ -66,6 +66,7 @@ export class TypesController {
   @Post()
   @RequirePermission('typology.edit')
   async create(@Body() dto: CreateTypologyDto, @Req() req: AdminRequest) {
+    requirePresent(dto, ['name', 'bedrooms', 'bathrooms']);
     const developmentId = await this.dev.id();
     const max = await this.prisma.client.typology.aggregate({ where: { developmentId }, _max: { sortOrder: true } });
     const row = await this.prisma.client.typology

@@ -163,7 +163,8 @@ test.describe('admin to website', () => {
       const removed = await eventually(
         async () => {
           const xml = await (await page.request.get('/sitemap.xml')).text();
-          return !xml.includes(`/residences/${slug}`);
+          // The whole URL, not a prefix: "/residences/a" is inside "/residences/a2".
+          return !xml.includes(`/residences/${slug}</loc>`);
         },
         { timeout: 30000 },
       );
