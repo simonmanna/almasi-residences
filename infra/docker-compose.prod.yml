@@ -19,6 +19,9 @@ x-app-env: &app-env
   # MinIO stands in for R2. The endpoint is the public storage host so that
   # presigned upload URLs work in the browser; inside the network that host
   # resolves to Caddy (see the alias below).
+  # Without this the API writes media inside its own container, which the
+  # public site cannot read and the next deploy deletes.
+  STORAGE_DRIVER: s3
   S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?}
   S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?}
   S3_BUCKET: avida-media
