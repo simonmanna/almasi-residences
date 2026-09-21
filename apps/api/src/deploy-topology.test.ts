@@ -36,3 +36,14 @@ describe('production admin topology', () => {
     expect(block.slice(0, spa)).toMatch(/\thandle \{[^}]*$/);
   });
 });
+
+describe('production public-site topology', () => {
+  it('sends same-origin /api/v1 calls straight to the API', () => {
+    // The enquiry form posts to /api/v1/enquiry on the site's own host. Next's
+    // rewrite of that path is baked at build time with the build host's
+    // loopback address, so the proxy must happen in Caddy.
+    const block = siteBlock('{$DOMAIN}');
+    expect(block).toMatch(/handle \/api\/v1\/\* \{\s*reverse_proxy api:3001/);
+    expect(block.indexOf('handle /api/v1/*')).toBeLessThan(block.indexOf('reverse_proxy web:3000'));
+  });
+});

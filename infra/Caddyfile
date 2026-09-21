@@ -16,6 +16,12 @@
 		root * /srv
 		file_server
 	}
+	# Same-origin API calls (enquiry form, live availability, analytics). Next's
+	# own /api/v1 rewrite is frozen at build time to the build host's loopback,
+	# which the running web container cannot reach.
+	handle /api/v1/* {
+		reverse_proxy api:3001
+	}
 	handle {
 		reverse_proxy web:3000
 	}
