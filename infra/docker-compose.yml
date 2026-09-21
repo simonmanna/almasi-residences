@@ -33,7 +33,7 @@ services:
 
   # The S3-compatible object store, same API as in production.
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: avida-minio
     command: server /data --console-address ":9001"
     environment:
