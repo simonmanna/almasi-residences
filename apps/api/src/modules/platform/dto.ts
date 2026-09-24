@@ -18,6 +18,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  IsUrl,
   Length,
   Matches,
   Max,
@@ -93,6 +94,7 @@ export class UpdatePropertyDto {
   @IsOptional() @IsString() @MaxLength(40) whatsappNumber?: string | null;
   @IsOptional() @IsBoolean() whatsappIconVisible?: boolean;
   @IsOptional() @IsString() @MaxLength(300) officeAddress?: string | null;
+  @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(500) mapsUrl?: string | null;
   @IsOptional() @IsString() @MaxLength(200) officeHours?: string | null;
   @IsOptional() @IsObject() socials?: Record<string, string> | null;
 }

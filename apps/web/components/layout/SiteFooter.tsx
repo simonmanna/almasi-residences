@@ -52,9 +52,15 @@ export async function SiteFooter() {
               <Wordmark />
             </Link>
             <address className={styles.address}>
-              {addressLines(contact).map((line) => (
-                <span key={line}>{line}</span>
-              ))}
+              {contact.mapsUrl ? (
+                <a href={contact.mapsUrl} target="_blank" rel="noopener noreferrer" aria-label={`${contact.officeAddress}, open in Google Maps`}>
+                  {addressLines(contact).map((line) => (
+                    <span key={line}>{line}</span>
+                  ))}
+                </a>
+              ) : (
+                addressLines(contact).map((line) => <span key={line}>{line}</span>)
+              )}
               {contact.officeHours && <span>{contact.officeHours}</span>}
             </address>
 

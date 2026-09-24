@@ -58,6 +58,11 @@
   color: var(--ink-muted);
 }
 
+.address > a {
+  display: grid;
+  color: inherit;
+}
+
 .name {
   margin: 4px 0 10px;
   font-family: var(--font-display);

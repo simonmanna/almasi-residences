@@ -137,9 +137,10 @@ async function main() {
     data: {
       buildingConfig: dev.buildingConfig ?? development.buildingConfig,
       officeAddress: dev.officeAddress ?? development.officeAddress,
-      contactPhone: dev.contactPhone ?? (process.env.NEXT_PUBLIC_SALES_PHONE || null),
+      mapsUrl: dev.mapsUrl ?? development.mapsUrl,
+      contactPhone: dev.contactPhone ?? (process.env.NEXT_PUBLIC_SALES_PHONE || development.contactPhone),
       contactEmail: dev.contactEmail ?? (process.env.NEXT_PUBLIC_SALES_EMAIL || null),
-      whatsappNumber: dev.whatsappNumber ?? (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || null),
+      whatsappNumber: dev.whatsappNumber ?? (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || development.whatsappNumber),
     },
   });
 

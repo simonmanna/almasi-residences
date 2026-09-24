@@ -284,6 +284,7 @@ export interface ContactDto {
   whatsapp: string | null;
   whatsappIconVisible: boolean;
   officeAddress: string | null;
+  mapsUrl: string | null;
   officeHours: string | null;
   socials: Record<string, string>;
 }

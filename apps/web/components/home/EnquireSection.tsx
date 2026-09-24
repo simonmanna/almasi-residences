@@ -66,7 +66,15 @@ export async function EnquireSection({
             )}
             <li>
               <span className={styles.label}>Address</span>
-              <address>{addressLines(contact).join(', ')}</address>
+              <address>
+                {contact.mapsUrl ? (
+                  <a className="link-line" href={contact.mapsUrl} target="_blank" rel="noopener noreferrer">
+                    {addressLines(contact).join(', ')}
+                  </a>
+                ) : (
+                  addressLines(contact).join(', ')
+                )}
+              </address>
             </li>
           </ul>
         </div>

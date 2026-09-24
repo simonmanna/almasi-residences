@@ -33,6 +33,7 @@ interface Property {
   yearStarted: number | null;
   contactEmail: string | null;
   officeAddress: string | null;
+  mapsUrl: string | null;
   officeHours: string | null;
   socials: Record<string, string> | null;
   logoMediaId: string | null;
@@ -81,7 +82,7 @@ export default function PropertyPage() {
   const save = async () => {
     setBusy(true);
     try {
-      const keys: (keyof Property)[] = ['name', 'tagline', 'descriptionMd', 'city', 'country', 'addressLine', 'latitude', 'longitude', 'handoverDate', 'currency', 'status', 'propertyType', 'buildingConfig', 'constructionStatus', 'constructionPercent', 'developerName', 'architect', 'contractor', 'yearStarted', 'contactEmail', 'officeAddress', 'officeHours', 'socials', 'logoMediaId', 'heroMediaId', 'mainMediaId', 'videoMediaId'];
+      const keys: (keyof Property)[] = ['name', 'tagline', 'descriptionMd', 'city', 'country', 'addressLine', 'latitude', 'longitude', 'handoverDate', 'currency', 'status', 'propertyType', 'buildingConfig', 'constructionStatus', 'constructionPercent', 'developerName', 'architect', 'contractor', 'yearStarted', 'contactEmail', 'officeAddress', 'mapsUrl', 'officeHours', 'socials', 'logoMediaId', 'heroMediaId', 'mainMediaId', 'videoMediaId'];
       const body = Object.fromEntries(
         keys
           .filter((k) => JSON.stringify(d[k]) !== JSON.stringify(data[k]))
@@ -183,6 +184,7 @@ export default function PropertyPage() {
           <div className="card-body form-grid three">
             <Field label="Email"><Input type="email" value={d.contactEmail ?? ''} onChange={(e) => set('contactEmail', e.target.value)} placeholder="sales@…" /></Field>
             <Field label="Sales office address" className="full"><Input value={d.officeAddress ?? ''} onChange={(e) => set('officeAddress', e.target.value)} /></Field>
+            <Field label="Google Maps link" hint="The footer and contact blocks link the address here." className="full"><Input type="url" value={d.mapsUrl ?? ''} onChange={(e) => set('mapsUrl', e.target.value)} placeholder="https://maps.app.goo.gl/…" /></Field>
             <Field label="Office hours" className="full"><Input value={d.officeHours ?? ''} onChange={(e) => set('officeHours', e.target.value)} placeholder="Mon–Sat, 9:00–18:00" /></Field>
             {SOCIALS.map((s) => (
               <Field key={s} label={s === 'x' ? 'X (Twitter)' : s[0]!.toUpperCase() + s.slice(1)}>

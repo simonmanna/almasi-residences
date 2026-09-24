@@ -12,6 +12,8 @@ export interface Contact {
   whatsapp: string | null;
   whatsappIconVisible: boolean;
   officeAddress: string | null;
+  /** Google Maps link for the office; the address links to it when set. */
+  mapsUrl: string | null;
   officeHours: string | null;
   socials: Record<string, string>;
   /** The property's own name, so no message this file writes hardcodes a brand. */
@@ -28,13 +30,14 @@ export function contactFrom(api?: Partial<Contact> | null, developmentName?: str
     whatsapp: clean(api?.whatsapp) ?? clean(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER),
     whatsappIconVisible: api?.whatsappIconVisible ?? true,
     officeAddress: clean(api?.officeAddress),
+    mapsUrl: clean(api?.mapsUrl),
     officeHours: clean(api?.officeHours),
     socials: Object.fromEntries(Object.entries(api?.socials ?? {}).filter(([, v]) => clean(v))),
     developmentName: clean(developmentName) ?? clean(api?.developmentName) ?? '',
   };
 }
 
-/** "KG 15 Ave, Kimihurura, Kigali, Rwanda" → two lines for an <address>. */
+/** "36 KG 2 Ave, Kigali, Rwanda" → two lines for an <address>. */
 export function addressLines(c: Contact): string[] {
   if (!c.officeAddress) return [];
   const parts = c.officeAddress.split(',').map((p) => p.trim()).filter(Boolean);

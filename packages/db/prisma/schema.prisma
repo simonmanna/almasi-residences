@@ -65,6 +65,8 @@ model Development {
   /// Shows the small site-wide WhatsApp launcher when a number is configured.
   whatsappIconVisible Boolean @default(true)
   officeAddress       String?
+  /// Google Maps link for the office address — the footer and contact blocks link to it.
+  mapsUrl             String?
   officeHours         String?
   /// { instagram, facebook, linkedin, youtube, x, tiktok } — URLs.
   socials             Json?

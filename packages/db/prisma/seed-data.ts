@@ -50,15 +50,19 @@ export const development = {
   ].join('\n'),
   city: 'Kigali',
   country: 'RW',
-  addressLine: 'KG 15 Ave, Kimihurura, Kigali',
-  latitude: -1.9445,
-  longitude: 30.0740,
+  addressLine: '36 KG 2 Ave, Kigali',
+  latitude: -1.955683,
+  longitude: 30.0829147,
   handoverDate: new Date('2028-06-30T00:00:00Z'),
   currency: 'USD',
   propertyType: 'Residential apartments',
   buildingConfig: 'B + G + 4',
   constructionStatus: 'STRUCTURE' as const,
-  officeAddress: 'KG 15 Ave, Kimihurura, Kigali, Rwanda',
+  officeAddress: '36 KG 2 Ave, Kigali, Rwanda',
+  mapsUrl: 'https://maps.app.goo.gl/82UcRPaKe6UDWvN8A',
+  /** One number for calls and WhatsApp. */
+  contactPhone: '+250 790 600 100',
+  whatsappNumber: '+250 790 600 100',
 };
 
 export const building = {
