@@ -148,8 +148,8 @@ async function main() {
     create: {
       developmentId: dev.id,
       title: `${development.name} — Premium apartments in Kimihurura, Kigali`,
-      description: 'Almasi Residences: {total} residences in Kimihurura, Kigali. One-, two- and three-bedroom homes and penthouses with a pool, gym, restaurant and basement parking. Handover {handover}.',
-      keywords: ['Kigali apartments', 'Kimihurura', 'off-plan', 'Rwanda real estate', 'Almasi Residences', 'premium apartments Kigali'],
+      description: 'Almasi Residence: {total} residences in Kimihurura, Kigali. One-, two- and three-bedroom homes and penthouses with a pool, gym, restaurant and basement parking. Handover {handover}.',
+      keywords: ['Kigali apartments', 'Kimihurura', 'off-plan', 'Rwanda real estate', 'Almasi Residence', 'premium apartments Kigali'],
     },
     update: {},
   });

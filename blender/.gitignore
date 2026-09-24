@@ -1,0 +1,6 @@
+*.blend1
+*.log
+page-*.png
+texture-*.png
+check-*.cjs
+verify-ui.cjs

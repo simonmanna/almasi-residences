@@ -15,7 +15,7 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
     title: 'Homepage',
     content: {
       heroKicker: 'Kimihurura · Kigali',
-      heroTitle: 'Almasi Residences',
+      heroTitle: 'Almasi Residence',
       heroSubtitle: 'Contemporary residences in the heart of Kimihurura.',
       ctaPrimaryLabel: 'Explore residences',
       ctaPrimaryHref: '/residences',
@@ -54,7 +54,7 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
     content: {
       kicker: 'Location',
       title: '',
-      lede: 'Almasi Residences rises in the heart of Kigali, just east of the city centre: embassies, restaurants and the Convention Centre on one side, the golf course and the airport road on the other, and quiet, tree-lined streets in between.',
+      lede: 'Almasi Residence rises in the heart of Kigali, just east of the city centre: embassies, restaurants and the Convention Centre on one side, the golf course and the airport road on the other, and quiet, tree-lined streets in between.',
       note: 'Straight-line distances from the site. Drive times are estimates at an average city speed.',
       showNearbyPlaces: true,
     },
@@ -135,7 +135,7 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
   film: {
     title: 'Film page',
     content: {
-      caption: 'A silent architectural film of Almasi Residences.',
+      caption: 'A silent architectural film of Almasi Residence.',
       downloadLabel: 'Download the film (MP4)',
     },
   },

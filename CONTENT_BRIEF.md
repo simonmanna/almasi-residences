@@ -1,7 +1,7 @@
-# Almasi Residences — Content Brief
+# Almasi Residence — Content Brief
 
 ## Project
-- **Name:** Almasi Residences
+- **Name:** Almasi Residence
 - **Location:** KG 15 Ave, Kimihurura, Kigali, Rwanda
 - **Building:** Basement + Ground + 4 levels (B+G+4)
 - **Total Residences:** 28
@@ -45,4 +45,4 @@
 - Longitude: 30.0740
 
 ## SEO Keywords
-Kigali apartments, Kimihurura, off-plan, Rwanda real estate, Almasi Residences, premium apartments Kigali
+Kigali apartments, Kimihurura, off-plan, Rwanda real estate, Almasi Residence, premium apartments Kigali

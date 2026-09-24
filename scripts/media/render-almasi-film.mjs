@@ -38,7 +38,7 @@ const H = 720;
 /** The cut, in order. Every clip here must exist as <scene>-hd.mp4. */
 const SHOTS = [
   { scene: 'aerial', title: 'Kimihurura', place: 'Above Kigali' },
-  { scene: 'street', title: 'Almasi Residences', place: 'KG 15 Ave' },
+  { scene: 'street', title: 'Almasi Residence', place: 'KG 15 Ave' },
   { scene: 'arrival', title: 'The entrance', place: 'Ground floor' },
   { scene: 'lobby', title: 'Reception', place: 'Ground floor' },
   { scene: 'pool', title: 'The pool deck', place: 'Level 1' },
@@ -107,12 +107,12 @@ function card(name, seconds, filters) {
 }
 
 const opening = card('opening', 4.2, [
-  text('Almasi Residences', { font: 'InstrumentSerif-Regular.ttf', size: 76, x: '(w-text_w)/2', y: '(h-text_h)/2-24', from: 0.5, to: 4.2 }),
+  text('Almasi Residence', { font: 'InstrumentSerif-Regular.ttf', size: 76, x: '(w-text_w)/2', y: '(h-text_h)/2-24', from: 0.5, to: 4.2 }),
   text('Kimihurura, Kigali', { font: 'InstrumentSans-Regular.ttf', size: 22, x: '(w-text_w)/2', y: '(h/2)+44', alpha: 0.7, from: 1.1, to: 4.2 }),
 ]);
 
 const closing = card('closing', 6.4, [
-  text('Almasi Residences', { font: 'InstrumentSerif-Regular.ttf', size: 76, x: '(w-text_w)/2', y: '(h-text_h)/2-40', from: 0.6, to: 6.4 }),
+  text('Almasi Residence', { font: 'InstrumentSerif-Regular.ttf', size: 76, x: '(w-text_w)/2', y: '(h-text_h)/2-40', from: 0.6, to: 6.4 }),
   text('Kimihurura, Kigali', { font: 'InstrumentSans-Regular.ttf', size: 22, x: '(w-text_w)/2', y: '(h/2)+28', alpha: 0.7, from: 1.0, to: 6.4 }),
   text('Private residences. Distinctly Kigali.', { font: 'InstrumentSerif-Italic.ttf', size: 34, x: '(w-text_w)/2', y: '(h/2)+96', from: 2.0, to: 6.4 }),
 ]);

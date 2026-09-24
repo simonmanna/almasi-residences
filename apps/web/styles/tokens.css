@@ -1,12 +1,12 @@
 /**
  * Almasi design tokens — the Wooden theme, and the base every theme overrides.
  *
- * Drawn from theme-reference/wooden-theme.png: pale oak and ivory for the
- * reading ground, walnut for the cinematic ground, a honey highlight caught in
- * the grain. Two grounds, each authored by hand rather than derived:
- *   stone — pale oak. Reading, data, forms.
- *   quiet — warm white. A softer companion used between themed sections.
- *   night — walnut. Cinematic media, the film, the tour.
+ * Premium mahogany: polished red-brown timber, brass-gold highlights and
+ * ivory type, sampled from the approved navigation reference. Three grounds,
+ * each authored by hand rather than derived:
+ *   stone — champagne ivory with mahogany ink. Reading, data, forms.
+ *   quiet — a lighter ivory companion used between full stone sections.
+ *   night — mahogany with brass gold. The nav, the film, the tour.
  * A section opts in with data-ground="night"; components only ever read
  * var(--…) and never compute a colour. Blue and Sky Blue re-author both
  * grounds in themes.css. The contrast floors are asserted by
@@ -14,18 +14,18 @@
  */
 :root,
 [data-ground="stone"] {
-  --surface:            #EADCCB;  /* pale oak, sampled #E5D4C4 */
-  --surface-raised:     #F4EBDF;  /* ivory, sampled #EEDFCD */
-  --surface-sunk:       #DECAB4;  /* amenity strip, sampled #DDC6AF */
-  --ink:                #35261A;  /* dark walnut, sampled #45372A */
-  --ink-muted:          #5E4938;
-  --line:               #C8AD91;
-  --accent:             #74492A;  /* walnut, sampled #754B2B */
-  --accent-weak:        #AE8C6D;
-  --on-accent:          #F4EBDF;
+  --surface:            #F2E6D6;  /* champagne ivory */
+  --surface-raised:     #FAF3E8;
+  --surface-sunk:       #E8D6BF;
+  --ink:                #3A1A08;  /* mahogany ink */
+  --ink-muted:          #6A4128;
+  --line:               #D6BC9A;
+  --accent:             #7A3A16;  /* polished mahogany */
+  --accent-weak:        #C49A5E;
+  --on-accent:          #FAF3E8;
   --foliage:            #56603F;
-  --scrim:              rgba(53, 38, 26, 0.38);
-  --elev:               0 1px 2px rgba(53, 38, 26, 0.08), 0 18px 48px rgba(88, 56, 30, 0.16);
+  --scrim:              rgba(58, 26, 8, 0.38);
+  --elev:               0 1px 2px rgba(58, 26, 8, 0.08), 0 18px 48px rgba(90, 40, 12, 0.16);
   /* Four states a buyer must tell apart at a glance and at 14px, held ΔE ≥ 22
      apart inside the material palette — bronze live, ochre held, patinated
      zinc gone, warm stone not yet released. */
@@ -37,7 +37,7 @@
      the list row always agree. Seven categories cannot hold the status
      palette's ΔE 22, so the floor here is 18 — and no pin is ever colour
      alone: each carries its name, its category and its distance. */
-  --cat-business:       #74492A;
+  --cat-business:       #4E2410;
   --cat-shopping:       #9C4F17;
   --cat-health:         #2A6571;
   --cat-school:         #465438;
@@ -45,61 +45,61 @@
   --cat-leisure:        #625E16;
   --cat-embassy:        #8C3B2A;
   /* The map's own paper — one step below the page. */
-  --map-ground:         #E4D3BF;
+  --map-ground:         #EEDFCB;
 }
 
 [data-ground="night"] {
-  --surface:            #3A281B;  /* walnut, sampled #503A21–#6E492D, taken deeper for film */
-  --surface-raised:     #4A3424;
-  --surface-sunk:       #2C1E14;
-  --ink:                #F4EBDF;
-  --ink-muted:          #D2BEA8;
-  --line:               #5E4631;
-  --accent:             #E3BD9B;  /* honey highlight, sampled #E3BD9B */
-  --accent-weak:        #9D6D43;
-  --on-accent:          #35261A;
+  --surface:            #3C1A07;  /* mahogany, sampled #3B1B05–#703817 */
+  --surface-raised:     #50250D;
+  --surface-sunk:       #280F03;
+  --ink:                #F8EFE2;
+  --ink-muted:          #DCC3A4;
+  --line:               #6E3D1D;
+  --accent:             #DBA858;  /* brass gold, sampled #DBA858 */
+  --accent-weak:        #A0703A;
+  --on-accent:          #2A1204;
   --foliage:            #8A9670;
-  --scrim:              rgba(24, 16, 10, 0.55);
-  --elev:               0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 56px rgba(20, 12, 6, 0.5);
+  --scrim:              rgba(26, 10, 2, 0.55);
+  --elev:               0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 56px rgba(22, 8, 1, 0.55);
   --status-available:   #E8C08E;
   --status-reserved:    #D98E3A;
   --status-sold:        #86B3C0;
   --status-unavailable: #A59A8C;
-  --cat-business:       #E3BD9B;
+  --cat-business:       #F3DDB0;
   --cat-shopping:       #E79A55;
   --cat-health:         #7DB7C2;
   --cat-school:         #A3B98F;
   --cat-airport:        #D29AB7;
   --cat-leisure:        #C6BF6C;
   --cat-embassy:        #E7947E;
-  --map-ground:         #33241A;
+  --map-ground:         #33160A;
 }
 
 [data-ground="quiet"] {
-  --surface:            #F3EADF;
-  --surface-raised:     #F8F2EA;
-  --surface-sunk:       #E9DDCF;
-  --ink:                #35261A;
-  --ink-muted:          #655344;
-  --line:               #D8CBBC;
-  --accent:             #74492A;
-  --accent-weak:        #AE8C6D;
+  --surface:            #F8EFE3;
+  --surface-raised:     #FDF8F1;
+  --surface-sunk:       #EEE0CC;
+  --ink:                #3A1A08;
+  --ink-muted:          #6A4128;
+  --line:               #DEC7A8;
+  --accent:             #7A3A16;
+  --accent-weak:        #C49A5E;
   --on-accent:          #FFFFFF;
   --foliage:            #56603F;
-  --scrim:              rgba(53, 38, 26, 0.26);
-  --elev:               0 1px 2px rgba(53, 38, 26, 0.06), 0 18px 48px rgba(88, 56, 30, 0.1);
+  --scrim:              rgba(58, 26, 8, 0.26);
+  --elev:               0 1px 2px rgba(58, 26, 8, 0.06), 0 18px 48px rgba(90, 40, 12, 0.1);
   --status-available:   #5E3E1A;
   --status-reserved:    #9A5F16;
   --status-sold:        #2F6070;
   --status-unavailable: #7E7264;
-  --cat-business:       #74492A;
+  --cat-business:       #4E2410;
   --cat-shopping:       #9C4F17;
   --cat-health:         #2A6571;
   --cat-school:         #465438;
   --cat-airport:        #74435C;
   --cat-leisure:        #625E16;
   --cat-embassy:        #8C3B2A;
-  --map-ground:         #F4ECE3;
+  --map-ground:         #F9F1E6;
 }
 
 :root {
@@ -158,34 +158,59 @@
   --btn-tracking: 0.16em;
   --btn-weight: 500;
   --btn-shadow: none;
+  --nav-rule: var(--gold);
   --btn-h: 52px;
-  /* Cards are walnut panels set on pale oak, framed by a hairline of ivory —
-     the reference's "wood inlay" rather than a floating white box. */
-  --card-surface:       #5A3D27;
-  --card-ink:           #F6EDE2;
-  --card-muted:         #DCC8B1;
-  --card-accent:        #EBC9A6;
-  --card-line:          rgba(246, 237, 226, 0.18);
-  --card-border:        1px solid rgba(90, 61, 39, 0.9);
-  --card-frame:         inset 0 0 0 1px rgba(246, 237, 226, 0.1);
-  --card-shadow:        0 2px 4px rgba(58, 36, 20, 0.12), 0 22px 48px -12px rgba(74, 46, 24, 0.38);
-  --card-shadow-hover:  0 4px 8px rgba(58, 36, 20, 0.14), 0 34px 70px -14px rgba(74, 46, 24, 0.48);
+  /* Cards are mahogany panels set on ivory, framed by a brass hairline —
+     a "wood inlay" rather than a floating white box. */
+  --card-surface:       #4E230B;
+  --card-ink:           #F8EFE2;
+  --card-muted:         #DDC5A7;
+  --card-accent:        #E2B268;
+  --card-line:          rgba(226, 178, 104, 0.2);
+  --card-border:        1px solid rgba(219, 168, 88, 0.3);
+  --card-frame:         inset 0 1px 0 rgba(255, 222, 170, 0.08);
+  --card-shadow:        0 2px 4px rgba(60, 24, 6, 0.14), 0 22px 48px -12px rgba(78, 32, 8, 0.42);
+  --card-shadow-hover:  0 4px 8px rgba(60, 24, 6, 0.16), 0 34px 70px -14px rgba(78, 32, 8, 0.52), 0 0 0 1px rgba(219, 168, 88, 0.45);
   --card-lift:          -4px;
-  /* Material: a horizontal oak grain, drawn as noise stretched along x. */
-  --texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='640' height='640'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.004 0.19' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.29 0 0 0 0 0.18 0 0 0 0 0.09 0 0 0 0.32 -0.12'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
+  /* Brass — the reference's gold: logo mark, active rule, solid buttons.
+     Literal values, so they read the same on every ground. */
+  --gold:     #DBA858;
+  --gold-hi:  #EDC47D;
+  --gold-ink: #2A1204;
+  --btn-solid-shadow: 0 1px 0 rgba(255, 230, 180, 0.35) inset, 0 10px 24px -12px rgba(219, 168, 88, 0.6);
+  /* Material: mahogany grain shared by the dark grounds and cards. Keeping it
+     separate prevents a light section's panel texture from bleaching cards. */
+  --wood-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='640' height='640'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.004 0.19' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.20 0 0 0 0 0.07 0 0 0 0 0.01 0 0 0 0.36 -0.12'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
+  --texture: var(--wood-grain);
+  --card-texture: var(--wood-grain);
+  /* Quiet sections translate the reference sauna wall into light luxury:
+     slim vertical timber panels, fine upright grain and concealed warm light
+     washing upward from the base. */
+  --ambient-quiet:
+    radial-gradient(85% 24% at 50% 100%, rgba(235, 157, 72, 0.24), transparent 72%),
+    linear-gradient(0deg, rgba(196, 112, 45, 0.14) 0%, rgba(231, 169, 96, 0.055) 13%, transparent 32%);
+  --texture-quiet:
+    linear-gradient(90deg, rgba(77, 43, 21, 0.13) 0, rgba(77, 43, 21, 0.035) 1px, transparent 3px, transparent 87px, rgba(255, 255, 255, 0.2) 90px, rgba(77, 43, 21, 0.08) 92px),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='720' height='720'><filter id='q'><feTurbulence type='fractalNoise' baseFrequency='0.14 0.004' numOctaves='4' seed='19' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.38 0 0 0 0 0.22 0 0 0 0 0.10 0 0 0 0.12 -0.035'/></filter><rect width='100%25' height='100%25' filter='url(%23q)'/></svg>");
   --ambient: none;
+  /* Night sections catch light the way the reference's polished panel does:
+     a warm sheen off-centre, the edges falling back into dark grain. */
+  --ambient-night:
+    radial-gradient(55% 160% at 70% 45%, rgba(150, 72, 30, 0.42), transparent 70%),
+    linear-gradient(90deg, rgba(18, 5, 0, 0.45), transparent 22%, transparent 82%, rgba(18, 5, 0, 0.55));
   /* The tint laid over photographs — scrims, captions over image, the film.
      rgb channels so a component chooses its own alpha: rgb(var(--shade) / .6). */
-  --shade: 30 19 11;
-  --on-media: 246 237 226;
+  --shade: 34 12 2;
+  --on-media: 248 239 226;
   /* The evening sky behind the introduction's render, bottom to top. */
-  --dusk-base: #140D08;
-  --dusk-low:  #24170E;
-  --dusk-mid:  #4A2F1C;
-  --dusk-high: #7C5334;
+  --dusk-base: #160600;
+  --dusk-low:  #2A1004;
+  --dusk-mid:  #4E220A;
+  --dusk-high: #8A4A20;
   /* Navigation once the page moves. */
   --nav-blur: 14px;
-  --nav-shadow: 0 10px 30px -18px rgba(30, 19, 11, 0.6);
+  --nav-opacity: 100%;  /* a solid mahogany band, as in the reference */
+  --nav-shadow: 0 1px 0 rgba(219, 168, 88, 0.18), 0 10px 30px -18px rgba(34, 12, 2, 0.7);
 
   /* The theme contract under its public names, for anything outside the
      component system (embeds, the 3D canvas, third-party widgets). */

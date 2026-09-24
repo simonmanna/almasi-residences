@@ -206,7 +206,7 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="app">
       <aside className="sidebar" data-open={menuOpen}>
-        <Link to="/" className="brand" aria-label="Almasi Residences — dashboard">
+        <Link to="/" className="brand" aria-label="Almasi Residence — dashboard">
           <BrandMark />
           <span className="brand-text">
             <span className="brand-name">ALMASI</span>
@@ -246,7 +246,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </button>
           <div className="topbar-title">
             <h1>{current?.title ?? current?.label ?? 'Admin Panel'}</h1>
-            <p>{current?.sub ?? 'Almasi Residences'}</p>
+            <p>{current?.sub ?? 'Almasi Residence'}</p>
           </div>
           <GlobalSearch />
           <Notifications />

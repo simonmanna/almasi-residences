@@ -328,7 +328,7 @@ export function ResidenceExplorer({
                 </thead>
                 <tbody>
                   {sorted.map((r) => (
-                    <ResidenceRow key={r.id} r={r} cover={coverFor(r.typologySlug)} hovered={hoveredId === r.id} onHover={setHoveredId} shortlist={shortlist} />
+                    <ResidenceRow key={r.id} r={r} cover={coverFor(r.typologySlug)} hovered={hoveredId === r.id} onHover={setHoveredId} />
                   ))}
                 </tbody>
               </table>
@@ -420,16 +420,12 @@ function ResidenceRow({
   cover,
   hovered,
   onHover,
-  shortlist,
 }: {
   r: Residence;
   cover: PublicMediaDto | null;
   hovered: boolean;
   onHover: (id: string | null) => void;
-  shortlist: ReturnType<typeof useResidenceShortlist>;
 }) {
-  const saved = shortlist.favorites.includes(r.id);
-  const comparing = shortlist.compare.includes(r.id);
   const price = visiblePriceMinor(r);
   return (
     <tr
@@ -480,24 +476,6 @@ function ResidenceRow({
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z M2 5l6 3.5L14 5 M8 8.5v6" /></svg>
           3D Tour
         </Link>
-        <span className={styles.shortlistActions}>
-          <button
-            type="button"
-            aria-pressed={saved}
-            title={`${saved ? 'Remove residence' : 'Save residence'} ${r.label}`}
-            onClick={() => { if (shortlist.toggleFavorite(r.id)) track('favorite_added', { residence: r.code }); }}
-          >
-            {saved ? 'Saved' : 'Save'}
-          </button>
-          <button
-            type="button"
-            aria-pressed={comparing}
-            title={`${comparing ? 'Stop comparing' : 'Compare'} residence ${r.label}`}
-            onClick={() => { if (shortlist.toggleCompare(r.id)) track('compare_added', { residence: r.code }); }}
-          >
-            {comparing ? 'Comparing' : 'Compare'}
-          </button>
-        </span>
       </td>
     </tr>
   );

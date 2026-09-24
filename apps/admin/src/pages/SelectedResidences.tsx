@@ -8,7 +8,7 @@ import { Link } from '../lib/router';
 import { SITE_URL } from '../lib/site';
 import type { Paged, ResidenceRow } from '../lib/types';
 import { useToast } from '../components/Toast';
-import { Alert, Badge, Button, Card, CardHead, Empty, ErrorBox, Field, LoadingPage, MediaImg, PageHead, Toggle, useConfirm } from '../components/ui';
+import { Alert, Badge, Button, Card, CardHead, Empty, ErrorBox, Field, LoadingPage, MediaImg, PageHead, Tabs, Toggle, useConfirm } from '../components/ui';
 
 interface SectionPage {
   title: string;
@@ -78,18 +78,43 @@ export default function SelectedResidences() {
   const { can } = useAuth();
   const confirm = useConfirm();
   const toast = useToast();
-  const { data, error, refetch } = useQuery('residences:featured', () => get<Paged<ResidenceRow>>('/admin/residences?featured=true&pageSize=100'));
+  const [tab, setTab] = useState<'settings' | 'residences'>('settings');
+
+  // Fetch featured residences
+  const { data: featuredData, error: featuredError, refetch: refetchFeatured } = useQuery('residences:featured', () => get<Paged<ResidenceRow>>('/admin/residences?featured=true&pageSize=100'));
+  // Fetch all residences for the selection tab
+  const { data: allData, error: allError, refetch: refetchAll } = useQuery('residences:all', () => get<Paged<ResidenceRow>>('/admin/residences?pageSize=200'));
   const editable = can('residence.edit');
+
   const unfeature = async (r: ResidenceRow) => {
     if (!(await confirm({ title: `Remove ${r.code} from the selection?`, body: 'It disappears from the homepage section. The residence itself stays published.', confirm: 'Remove' }))) return;
     try {
       await patch(`/admin/residences/${r.id}`, { featured: false });
       toast.success(`${r.code} removed from the selection.`);
       invalidate('residences', 'residence:', 'dashboard');
+      refetchFeatured();
+      refetchAll();
     } catch (e) {
       toast.error((e as Error).message);
     }
   };
+
+  const feature = async (r: ResidenceRow) => {
+    try {
+      await patch(`/admin/residences/${r.id}`, { featured: true });
+      toast.success(`${r.code} added to the selection.`);
+      invalidate('residences', 'residence:', 'dashboard');
+      refetchFeatured();
+      refetchAll();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const featuredCount = featuredData?.data.length ?? 0;
+  const allCount = allData?.data.length ?? 0;
+  const featuredIds = new Set(featuredData?.data.map(r => r.id) ?? []);
+
   return (
     <>
       <PageHead
@@ -99,43 +124,65 @@ export default function SelectedResidences() {
       >
         <a className="btn" href={`${SITE_URL}/#featured-title`} target="_blank" rel="noreferrer"><ExternalLink size={15} /> View on the website</a>
       </PageHead>
-      <Visibility />
-      <Card>
-        <CardHead title="Residences in the selection" icon={<Star size={18} />} sub="Marked featured under Property → Residences">
-          <Link to="/residences" className="btn">Choose residences</Link>
-        </CardHead>
-        {error ? (
-          <ErrorBox error={error} onRetry={refetch} />
-        ) : !data ? (
-          <LoadingPage />
-        ) : data.data.length === 0 ? (
-          <Empty title="No residence is selected yet" icon={<Star size={32} />}>
-            Mark a residence as featured under Property → Residences and it appears here, and in the homepage section.
-          </Empty>
-        ) : (
-          <div className="table-wrap" style={{ padding: '0 14px 14px' }}>
-            <table className="table">
-              <thead><tr><th /><th>Residence</th><th>Type</th><th>Floor</th><th>Size</th><th>Price</th><th>Status</th><th /></tr></thead>
-              <tbody>
-                {data.data.map((r) => (
-                  <tr key={r.id}>
-                    <td style={{ width: 56 }}><MediaImg m={r.cover} thumb sizes="48px" style={{ width: 48, height: 34, objectFit: 'cover', borderRadius: 4 }} /></td>
-                    <td><Link to={`/residences/${r.id}`}><strong style={{ color: 'var(--navy)' }}>{r.code}</strong></Link></td>
-                    <td>{r.typology.name}</td>
-                    <td>{r.floor.label}</td>
-                    <td className="tabular nowrap">{area(r.areaSqm)}</td>
-                    <td className="tabular nowrap">{money(r.effectivePriceMinor, r.currency)}</td>
-                    <td><Badge tone={r.published ? 'green' : 'amber'} plain>{r.published ? 'Published' : 'Unpublished'}</Badge></td>
-                    <td style={{ textAlign: 'right' }}>
-                      {editable && <Button size="sm" icon={<StarOff size={14} />} onClick={() => void unfeature(r)}>Remove</Button>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+
+      <Tabs value={tab} onChange={setTab} tabs={[
+        { value: 'settings', label: 'Settings', count: featuredCount > 0 ? featuredCount : undefined },
+        { value: 'residences', label: 'Residences', count: allCount },
+      ]} />
+
+      {tab === 'settings' && <Visibility />}
+
+      {tab === 'residences' && (
+        <Card>
+          <CardHead title="All residences" icon={<Star size={18} />} sub="Toggle the star to add or remove a residence from the homepage selection.">
+            <Link to="/residences" className="btn">Manage residences</Link>
+          </CardHead>
+          {allError ? (
+            <ErrorBox error={allError} onRetry={refetchAll} />
+          ) : !allData ? (
+            <LoadingPage />
+          ) : allData.data.length === 0 ? (
+            <Empty title="No residences yet" icon={<Star size={32} />}>
+              Create residences under Property → Residences to add them to the selection.
+            </Empty>
+          ) : (
+            <div className="table-wrap" style={{ padding: '0 14px 14px' }}>
+              <table className="table">
+                <thead><tr><th /><th>Residence</th><th>Type</th><th>Floor</th><th>Size</th><th>Price</th><th>Status</th><th style={{ width: 100, textAlign: 'center' }}>Selected</th></tr></thead>
+                <tbody>
+                  {allData.data.map((r) => {
+                    const isFeatured = featuredIds.has(r.id);
+                    return (
+                      <tr key={r.id}>
+                        <td style={{ width: 56 }}><MediaImg m={r.cover} thumb sizes="48px" style={{ width: 48, height: 34, objectFit: 'cover', borderRadius: 4 }} /></td>
+                        <td><Link to={`/residences/${r.id}`}><strong style={{ color: 'var(--navy)' }}>{r.code}</strong></Link></td>
+                        <td>{r.typology.name}</td>
+                        <td>{r.floor.label}</td>
+                        <td className="tabular nowrap">{area(r.areaSqm)}</td>
+                        <td className="tabular nowrap">{money(r.effectivePriceMinor, r.currency)}</td>
+                        <td><Badge tone={r.published ? 'green' : 'amber'} plain>{r.published ? 'Published' : 'Unpublished'}</Badge></td>
+                        <td style={{ textAlign: 'center' }}>
+                          {editable && (
+                            <Button
+                              size="sm"
+                              variant={isFeatured ? 'primary' : 'ghost'}
+                              icon={isFeatured ? <Star size={14} /> : <StarOff size={14} />}
+                              onClick={() => isFeatured ? void unfeature(r) : void feature(r)}
+                              aria-label={isFeatured ? `Remove ${r.code} from selection` : `Add ${r.code} to selection`}
+                            >
+                              {isFeatured ? 'Selected' : 'Add'}
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
     </>
   );
 }

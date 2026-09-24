@@ -247,6 +247,45 @@
   white-space: nowrap;
 }
 
+/* Wooden dresses the list as a honey-oak panel: golden amber timber with a
+   fine grain, a warm sheen along the top and mahogany type. The table's own
+   tokens are re-pointed, so every cell, rule and button follows. */
+:global(:root:not([data-theme='blue'], [data-theme='sky'])) .table {
+  --ink: #2E1405;
+  --ink-muted: #4A230B;
+  --line: rgba(74, 35, 11, 0.2);
+  --accent: #4E2410;
+  --surface: #FBEBC8;
+  --surface-raised: rgba(255, 238, 196, 0.42);
+  --surface-sunk: #C98C3C;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid rgba(160, 104, 40, 0.55);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background-color: #D9A252;
+  background-image:
+    linear-gradient(180deg, rgba(255, 236, 190, 0.5), transparent 140px),
+    radial-gradient(70% 60% at 78% 30%, rgba(255, 226, 160, 0.35), transparent 70%),
+    var(--wood-grain),
+    linear-gradient(180deg, #EDC27A 0%, #DDA551 45%, #C98A3C 100%);
+  color: var(--ink);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 214, 0.7),
+    0 2px 4px rgba(90, 44, 10, 0.12),
+    0 24px 50px -18px rgba(120, 64, 14, 0.45);
+}
+:global(:root:not([data-theme='blue'], [data-theme='sky'])) .table thead th {
+  background: rgba(110, 56, 16, 0.14);
+  border-bottom-color: rgba(110, 56, 16, 0.3);
+  color: #4A230B;
+  font-weight: 600;
+}
+:global(:root:not([data-theme='blue'], [data-theme='sky'])) .table :is(th, td):first-child { padding-left: 18px; }
+:global(:root:not([data-theme='blue'], [data-theme='sky'])) .table :is(th, td):last-child { padding-right: 18px; }
+:global(:root:not([data-theme='blue'], [data-theme='sky'])) .row:last-child :is(td, th) { border-bottom: 0; }
+:global(:root:not([data-theme='blue'], [data-theme='sky'])) .thumb { box-shadow: 0 0 0 1px rgba(90, 44, 10, 0.25); }
+
 /* Same palette as the elevation board tiles beside the list. */
 .statusBadge {
   display: inline-flex;
@@ -288,25 +327,6 @@
 .rowActions { width: 1%; }
 .rowActions > a { display: flex; justify-content: center; width: 100%; min-width: 92px; }
 .rowActions > a + a { margin-top: 6px; }
-.shortlistActions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 6px;
-}
-.shortlistActions button {
-  min-height: 24px;
-  padding: 0;
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  color: var(--ink-muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
-  white-space: nowrap;
-}
-.shortlistActions button[aria-pressed='true'] { color: var(--accent); text-decoration-color: currentColor; }
-.shortlistActions button:hover, .shortlistActions button:focus-visible { color: var(--accent); }
 .tour3d {
   display: inline-flex;
   align-items: center;
@@ -421,7 +441,10 @@
   }
   .rowActions > a { width: auto; }
   .rowActions > a + a { margin-top: 0; }
-  .shortlistActions { margin-top: 0; align-items: center; }
+  :global(:root:not([data-theme='blue'], [data-theme='sky'])) .row { padding: 14px 16px; }
+  :global(:root:not([data-theme='blue'], [data-theme='sky'])) .table :is(th, td) { padding: 0; }
+  :global(:root:not([data-theme='blue'], [data-theme='sky'])) .rowActions { flex-wrap: wrap; }
+  :global(:root:not([data-theme='blue'], [data-theme='sky'])) .row:last-child { border-bottom: 0; }
 }
 
 @media (max-width: 400px) {

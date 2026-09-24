@@ -194,7 +194,7 @@ async function main() {
         collection: 'LIBRARY',
         category: 'RENDERS_3D',
         title,
-        altText: key === 'film:poster' ? 'Almasi Residences at dusk, the opening frame of the film.' : null,
+        altText: key === 'film:poster' ? 'Almasi Residence at dusk, the opening frame of the film.' : null,
         provenance: 'SUPPLIED_RENDER',
         storageKey: stored.storageKey,
         mimeType: stored.mimeType,

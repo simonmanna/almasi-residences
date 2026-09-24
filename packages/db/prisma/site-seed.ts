@@ -30,10 +30,10 @@ export interface TourSeed {
 export const siteTours: TourSeed[] = [
   {
     slug: 'building',
-    name: 'The Almasi Residences tour',
+    name: 'The Almasi Residence tour',
     description: 'The building, entrance to view, in the order a resident would walk it.',
     stations: [
-      { key: 'exterior', media: 'street', title: 'Almasi Residences', place: 'KG 15 Ave, Kimihurura', body: 'Stone, walnut and deep glass balconies behind a gatehouse and a walled garden.' },
+      { key: 'exterior', media: 'street', title: 'Almasi Residence', place: 'KG 15 Ave, Kimihurura', body: 'Stone, walnut and deep glass balconies behind a gatehouse and a walled garden.' },
       { key: 'entrance', media: 'arrival', title: 'The entrance', place: 'Ground floor', body: 'A covered drop-off under a walnut canopy, a water wall, and the lobby a few steps from the car.' },
       { key: 'lobby', media: 'lobby', title: 'Reception', place: 'Ground floor', body: 'Double height, in travertine and walnut, with a lounge for guests and a staffed front desk.' },
       { key: 'pool', media: 'pool', title: 'The pool', place: 'Level 1, amenity deck', body: 'Fifteen metres, lit after dark, with loungers and planting along the deck.' },
@@ -87,7 +87,7 @@ export const siteFilm = {
   durationSec: 49.8,
   chapters: [
     { startSec: 3.4, label: 'Kimihurura', place: 'Above Kigali' },
-    { startSec: 7.64, label: 'Almasi Residences', place: 'KG 15 Ave' },
+    { startSec: 7.64, label: 'Almasi Residence', place: 'KG 15 Ave' },
     { startSec: 11.88, label: 'The entrance', place: 'Ground floor' },
     { startSec: 16.13, label: 'Reception', place: 'Ground floor' },
     { startSec: 20.37, label: 'The pool deck', place: 'Level 1' },

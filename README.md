@@ -1,6 +1,6 @@
-# Almasi Residences — Kimihurura, Kigali
+# Almasi Residence — Kimihurura, Kigali
 
-The sales site for Almasi Residences: 28 residences on a quiet rise in
+The sales site for Almasi Residence: 28 residences on a quiet rise in
 Kimihurura. A cinematic opening, a 3D building you can turn and take apart floor
 by floor, live availability from the sales team's own records, a page for every
 residence with its plan and payment schedule, a guided tour, and a film.

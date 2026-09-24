@@ -43,7 +43,14 @@ table { border-collapse: collapse; }
 
 /* A section that declares a ground paints it; everything inside reads the tokens. */
 :where([data-ground]) { background-color: var(--surface); background-image: var(--ambient), var(--texture); color: var(--ink); }
-[data-ground="quiet"] { --ambient: none; --texture: none; }
+/* Wooden's night ground adds its polished sheen; other themes clear it. */
+[data-ground="night"] { background-image: var(--ambient-night, var(--ambient)), var(--texture); }
+[data-ground="quiet"] {
+  --ambient: var(--ambient-quiet, none);
+  --texture: var(--texture-quiet, none);
+  background-size: 100% 100%, 100% 100%, 92px 100%, 720px 720px;
+  background-position: center, center, center top, center;
+}
 
 ::selection { background: var(--accent); color: var(--surface); }
 
@@ -219,7 +226,7 @@ html.lenis, html.lenis body { height: auto; }
 }
 .btn--solid { box-shadow: var(--btn-shadow); }
 /* Blue and Sky Blue lead with their light: the solid button is the accent,
-   exactly as in their references; Wooden keeps walnut on oak, ivory on walnut. */
+   exactly as in their references; Wooden's is brass on every ground. */
 :root[data-theme="blue"] .btn--solid,
 :root[data-theme="sky"] .btn--solid {
   --btn-bg: var(--accent);
@@ -227,6 +234,14 @@ html.lenis, html.lenis body { height: auto; }
   --btn-border: var(--accent);
   --btn-fill: var(--ink);
   --btn-fill-ink: var(--surface);
+}
+:root:not([data-theme="blue"], [data-theme="sky"]) .btn--solid {
+  --btn-bg: var(--gold);
+  --btn-ink: var(--gold-ink);
+  --btn-border: var(--gold);
+  --btn-fill: var(--gold-hi);
+  --btn-fill-ink: var(--gold-ink);
+  box-shadow: var(--btn-solid-shadow);
 }
 .btn--ghost { --btn-border: var(--line); }
 .btn-arrow { display: inline-block; transition: transform var(--dur-3) var(--ease-out); }
@@ -345,7 +360,7 @@ html.lenis, html.lenis body { height: auto; }
   border: var(--card-border);
   border-radius: var(--radius-card);
   background-color: var(--card-surface);
-  background-image: var(--texture);
+  background-image: var(--card-texture, none);
   color: var(--ink);
   box-shadow: var(--card-frame), var(--card-shadow);
   transition:

@@ -166,7 +166,7 @@ export function ExploreAlmasi({
           tabIndex={showModel ? 0 : -1}
           role="application"
           aria-roledescription="3D model"
-          aria-label="Model of Almasi Residences. Arrow keys turn it, plus and minus zoom, Escape returns to the whole building. Floors and residences are listed beside it."
+          aria-label="Model of Almasi Residence. Arrow keys turn it, plus and minus zoom, Escape returns to the whole building. Floors and residences are listed beside it."
           onKeyDown={onKey}
           data-cursor={touched ? undefined : 'Drag'}
         >

@@ -123,7 +123,7 @@ export function KigaliMap({
   filter = null,
   onHover,
   onSelect,
-  originLabel = 'Almasi Residences',
+  originLabel = 'Almasi Residence',
 }: KigaliMapProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });

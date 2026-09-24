@@ -20,8 +20,8 @@
 }
 
 .nav[data-mode='solid'] {
-  background-color: color-mix(in srgb, var(--surface) 86%, transparent);
-  background-image: var(--texture);
+  background-color: color-mix(in srgb, var(--surface) var(--nav-opacity, 86%), transparent);
+  background-image: var(--ambient-night, none), var(--texture);
   border-bottom-color: color-mix(in srgb, var(--line) 70%, transparent);
   box-shadow: var(--nav-shadow);
   backdrop-filter: blur(var(--nav-blur)) saturate(1.2);
@@ -49,6 +49,9 @@
   min-height: 44px;
 }
 
+/* The mark takes the theme's metal; the name stays in the nav's ink. */
+.brand svg { color: var(--nav-rule, currentColor); }
+
 .links ul {
   display: flex;
   gap: clamp(18px, 2.2vw, 40px);
@@ -72,8 +75,8 @@
   left: 0;
   right: 0;
   bottom: 4px;
-  height: 1px;
-  background: currentColor;
+  height: 2px;
+  background: var(--nav-rule, currentColor);
   transform: scaleX(0);
   transform-origin: 100% 50%;
   transition: transform var(--dur-3) var(--ease-out);

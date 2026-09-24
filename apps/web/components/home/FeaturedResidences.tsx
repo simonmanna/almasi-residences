@@ -27,7 +27,8 @@ export function FeaturedResidences({ items }: { items: PublicResidenceCardDto[] 
       <div className="container">
         <header className={styles.head}>
           <div>
-            <p className={`mark kicker-lg ${styles.kicker}`}>Selected</p>
+            <p className={`eyebrow ${styles.eyebrow}`}>Our Residences</p>
+            <p className={`mark kicker-lg ${styles.kicker}`}>Selected Residences</p>
             <RevealText as="h2" id="featured-title" className="title-sm" lines={['Residences Worth A Closer Look.']} />
           </div>
           <div className={styles.aside}>

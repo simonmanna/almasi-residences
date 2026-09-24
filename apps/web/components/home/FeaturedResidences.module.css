@@ -1,22 +1,27 @@
 /**
  * The selected residences sit side by side as a compact row of cards, so a
  * curated choice reads at a glance instead of costing a screen per residence.
+ * The header stacks the same three lines as the residences section beside it —
+ * eyebrow, kicker, title — so the two sections read as one family.
  */
 .section {
   background-color: var(--surface-sunk);
 }
 
 .head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px 32px;
-  margin-bottom: clamp(24px, 3vw, 40px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 32px;
+  margin-bottom: clamp(24px, 3vw, 48px);
+}
+
+.eyebrow {
+  margin-bottom: 18px;
 }
 
 .kicker {
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 .aside {
@@ -97,4 +102,11 @@
 
 .cta {
   margin-top: 10px;
+}
+
+/* A phone gets the heading block above the link, as the residences section does. */
+@media (max-width: 900px) {
+  .head {
+    grid-template-columns: 1fr;
+  }
 }

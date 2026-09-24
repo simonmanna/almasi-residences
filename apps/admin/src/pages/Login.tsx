@@ -35,7 +35,7 @@ export function Login() {
     <div className="login-page">
       <div className="login-art">
         <div className="script">Luxury Living Redefined</div>
-        <h2>The command centre for Almasi Residences</h2>
+        <h2>The command centre for Almasi Residence</h2>
         <p>Floors, residences, prices, media and people — one place, and the website follows every change.</p>
       </div>
       <main className="login-panel">

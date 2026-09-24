@@ -48,7 +48,7 @@ export default async function InsightPage({ params }: { params: Promise<{ slug: 
     <main id="main">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd(post, dev?.name ?? 'Almasi Residences')) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd(post, dev?.name ?? 'Almasi Residence')) }}
       />
       <header className={`container ground-band ${styles.articleHead}`} data-ground="night" data-nav-over>
         <p className="mark">{post.category}</p>

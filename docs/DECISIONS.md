@@ -173,7 +173,7 @@ disabled by reduced motion, the change is simply instant.
 
 **Status:** replaced, 2026-09-11 · **§4.6, §15 Q1 resolved**
 
-The seed fixture now carries Almasi Residences: a real project in Kimihurura,
+The seed fixture now carries Almasi Residence: a real project in Kimihurura,
 Kigali with 28 units across Ground + 4 floors. Prices are illustrative (replaced
 via the admin panel when the developer confirms them). See `seed-data.ts` and
 `seed.ts` for the current fixture. The placeholder Kivu Ridge data was removed.

@@ -19,7 +19,7 @@ const typology = (over: Partial<TypologyDto> = {}): TypologyDto => ({
 const dev: DevelopmentDto = {
   id: 'd1',
   slug: 'almasi-residences',
-  name: 'Almasi Residences',
+  name: 'Almasi Residence',
   tagline: 'Twenty-eight homes in Kimihurura',
   descriptionMd: '',
   city: 'Kigali',

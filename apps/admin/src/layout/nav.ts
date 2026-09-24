@@ -33,6 +33,7 @@ import {
   Map,
   MapPin,
   MapPinned,
+  MessageCircle,
   Newspaper,
   LayoutDashboard,
   PenTool,
@@ -119,6 +120,7 @@ export const NAV: NavGroup[] = [
     title: 'Website',
     items: [
       { label: 'Page content', to: '/content/home', icon: FileText, needs: 'content.view', sub: 'Headlines and words, page by page' },
+      { label: 'WhatsApp & Telephone', to: '/whatsapp', icon: MessageCircle, needs: 'property.view', sub: 'The numbers buyers reach you on, and whether the WhatsApp button shows' },
       { label: 'Amenities', to: '/amenities', icon: Sparkles, sub: 'Pool, gym, restaurant and the rest of the building' },
       { label: 'Residences', to: '/residences', icon: DoorOpen, needs: 'residence.view', sub: 'Every home: status, price, specifications and media' },
       { label: 'Payment plans', to: '/payment-plans', icon: Wallet, sub: 'Deposit, milestones and instalments' },

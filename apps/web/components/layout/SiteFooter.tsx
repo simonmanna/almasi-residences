@@ -18,11 +18,6 @@ const EXPLORE_LINKS = [
   { href: '/tour/penthouse', label: 'The penthouse tour' },
   { href: '/film', label: 'The film' },
   { href: '/location', label: 'Location' },
-  // §SEO — the neighbourhood pages and the guides are linked from every page,
-  // so they are reachable rather than only listed in the sitemap.
-  { href: '/locations', label: 'Neighbourhoods' },
-  { href: '/insights', label: 'Insights & guides' },
-  { href: '/progress', label: 'Construction progress' },
 ];
 
 const LEGAL_LINKS = [

@@ -26,7 +26,7 @@ export const LEGACY_DEV_SLUGS = ['seed-dev'];
 
 export const development = {
   slug: DEV_SLUG,
-  name: 'Almasi Residences',
+  name: 'Almasi Residence',
   tagline: 'Twenty-eight homes in Kimihurura',
   descriptionMd: [
     '"Almasi" — the Swahili word for diamond — sits on a quiet rise in Kimihurura,',

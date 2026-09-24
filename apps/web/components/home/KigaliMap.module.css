@@ -12,7 +12,7 @@
 .frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 0.75;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius-2);

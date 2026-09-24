@@ -11,7 +11,7 @@ import styles from './ThemeSwitcher.module.css';
  */
 export const THEMES = [
   { id: 'blue', label: 'Blue', note: 'Architectural night', preview: '/themes/blue.webp', ground: '#11202E', accent: '#8ECDF4', night: '#0A1520' },
-  { id: 'wooden', label: 'Wooden', note: 'Warm natural luxury', preview: '/themes/wooden.webp', ground: '#EADCCB', accent: '#74492A', night: '#3A281B' },
+  { id: 'wooden', label: 'Wooden', note: 'Mahogany and brass', preview: '/themes/wooden.webp', ground: '#F2E6D6', accent: '#DBA858', night: '#3C1A07' },
   { id: 'sky', label: 'Sky Blue', note: 'Bright contemporary daylight', preview: '/themes/sky.webp', ground: '#F4F9FE', accent: '#1D6DB0', night: '#173656' },
 ] as const;
 
