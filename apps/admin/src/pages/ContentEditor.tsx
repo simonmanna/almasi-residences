@@ -173,7 +173,7 @@ export default function ContentEditor({ params }: { params: Record<string, strin
         </Card>
       )}
       {key === 'gallery' && <Alert tone="info">The galleries themselves are managed under <Link to="/galleries">Media → Galleries</Link>, and construction updates under <Link to="/progress">Gallery & progress</Link>.</Alert>}
-      {key === 'contact' && <Alert tone="info">Phone, email, WhatsApp and the office address are edited on <Link to="/property">Property overview</Link>, so every page uses the same details.</Alert>}
+      {key === 'contact' && <Alert tone="info">Email, the sales office and the social links are edited on <Link to="/property">Property overview</Link>, and the telephone and WhatsApp numbers on <Link to="/whatsapp">WhatsApp & Telephone</Link>, so every page uses the same details.</Alert>}
       {key === 'amenities' && <Alert tone="info">The amenities are managed under <Link to="/amenities">Property → Amenities</Link>.</Alert>}
       {key === 'buying' && <Alert tone="info">Payment milestones come from the default <Link to="/payment-plans">payment plan</Link>, and questions from <Link to="/faqs">FAQs</Link>.</Alert>}
       {picker && (
