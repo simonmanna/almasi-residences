@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { formatDistance } from '@avida/types';
 import { getDevelopment, getFeatured, getLocationPage, getLocationPages } from '../../../../lib/api';
 import { entityMetadata } from '../../../../lib/page-metadata';
 import { plainText, renderMarkdown } from '../../../../lib/markdown';
 import { placeJsonLd } from '../../../../lib/seo';
+import { distanceText, driveText, walkText } from '../../../../lib/distance';
 import { Breadcrumbs } from '../../../../components/layout/Breadcrumbs';
 import { LocationExperience } from '../../../../components/home/LocationExperience';
 import { SceneImage } from '../../../../components/ui/SceneImage';
@@ -85,7 +85,11 @@ export default async function LocationDetailPage({ params }: { params: Promise<{
           kicker="Nearby"
           title={`Around ${page.name}`}
           lede=""
-          note="Straight-line distances from the site. Drive times are estimates at an average city speed."
+          note={
+            landmarks.every((l) => l.routed)
+              ? 'Road distances and drive times from Google Maps, not counting live traffic.'
+              : 'Distances marked straight-line are measured on the map; their times (≈) are estimates at an average city speed.'
+          }
           ground="quiet"
         />
       )}
@@ -100,9 +104,9 @@ export default async function LocationDetailPage({ params }: { params: Promise<{
               <li key={l.id} className={styles.place}>
                 <span>{l.name}</span>
                 <span className="tabular muted">
-                  {l.distanceM !== null ? formatDistance(l.distanceM) : '—'}
-                  {l.driveMinutes ? ` · ${l.driveMinutes} min by car` : ''}
-                  {l.walkMinutes ? ` · ${l.walkMinutes} min on foot` : ''}
+                  {distanceText(l) || '—'}
+                  {l.driveMinutes ? ` · ${driveText(l)}` : ''}
+                  {l.walkMinutes ? ` · ${walkText(l)}` : ''}
                 </span>
               </li>
             ))}

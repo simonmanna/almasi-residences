@@ -472,23 +472,27 @@ export const galleries: { slug: string; title: string; description: string }[] =
 
 export const amenitiesSeed = amenities;
 
-/** Real Kimihurura-area landmarks. */
+/** The owner's nearby places (2026-09-24), each point checked on Google Maps. */
 export const landmarks: {
   name: string;
   category: LandmarkCategory;
   latitude: number;
   longitude: number;
 }[] = [
-  { name: 'Kigali Convention Centre', category: 'BUSINESS', latitude: -1.9535, longitude: 30.0925 },
-  { name: 'Kigali Heights', category: 'SHOPPING', latitude: -1.9541, longitude: 30.0937 },
-  { name: 'Kigali Business Centre', category: 'BUSINESS', latitude: -1.9441, longitude: 30.0619 },
-  { name: 'King Faisal Hospital', category: 'HOSPITAL', latitude: -1.9527, longitude: 30.0889 },
-  { name: 'Green Hills Academy', category: 'SCHOOL', latitude: -1.9557, longitude: 30.1042 },
-  { name: 'Kigali International Airport', category: 'AIRPORT', latitude: -1.9686, longitude: 30.1395 },
-  { name: 'Kigali Golf Club', category: 'LEISURE', latitude: -1.9349, longitude: 30.0997 },
-  { name: 'BK Arena', category: 'LEISURE', latitude: -1.9382, longitude: 30.0623 },
-  { name: 'Kimihurura Market', category: 'SHOPPING', latitude: -1.9478, longitude: 30.0727 },
-  { name: 'US Embassy', category: 'EMBASSY', latitude: -1.9520, longitude: 30.0930 },
+  { name: 'Embassy of the Republic of Turkey', category: 'EMBASSY', latitude: -1.9552875, longitude: 30.0830114 },
+  { name: 'Repub Lounge', category: 'LEISURE', latitude: -1.9522083, longitude: 30.0815491 },
+  { name: 'WAKA Fitness', category: 'LEISURE', latitude: -1.9526577, longitude: 30.0813898 },
+  { name: 'Kimihurura Roundabout Park', category: 'LEISURE', latitude: -1.9552116, longitude: 30.0859855 },
+  { name: 'Kigali Convention Centre', category: 'LEISURE', latitude: -1.9545556, longitude: 30.0938534 },
+  { name: 'Radisson Blu Hotel', category: 'LEISURE', latitude: -1.9543355, longitude: 30.092681 },
+  { name: 'The Hut Hotel & Restaurant', category: 'LEISURE', latitude: -1.9578386, longitude: 30.0934672 },
+  { name: 'Kigali Heights', category: 'SHOPPING', latitude: -1.952861, longitude: 30.0926808 },
+  { name: 'Kigali Alliance Business Centre (KABC)', category: 'SHOPPING', latitude: -1.9522827, longitude: 30.0912714 },
+  { name: 'University of Kigali (UoK)', category: 'SCHOOL', latitude: -1.9508723, longitude: 30.0929327 },
+  { name: 'Rwanda Development Board (RDB)', category: 'BUSINESS', latitude: -1.9526603, longitude: 30.1018672 },
+  { name: 'M Peace Plaza', category: 'BUSINESS', latitude: -1.9471815, longitude: 30.0593244 },
+  { name: 'Green Hills Academy', category: 'SCHOOL', latitude: -1.9412444, longitude: 30.1044367 },
+  { name: 'Kigali International Airport (KGL)', category: 'AIRPORT', latitude: -1.9633119, longitude: 30.1350179 },
 ];
 
 /** §4.6 — media sets. Production renders replace these. */

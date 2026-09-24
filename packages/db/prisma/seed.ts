@@ -501,7 +501,8 @@ async function main() {
         ST_SetSRID(ST_MakePoint(${development.longitude}::double precision,
                                 ${development.latitude}::double precision), 4326)::geography
       )
-    )::int
+    )::int,
+    "routed" = false
     WHERE l."developmentId" = ${dev.id} AND NOT l."manualDistance"
   `;
   // Travel time is a modelled estimate (§13) — 28 km/h urban average, 4.5 km/h walking.

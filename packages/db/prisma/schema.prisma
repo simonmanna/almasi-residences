@@ -957,6 +957,8 @@ model Landmark {
   walkMinutes    Int?
   /// true when the admin typed the distance and times rather than having them computed
   manualDistance Boolean          @default(false)
+  /// true when distanceM and the times are Google road routes; false for straight-line estimates
+  routed         Boolean          @default(false)
   /// when false, the landmark is hidden from the public site but kept in the admin
   visible        Boolean          @default(true)
 

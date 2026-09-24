@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Get, Patch, Req, UseGuards, UseI
 import type { Prisma } from '@avida/db';
 import { AuditService, diff } from '../../common/audit.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
+import { LandmarkDistances } from '../../common/landmark-distances.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { PublicSync } from '../../common/public-sync.service.js';
@@ -21,6 +22,7 @@ export class PropertyController {
     private readonly storage: StorageService,
     private readonly audit: AuditService,
     private readonly sync: PublicSync,
+    private readonly distances: LandmarkDistances,
   ) {}
 
   @Get()
@@ -80,7 +82,7 @@ export class PropertyController {
     const after = await this.prisma.client.development.update({ where: { id }, data });
     this.dev.invalidate();
     // The pin moved: every nearby place measured from it is now off.
-    if (after.latitude !== before.latitude || after.longitude !== before.longitude) await this.remeasureLandmarks(id);
+    if (after.latitude !== before.latitude || after.longitude !== before.longitude) await this.distances.refresh(id);
     const changes = diff(before as unknown as Record<string, unknown>, after as unknown as Record<string, unknown>);
     changes.keys = changes.keys.filter((k) => k !== 'updatedAt');
     if (changes.keys.length) {
@@ -98,28 +100,5 @@ export class PropertyController {
       await this.sync.changed('all');
     }
     return this.get();
-  }
-
-  /** Same PostGIS distance and 28 km/h drive / 4.5 km/h walk estimates as the seed; manual rows are left alone. */
-  private async remeasureLandmarks(developmentId: string) {
-    await this.prisma.client.$executeRaw`
-      UPDATE "Landmark" l
-      SET "distanceM" = ROUND(
-        ST_Distance(
-          ST_SetSRID(ST_MakePoint(l."longitude", l."latitude"), 4326)::geography,
-          ST_SetSRID(ST_MakePoint(d."longitude", d."latitude"), 4326)::geography
-        )
-      )::int
-      FROM "Development" d
-      WHERE d."id" = ${developmentId} AND l."developmentId" = d."id" AND NOT l."manualDistance"
-    `;
-    await this.prisma.client.$executeRaw`
-      UPDATE "Landmark"
-      SET "driveMinutes" = GREATEST(1, ROUND(("distanceM" / 1000.0) / 28.0 * 60)::int),
-          "walkMinutes"  = CASE WHEN "distanceM" <= 3000
-                                THEN GREATEST(1, ROUND(("distanceM" / 1000.0) / 4.5 * 60)::int)
-                                ELSE NULL END
-      WHERE "developmentId" = ${developmentId} AND NOT "manualDistance"
-    `;
   }
 }

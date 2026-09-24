@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { formatDistance } from '@avida/types';
 import type { LandmarkDto } from '../../lib/api';
+import { distanceText, driveText } from '../../lib/distance';
 import { useContact } from '../providers/ContactProvider';
 import { RevealText } from '../ui/RevealText';
 import { CATEGORY_LABEL, KigaliMap } from './KigaliMap';
@@ -11,8 +11,8 @@ import styles from './LocationExperience.module.css';
 /**
  * 07 — In the heart of Kigali. The words come from the CMS (Homepage
  * location); the places from Website → Location in the admin. Distances are
- * computed by PostGIS from the coordinates unless the admin typed them; drive
- * times are modelled estimates, and the footnote says so.
+ * Google road routes when routing is configured, otherwise straight lines with
+ * estimated times — and each row's wording says which (lib/distance).
  *
  * The list and the map are one instrument: hovering either highlights the
  * other, clicking either pins a card open, and the category filter thins
@@ -127,8 +127,8 @@ export function LocationExperience({
                   <span className={styles.dot} aria-hidden="true" />
                   <span className={styles.name}>{l.name}</span>
                   <span className={styles.cat}>{CATEGORY_LABEL[l.category] ?? l.category}</span>
-                  <span className={styles.dist}>{l.distanceM !== null ? formatDistance(l.distanceM) : ''}</span>
-                  <span className={styles.time}>{l.driveMinutes ? `${l.driveMinutes} min by car` : ''}</span>
+                  <span className={styles.dist}>{distanceText(l)}</span>
+                  <span className={styles.time}>{driveText(l)}</span>
                 </button>
               </li>
             ))}

@@ -4,6 +4,7 @@ import { AccessService } from './access.service.js';
 import { AuditService } from './audit.service.js';
 import { CrmService } from './crm.service.js';
 import { CurrentDevelopment } from './current-development.service.js';
+import { LandmarkDistances } from './landmark-distances.service.js';
 import { NotificationService } from './notification.service.js';
 import { PublicSync } from './public-sync.service.js';
 import { RevalidateService } from './revalidate.service.js';
@@ -13,7 +14,7 @@ import { StorageService } from './storage.service.js';
 @Global()
 @Module({
   imports: [InventoryModule],
-  providers: [AccessService, CurrentDevelopment, AuditService, StorageService, RevalidateService, PublicSync, NotificationService, CrmService],
-  exports: [AccessService, CurrentDevelopment, AuditService, StorageService, RevalidateService, PublicSync, NotificationService, CrmService],
+  providers: [AccessService, CurrentDevelopment, AuditService, StorageService, RevalidateService, PublicSync, NotificationService, CrmService, LandmarkDistances],
+  exports: [AccessService, CurrentDevelopment, AuditService, StorageService, RevalidateService, PublicSync, NotificationService, CrmService, LandmarkDistances],
 })
 export class PlatformCommonModule {}

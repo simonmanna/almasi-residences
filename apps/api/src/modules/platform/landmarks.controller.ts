@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuditService } from '../../common/audit.service.js';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
+import { LandmarkDistances } from '../../common/landmark-distances.service.js';
 import { NoStoreInterceptor } from '../../common/no-store.interceptor.js';
 import { PrismaService } from '../../common/prisma.service.js';
 import { PublicSync } from '../../common/public-sync.service.js';
@@ -11,8 +12,8 @@ import { CreateLandmarkDto, UpdateLandmarkDto } from './dto.js';
 /**
  * Website → Location — the places listed and mapped around the site.
  *
- * Distances are computed by PostGIS from the coordinates (§4.5), exactly as
- * the seed does, and drive/walk times are the same modelled estimates (§13).
+ * Distances come from LandmarkDistances: Google road routes when a Maps key is
+ * configured, otherwise PostGIS straight lines with modelled times (§4.5, §13).
  * An admin may instead type the figures (manualDistance), and those are kept.
  */
 @Controller('admin/landmarks')
@@ -24,6 +25,7 @@ export class LandmarksController {
     private readonly dev: CurrentDevelopment,
     private readonly audit: AuditService,
     private readonly sync: PublicSync,
+    private readonly distances: LandmarkDistances,
   ) {}
 
   @Get()
@@ -34,7 +36,18 @@ export class LandmarksController {
       this.prisma.client.development.findUniqueOrThrow({ where: { id: developmentId }, select: { name: true, latitude: true, longitude: true } }),
       this.prisma.client.landmark.findMany({ where: { developmentId }, orderBy: [{ distanceM: 'asc' }, { name: 'asc' }] }),
     ]);
-    return { origin, landmarks };
+    return { origin, landmarks, routing: Boolean(process.env.GOOGLE_MAPS_API_KEY?.trim()) };
+  }
+
+  /** Re-measure every place from the property, by road when routing is configured. */
+  @Post('refresh')
+  @RequirePermission('content.edit')
+  async refresh(@Req() req: AdminRequest) {
+    const developmentId = await this.dev.id();
+    const { routed } = await this.distances.refresh(developmentId);
+    await this.audit.record({ actorId: actorOf(req).id, action: 'landmark.refresh', entity: 'landmark', entityId: developmentId, target: 'Nearby places', summary: `Re-measured nearby places (${routed ? 'road routes' : 'straight line'})`, req });
+    await this.sync.changed('content');
+    return { routed, ...(await this.list()) };
   }
 
   @Post()
@@ -54,7 +67,7 @@ export class LandmarksController {
         ...(manual ? { distanceM: dto.distanceM ?? null, driveMinutes: dto.driveMinutes ?? null, walkMinutes: dto.walkMinutes ?? null } : {}),
       },
     });
-    if (!manual) await this.compute(row.id);
+    if (!manual) await this.distances.refresh(developmentId, [row.id]);
     await this.audit.record({ actorId: actorOf(req).id, action: 'landmark.create', entity: 'landmark', entityId: row.id, target: row.name, summary: `Added nearby place ${row.name}`, req });
     await this.sync.changed('content');
     return this.one(row.id);
@@ -78,6 +91,7 @@ export class LandmarksController {
         ...(dto.visible !== undefined ? { visible: dto.visible } : {}),
         ...(manual
           ? {
+              routed: false,
               ...(dto.distanceM !== undefined ? { distanceM: dto.distanceM } : {}),
               ...(dto.driveMinutes !== undefined ? { driveMinutes: dto.driveMinutes } : {}),
               ...(dto.walkMinutes !== undefined ? { walkMinutes: dto.walkMinutes } : {}),
@@ -85,7 +99,7 @@ export class LandmarksController {
           : {}),
       },
     });
-    if (!manual) await this.compute(id);
+    if (!manual) await this.distances.refresh(developmentId, [id]);
     const row = await this.one(id);
     await this.audit.record({ actorId: actorOf(req).id, action: 'landmark.update', entity: 'landmark', entityId: id, target: row.name, summary: `Edited nearby place ${row.name}`, req });
     await this.sync.changed('content');
@@ -106,28 +120,5 @@ export class LandmarksController {
 
   private one(id: string) {
     return this.prisma.client.landmark.findUniqueOrThrow({ where: { id } });
-  }
-
-  /** The seed's PostGIS distance, then its 28 km/h drive and 4.5 km/h walk (≤ 3 km) estimates. */
-  private async compute(id: string) {
-    await this.prisma.client.$executeRaw`
-      UPDATE "Landmark" l
-      SET "distanceM" = ROUND(
-        ST_Distance(
-          ST_SetSRID(ST_MakePoint(l."longitude", l."latitude"), 4326)::geography,
-          ST_SetSRID(ST_MakePoint(d."longitude", d."latitude"), 4326)::geography
-        )
-      )::int
-      FROM "Development" d
-      WHERE l."id" = ${id} AND d."id" = l."developmentId"
-    `;
-    await this.prisma.client.$executeRaw`
-      UPDATE "Landmark"
-      SET "driveMinutes" = GREATEST(1, ROUND(("distanceM" / 1000.0) / 28.0 * 60)::int),
-          "walkMinutes"  = CASE WHEN "distanceM" <= 3000
-                                THEN GREATEST(1, ROUND(("distanceM" / 1000.0) / 4.5 * 60)::int)
-                                ELSE NULL END
-      WHERE "id" = ${id}
-    `;
   }
 }

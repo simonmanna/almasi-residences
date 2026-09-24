@@ -196,6 +196,9 @@ export interface LocationPageDetailDto extends LocationPageDto {
     distanceM: number | null;
     driveMinutes: number | null;
     walkMinutes: number | null;
+    /** true: Google road distance and times; false: straight line with estimated times. */
+    routed: boolean;
+    manualDistance: boolean;
   }[];
   seo: SeoEntityDto | null;
 }
@@ -275,6 +278,8 @@ export interface LandmarkDto {
   distanceM: number | null;
   driveMinutes: number | null;
   walkMinutes: number | null;
+  routed: boolean;
+  manualDistance?: boolean;
   visible: boolean;
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ExternalLink, FileText, MapPin, Pencil, Plus, Save, Send, Trash2 } from 'lucide-react';
+import { ExternalLink, FileText, MapPin, Pencil, Plus, RefreshCw, Save, Send, Trash2 } from 'lucide-react';
 import { formatDistance } from '@avida/types';
 import { del, get, patch, post, put } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -30,12 +30,15 @@ interface Landmark {
   driveMinutes: number | null;
   walkMinutes: number | null;
   manualDistance: boolean;
+  routed: boolean;
   visible: boolean;
 }
 
 interface LandmarkList {
   origin: { name: string; latitude: number; longitude: number };
   landmarks: Landmark[];
+  /** true when the API has a Google Maps key and measures by road. */
+  routing: boolean;
 }
 
 interface SectionPage {
@@ -216,9 +219,22 @@ export default function Location() {
   const toast = useToast();
   const { data, error, refetch } = useQuery('landmarks', () => get<LandmarkList>('/admin/landmarks'));
   const [edit, setEdit] = useState<Landmark | 'new' | null>(null);
+  const [measuring, setMeasuring] = useState(false);
   if (error) return <ErrorBox error={error} onRetry={refetch} />;
   if (!data) return <LoadingPage />;
   const editable = can('content.edit');
+  const remeasure = async () => {
+    setMeasuring(true);
+    try {
+      const r = await post<{ routed: boolean }>('/admin/landmarks/refresh', {});
+      toast.success(r.routed ? 'Re-measured by road with Google Maps.' : 'Re-measured in a straight line from the site.');
+      invalidate('landmarks');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setMeasuring(false);
+    }
+  };
   const remove = async (l: Landmark) => {
     if (!(await confirm({ title: `Remove ${l.name}?`, body: 'It disappears from the list and the map on the website.', confirm: 'Remove', danger: true }))) return;
     try {
@@ -236,7 +252,8 @@ export default function Location() {
       </PageHead>
       <SectionText />
       <Card>
-        <CardHead title="Nearby places" icon={<MapPin size={18} />} sub={`${data.landmarks.length} listed, nearest first`}>
+        <CardHead title="Nearby places" icon={<MapPin size={18} />} sub={`${data.landmarks.length} listed, nearest first · ${data.routing ? 'road distances from Google Maps' : 'straight-line distances (no Google Maps key on the server)'}`}>
+          {editable && <Button icon={<RefreshCw size={15} />} disabled={measuring} onClick={() => void remeasure()}>Re-measure</Button>}
           {editable && <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEdit('new')}>Add place</Button>}
         </CardHead>
         {data.landmarks.length === 0 ? (
@@ -250,7 +267,7 @@ export default function Location() {
                   <tr key={l.id}>
                     <td><strong style={{ color: 'var(--navy)' }}>{l.name}</strong></td>
                     <td><Badge tone="sky" plain>{categoryLabel(l.category)}</Badge></td>
-                    <td className="tabular nowrap">{l.distanceM !== null ? formatDistance(l.distanceM) : '—'}{l.manualDistance && <span className="muted small"> · typed</span>}</td>
+                    <td className="tabular nowrap">{l.distanceM !== null ? formatDistance(l.distanceM) : '—'}<span className="muted small"> · {l.manualDistance ? 'typed' : l.routed ? 'road' : 'straight line'}</span></td>
                     <td className="tabular nowrap">{l.driveMinutes ? `${l.driveMinutes} min` : '—'}</td>
                     <td className="tabular nowrap">{l.walkMinutes ? `${l.walkMinutes} min` : '—'}</td>
                     <td className="tabular nowrap"><Badge tone={l.visible ? 'green' : 'amber'} plain>{l.visible ? 'Visible' : 'Hidden'}</Badge></td>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { formatDistance } from '@avida/types';
 import type { LandmarkDto } from '../../lib/api';
+import { distanceText, driveText, walkText } from '../../lib/distance';
 import styles from './KigaliMap.module.css';
 
 const SIZE = 600;
@@ -410,9 +411,9 @@ export function KigaliMap({
             </p>
             <p className={styles.cardName}>{card.l.name}</p>
             <p className={styles.cardMeta}>
-              {card.l.distanceM !== null && <span>{formatDistance(card.l.distanceM)}</span>}
-              {card.l.driveMinutes ? <span>{card.l.driveMinutes} min drive</span> : null}
-              {card.l.walkMinutes ? <span>{card.l.walkMinutes} min walk</span> : null}
+              {card.l.distanceM !== null && <span>{distanceText(card.l)}</span>}
+              {card.l.driveMinutes ? <span>{driveText(card.l, 'drive')}</span> : null}
+              {card.l.walkMinutes ? <span>{walkText(card.l, 'walk')}</span> : null}
             </p>
             <a
               className={styles.cardLink}

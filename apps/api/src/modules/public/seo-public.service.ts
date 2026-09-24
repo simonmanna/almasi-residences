@@ -72,7 +72,7 @@ export class SeoPublicService {
       this.prisma.client.landmark.findMany({
         where: { developmentId, visible: true, ...(row.categories.length ? { category: { in: row.categories as never } } : {}) },
         orderBy: { distanceM: 'asc' },
-        select: { id: true, name: true, category: true, latitude: true, longitude: true, distanceM: true, driveMinutes: true, walkMinutes: true },
+        select: { id: true, name: true, category: true, latitude: true, longitude: true, distanceM: true, driveMinutes: true, walkMinutes: true, routed: true, manualDistance: true },
       }),
       this.prisma.client.seoEntity.findUnique({
         where: { developmentId_entityType_entityId: { developmentId, entityType: 'LOCATION_PAGE', entityId: row.id } },
