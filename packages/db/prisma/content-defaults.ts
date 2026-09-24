@@ -26,7 +26,6 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
         'Almasi is Swahili for diamond — stone, walnut and glass on a quiet rise in Kimihurura, with deep balconies and a whole floor of amenities.',
       residencesKicker: 'Residences',
       residencesTitle: '{types} Ways|To Live Here.',
-      storyTitle: 'The Experience',
       amenitiesKicker: 'Amenities',
       // Title and lede intentionally empty — the Amenities section on the home
       // page renders no heading or lead copy (the component shows nothing for
@@ -36,9 +35,6 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
       penthouseKicker: 'The penthouses',
       penthouseTitle: 'The top floor,|in {penthouse.countWords} residences.',
       penthouseLede: 'From {penthouse.areaMin} to {penthouse.areaMax} m², glazed on three sides above the treetops.',
-      filmKicker: 'The Film',
-      filmTitle: 'Almasi, An Architectural Film',
-      filmCta: 'Play the film',
       progressKicker: 'Construction',
       progressTitle: 'Rising In|Kimihurura.',
     },
@@ -47,6 +43,22 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
     title: 'Selected residences',
     content: {
       showFeaturedResidences: true,
+    },
+  },
+  experienceSection: {
+    title: 'Homepage experience',
+    content: {
+      showExperienceSection: true,
+      title: 'The Experience',
+    },
+  },
+  filmSection: {
+    title: 'Homepage film',
+    content: {
+      showFilmSection: true,
+      kicker: 'The Film',
+      title: 'Almasi, An Architectural Film',
+      cta: 'Play the film',
     },
   },
   locationSection: {

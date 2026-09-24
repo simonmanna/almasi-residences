@@ -332,16 +332,12 @@ export const CONTENT_PAGES: ContentPageDef[] = [
       { key: 'introBody', label: 'Introduction text', type: 'textarea' },
       { key: 'residencesKicker', label: 'Residences section kicker', type: 'text' },
       { key: 'residencesTitle', label: 'Residences section title', type: 'text', help: 'A line break is written as “|”.' },
-      { key: 'storyTitle', label: 'Experience section title', type: 'text', help: 'Its chapters are edited under Website → Tours → Homepage experience.' },
       { key: 'amenitiesKicker', label: 'Amenities section kicker', type: 'text' },
       { key: 'amenitiesTitle', label: 'Amenities section title', type: 'text', help: 'A line break is written as “|”.' },
       { key: 'amenitiesLede', label: 'Amenities section introduction', type: 'textarea' },
       { key: 'penthouseKicker', label: 'Penthouse section kicker', type: 'text' },
       { key: 'penthouseTitle', label: 'Penthouse section title', type: 'text', help: 'A line break is written as “|”.' },
       { key: 'penthouseLede', label: 'Penthouse section introduction', type: 'textarea' },
-      { key: 'filmKicker', label: 'Film teaser kicker', type: 'text' },
-      { key: 'filmTitle', label: 'Film teaser title', type: 'text' },
-      { key: 'filmCta', label: 'Film teaser button', type: 'text' },
       { key: 'progressKicker', label: 'Construction progress kicker', type: 'text' },
       { key: 'progressTitle', label: 'Construction progress title', type: 'text', help: 'A line break is written as “|”.' },
     ],
@@ -352,6 +348,26 @@ export const CONTENT_PAGES: ContentPageDef[] = [
     description: 'The “Selected” residences section of the homepage. Which residences appear in it is set by marking them featured under Property → Residences.',
     fields: [
       { key: 'showFeaturedResidences', label: 'Show selected residences', type: 'boolean', help: 'Toggle to show/hide the selected (featured) residences section on the homepage.' },
+    ],
+  },
+  {
+    key: 'experienceSection',
+    title: 'Homepage experience',
+    description: 'The “Experience” reel on the homepage. Its chapters are the stations of the Homepage experience tour, edited under Website → Experience.',
+    fields: [
+      { key: 'showExperienceSection', label: 'Show the experience', type: 'boolean', help: 'Off hides the whole experience reel on the homepage. Its chapters are kept.' },
+      { key: 'title', label: 'Heading', type: 'text', help: 'The line above the reel, e.g. “The Experience”.' },
+    ],
+  },
+  {
+    key: 'filmSection',
+    title: 'Homepage film',
+    description: 'The full-width invitation to watch the film, lower on the homepage. Its picture or loop is chosen under Website → Placements; the film itself under Website → Film page.',
+    fields: [
+      { key: 'showFilmSection', label: 'Show the film section', type: 'boolean', help: 'Off hides the film invitation on the homepage. The /film page stays live.' },
+      { key: 'kicker', label: 'Kicker', type: 'text', help: 'Small line above the title, e.g. “The Film”.' },
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'cta', label: 'Button', type: 'text', help: 'The play label, e.g. “Play the film”. Empty shows no button.' },
     ],
   },
   {
@@ -444,7 +460,7 @@ export const CONTENT_PAGES: ContentPageDef[] = [
   {
     key: 'film',
     title: 'Film page',
-    description: 'The words around the film. The film and its chapters are managed under Website → Film.',
+    description: 'The words around the film. The film and its chapters are managed under Website → Film page.',
     fields: [
       { key: 'caption', label: 'Caption under the film', type: 'textarea' },
       { key: 'downloadLabel', label: 'Download link label', type: 'text' },

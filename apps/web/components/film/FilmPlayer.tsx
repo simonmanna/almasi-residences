@@ -16,7 +16,7 @@ const clock = (s: number) => {
  * The film, with chapters. It never autoplays with motion reduced; it picks the
  * smaller rendition on small screens and slow connections; every control is a
  * real button or range input, and the chapter list doubles as a transcript.
- * The film, its poster and its chapters are managed in the admin (Website → Film).
+ * The film, its poster and its chapters are managed in the admin (Website → Film page).
  */
 export function FilmPlayer({ film, caption, downloadLabel }: { film: FilmDto; caption: string; downloadLabel: string }) {
   const duration = film.durationSec;

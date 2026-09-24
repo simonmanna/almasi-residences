@@ -5,6 +5,8 @@ export const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined) ||
 export const PAGE_PATH: Record<string, string> = {
   home: '/',
   featuredSection: '/',
+  experienceSection: '/',
+  filmSection: '/',
   locationSection: '/',
   about: '/buying',
   residences: '/residences',

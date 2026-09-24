@@ -38,8 +38,8 @@ export function generateMetadata(): Promise<Metadata> {
 
 /**
  * Every word, picture and chapter on this page comes from the admin: copy from
- * Website → Homepage, pictures from placements, the story from the
- * "experience" walkthrough, residences and amenities from their records.
+ * Website → Homepage (and the Experience and Film section pages), pictures
+ * from placements, the story from the "experience" walkthrough, residences and amenities from their records.
  */
 export default async function HomePage() {
   let dev: DevelopmentDto | null = null;
@@ -71,6 +71,10 @@ export default async function HomePage() {
   const showNearbyPlaces = pages.locationSection?.showNearbyPlaces === true || copy(pages, 'locationSection', 'showNearbyPlaces') === 'true';
   // Website → Selected Residence. Absent (never saved) means shown, as it always was.
   const showFeatured = pages.featuredSection?.showFeaturedResidences !== false && copy(pages, 'featuredSection', 'showFeaturedResidences') !== 'false';
+  // Website → Experience and Website → Film. Absent (never saved) means shown.
+  const showExperience = pages.experienceSection?.showExperienceSection !== false;
+  const showFilm = pages.filmSection?.showFilmSection !== false;
+  const section = (page: string, key: string) => titleCaseHeading(copy(pages, page, key));
 
   return (
     <main id="main">
@@ -87,7 +91,7 @@ export default async function HomePage() {
       <ExploreAlmasi />
       <ResidencesPreview cards={cards} kicker={homeHeading('residencesKicker')} title={homeHeading('residencesTitle')} />
       {showFeatured && <FeaturedResidences items={featured} />}
-      <ExperienceStory stations={story?.stations ?? []} title={homeHeading('storyTitle')} />
+      {showExperience && <ExperienceStory stations={story?.stations ?? []} title={section('experienceSection', 'title')} />}
       <AmenityExperience
         amenities={amenities.length ? amenities : (dev?.amenities ?? [])}
         kicker={homeHeading('amenitiesKicker')}
@@ -110,7 +114,7 @@ export default async function HomePage() {
       )}
       <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} ground="quiet" />
       <ProgressPreview updates={progress} kicker={homeHeading('progressKicker')} title={copyLines(pages, 'home', 'progressTitle').map(titleCaseHeading)} />
-      <FilmTeaser kicker={homeHeading('filmKicker')} title={homeHeading('filmTitle')} cta={home('filmCta')} />
+      {showFilm && <FilmTeaser kicker={section('filmSection', 'kicker')} title={section('filmSection', 'title')} cta={copy(pages, 'filmSection', 'cta')} />}
       <EnquireSection compact ground="quiet" />
       <SiteFooter />
     </main>
