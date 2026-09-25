@@ -14,6 +14,10 @@ x-app-env: &app-env
   WEB_ORIGIN: ${SCHEME}://${DOMAIN}
   ADMIN_ORIGIN: ${SCHEME}://admin.${DOMAIN}
   ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?}
+  # Admin sign-in: Google is offered when both values are set.
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  ADMIN_REQUIRE_TOTP: ${ADMIN_REQUIRE_TOTP:-false}
   REVALIDATE_SECRET: ${REVALIDATE_SECRET:?}
   WEB_REVALIDATE_URL: http://web:3000/api/revalidate
   # MinIO stands in for R2. The endpoint is the public storage host so that

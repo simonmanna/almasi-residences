@@ -25,7 +25,18 @@ password is `SEED_ADMIN_PASSWORD` in `.env`, no authenticator code):
 | viewer@example.invalid | Viewer |
 
 Production accounts are created with `apps/api/scripts/create-admin.mjs`
-(password and TOTP secret); production refuses a sign-in without TOTP.
+(password and TOTP secret; `--no-totp` for password only).
+
+## Signing in
+
+- **Email + password.** An account with an authenticator must also enter its
+  code. With `ADMIN_REQUIRE_TOTP=true` every password sign-in needs one.
+- **Continue with Google.** Shown when `GOOGLE_CLIENT_ID` and
+  `GOOGLE_CLIENT_SECRET` are set. Google proves the email; it still has to
+  belong to an active user under Users. Create an OAuth client (Web
+  application) at console.cloud.google.com with the authorised redirect URI
+  `https://admin.<domain>/api/v1/admin/auth/google/callback`
+  (locally `http://localhost:<API_PORT>/api/v1/admin/auth/google/callback`).
 
 ## Where things live
 

@@ -5,7 +5,10 @@
  * enrol itself under Settings, so this is for the first account and for
  * recovering one nobody can sign in to.
  *
- *   node scripts/create-admin.mjs <email> "<name>" [ROLE_KEY]   (default SUPER_ADMIN)
+ *   node scripts/create-admin.mjs <email> "<name>" [ROLE_KEY] [--no-totp]   (default SUPER_ADMIN)
+ *
+ * --no-totp: password only (the person can add an authenticator under
+ * Settings later). Only signs in while ADMIN_REQUIRE_TOTP is not "true".
  *
  * Prints the generated password and an otpauth:// URI: add it to an
  * authenticator app (most accept the URI pasted, or render it as a QR code).
@@ -17,7 +20,9 @@ import { generateSecret, generateURI } from 'otplib';
 import db from '@avida/db';
 
 const { prisma } = db;
-const [emailArg, name, role = 'SUPER_ADMIN'] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const withTotp = !args.includes('--no-totp');
+const [emailArg, name, role = 'SUPER_ADMIN'] = args.filter((a) => a !== '--no-totp');
 // Roles are rows now; the API creates the system ones on its first start.
 const roleRow = await prisma.role.findUnique({ where: { key: role }, select: { id: true } });
 if (!emailArg || !name || !roleRow) {
@@ -29,7 +34,7 @@ if (!emailArg || !name || !roleRow) {
 
 const email = emailArg.toLowerCase();
 const password = randomBytes(18).toString('base64url');
-const totpSecret = generateSecret();
+const totpSecret = withTotp ? generateSecret() : null;
 const passwordHash = await hash(password);
 const reset = {
   name,
@@ -38,7 +43,8 @@ const reset = {
   active: true,
   passwordHash,
   totpSecret,
-  totpEnrolledAt: new Date(),
+  totpEnrolledAt: withTotp ? new Date() : null,
+  recoveryCodeHashes: [],
   failedLoginCount: 0,
   lockedUntil: null,
 };
@@ -60,9 +66,14 @@ console.log(`
   Admin account ready: ${email} (${role})
 
   Password:     ${password}
-  TOTP secret:  ${totpSecret}
+${
+  totpSecret
+    ? `  TOTP secret:  ${totpSecret}
   TOTP URI:     ${generateURI({ issuer: `${development?.name ?? 'Property'} admin`, label: email, secret: totpSecret })}
 
   Shown once. Store the password in a password manager and add the secret to
-  an authenticator app now.
+  an authenticator app now.`
+    : `  No authenticator: password only. Shown once — store it in a password
+  manager, and change it under Settings after signing in.`
+}
 `);

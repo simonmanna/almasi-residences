@@ -274,7 +274,7 @@ export function UserFormModal({ user, self, canAssignRole = true, onClose, onSav
   return (
     <Modal
       title={user ? `Edit ${user.name}` : 'Add a user'}
-      sub={user ? 'Profile and role. Status and permissions are managed separately.' : 'They receive a temporary password and choose their own after signing in.'}
+      sub={user ? 'Profile and role. Status and permissions are managed separately.' : 'They receive a temporary password and choose their own after signing in. If this is a Google (Gmail) address, they can also use Continue with Google.'}
       size="lg"
       onClose={onClose}
       footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" busy={busy} disabled={!valid} onClick={() => void submit()}>{user ? 'Save changes' : 'Add user'}</Button></>}

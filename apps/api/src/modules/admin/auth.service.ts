@@ -13,6 +13,16 @@ import { SessionService } from './session.service.js';
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 
+/**
+ * §3.1 — with ADMIN_REQUIRE_TOTP=true an account without an authenticator
+ * cannot sign in with a password (and cannot switch it off). Otherwise a
+ * password is enough until the person sets one up under Settings; an account
+ * that has one must always present a code.
+ */
+export function totpRequired(): boolean {
+  return process.env.ADMIN_REQUIRE_TOTP === 'true';
+}
+
 @Injectable()
 export class AuthService {
   private readonly log = new Logger(AuthService.name);
@@ -72,10 +82,32 @@ export class AuthService {
           : await this.consumeRecoveryCode(user.id, user.recoveryCodeHashes, entered);
         if (!used) return this.recordFailure(user.id, user.failedLoginCount);
       }
-    } else if (process.env.NODE_ENV === 'production') {
+    } else if (totpRequired()) {
       throw new UnauthorizedException('This account must complete two-factor enrolment first');
     }
 
+    return this.startSession(user);
+  }
+
+  /**
+   * Google has already proved the person owns this address; it still has to
+   * belong to an active admin account. Two-factor is Google's job on this path.
+   */
+  async loginWithGoogle(email: string) {
+    const user = await this.prisma.client.adminUser.findUnique({
+      where: { email: email.toLowerCase() },
+      include: { role: { select: { key: true } } },
+    });
+    if (!user || !user.active || !canSignIn(user.status)) {
+      throw new UnauthorizedException(`${email} does not have an admin account. Ask an administrator to add it under Users.`);
+    }
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      throw new UnauthorizedException('Too many attempts. Try again shortly.');
+    }
+    return this.startSession(user);
+  }
+
+  private async startSession(user: { id: string; name: string; email: string; status: string; tokenVersion: number; role: { key: string } }) {
     await this.prisma.client.adminUser.update({
       where: { id: user.id },
       // An invited account becomes active the first time it signs in.
@@ -127,7 +159,7 @@ export class AuthService {
     const user = await this.prisma.client.adminUser.findUniqueOrThrow({ where: { id: userId } });
     const ok = await verify(user.passwordHash, password).catch(() => false);
     if (!ok) throw new BadRequestException('That password is not correct.');
-    if (process.env.NODE_ENV === 'production') {
+    if (totpRequired()) {
       throw new BadRequestException('Two-factor authentication cannot be switched off on this deployment. Ask a super admin to reset it instead.');
     }
     await this.clearTotp(userId);
