@@ -670,18 +670,29 @@
   }
 }
 
+/* Phone-only pieces; the wide layout never shows them. */
+.tagline,
+.watchPhone,
+.slider {
+  display: none;
+}
+
 /* ─── Phone: the Sapphire frame ───────────────────────────────────
-   On a phone the render goes back to full bleed, cropped to the lit wing on
-   the right, and the words sit over the sky above it, as a magazine cover
-   sets its line over the photograph. The facts panel steps aside: the glass
-   finder that overlaps the foot of the frame carries the count and the price. */
+   A magazine cover in motion. The render goes full bleed behind the words and
+   becomes a slow sequence of four frames — the building at dusk, the pool, the
+   penthouse terrace, the hill from above — each easing in on a long push. The
+   words sit over the darkened left of the frame; the counter and arrows sit
+   bottom right; the glass finder overlaps the foot. */
 @media (max-width: 767px) {
   .hero {
-    justify-content: flex-start;
-    min-height: min(80svh, 700px);
-    padding-top: calc(var(--nav-h) + 36px);
-    padding-bottom: 128px;
+    justify-content: flex-end;
+    min-height: min(92svh, 780px);
+    padding-top: calc(var(--nav-h) + 40px);
+    /* The finder overlaps the last 104px; the words end clear above it. */
+    padding-bottom: 150px;
     background: #060F26;
+    --stage-top: 8%;
+    --stage-h: 66%;
   }
 
   .media {
@@ -689,40 +700,72 @@
     height: auto;
   }
 
-  /* A painted blue hour fills the frame; the render stands in its lower part,
-     whole from crown to kerb, and its own sky melts up into the painted one. */
   .sky {
     background:
       radial-gradient(90% 55% at 100% 0%, rgb(var(--sapphire-glow) / 0.28), transparent 70%),
       linear-gradient(to bottom, #040A1C 0%, #0A1A40 40%, #15306A 72%, #1C3A78 100%);
   }
 
-  .parallax {
-    inset: auto 0 0 0;
-    height: 60%;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 34%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 34%);
+  /* The stage: every frame stands in the same band across the middle of the
+     screen, tall enough for the whole building, and melts into the painted
+     blue hour above and the sapphire ground below. A full-bleed cover of a
+     panorama would show a third of one wing, soft with enlargement. */
+  .parallax,
+  .slide {
+    inset: auto 0 auto 0;
+    top: var(--stage-top);
+    height: var(--stage-h);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 24%, #000 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 24%, #000 70%, transparent 100%);
   }
 
   .image {
-    object-position: 70% 60%;
-    transform-origin: 70% 70%;
+    object-position: 66% 50%;
+    transform-origin: 70% 60%;
     animation: arrive 2.6s var(--ease-out) both;
   }
 
-  /* Dark enough under the words, open over the building, and dissolving into
-     the page's own sapphire at the foot so the finder floats on one ground. */
+  /* The later frames: stacked over the first, each fading up on its turn with
+     its own long push, so the change reads as a cut in a film, not a swipe. */
+  .slide {
+    position: absolute;
+    opacity: 0;
+    transition: opacity 1.4s var(--ease-in-out);
+  }
+
+  .slide[data-on] {
+    opacity: 1;
+  }
+
+  .slideImage {
+    object-fit: cover;
+    transform: scale(1.04);
+    transform-origin: 50% 60%;
+  }
+
+  .slide[data-on] .slideImage {
+    animation: push 8s linear both;
+  }
+
+  /* Dark under the words and the nav, open across the middle where the
+     building stands, and dissolving into the page's sapphire at the foot so
+     the finder floats on one ground. */
   .scrim {
     background:
       linear-gradient(
         to bottom,
-        rgb(var(--shade) / 0.86) 0%,
-        rgb(var(--shade) / 0.58) 30%,
-        rgb(var(--shade) / 0.04) 56%,
-        rgb(var(--shade) / 0.3) 78%,
+        rgb(4 10 28 / 0.6) 0%,
+        rgb(4 10 28 / 0) 16%,
+        rgb(4 10 28 / 0) 32%,
+        rgb(4 10 28 / 0.5) 54%,
+        rgb(6 15 38 / 0.82) 78%,
         #060F26 100%
       ),
-      linear-gradient(to right, rgb(var(--shade) / 0.5) 0%, transparent 72%);
+      linear-gradient(to right, rgb(4 10 28 / 0.74) 0%, rgb(4 10 28 / 0.38) 50%, transparent 82%);
+  }
+
+  .grain {
+    opacity: 0.05;
   }
 
   .panelWrap,
@@ -735,49 +778,76 @@
   }
 
   .eyebrow {
-    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
     color: var(--champagne);
     font-size: 0.6875rem;
     font-weight: 600;
-    letter-spacing: 0.38em;
+    letter-spacing: 0.34em;
+  }
+
+  .eyebrow::before {
+    content: '';
+    flex: none;
+    width: 28px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--champagne));
   }
 
   .title {
     max-width: 11ch;
-    font-size: clamp(2.75rem, 12vw, 3.5rem);
+    font-size: clamp(3rem, 14.5vw, 4rem);
     font-weight: 500;
-    line-height: 1.02;
-    letter-spacing: -0.012em;
-    text-wrap: balance;
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 30px rgb(2 6 18 / 0.45);
   }
 
+  /* The second line in italic, lit like brushed champagne catching the dusk. */
   .accentLine {
-    color: var(--ink);
+    padding-right: 0.08em;
+    background: linear-gradient(100deg, #FFFFFF 0%, var(--champagne-hi) 55%, var(--champagne) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: none;
   }
 
   .aside {
-    gap: 30px;
-    margin-top: 18px;
+    gap: 0;
+    margin-top: 20px;
+  }
+
+  .tagline {
+    display: block;
+    margin-bottom: 10px;
+    font-family: var(--font-display);
+    font-size: 1.3125rem;
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--ink);
   }
 
   .lede {
-    max-width: 30ch;
-    color: rgb(var(--on-media) / 0.82);
-    font-size: 0.9375rem;
-    line-height: 1.65;
-    letter-spacing: 0.01em;
+    max-width: 27ch;
+    color: rgb(var(--on-media) / 0.76);
+    font-size: 0.875rem;
+    line-height: 1.6;
   }
 
   /* The finder below the frame is the way in; the frame keeps the invitation. */
+  .ctas {
+    margin-top: 26px;
+  }
+
   .ctas > :first-child {
     display: none;
   }
 
   .watch {
-    display: inline-grid;
-    grid-template-columns: 64px 10ch;
-    overflow: visible;
-    gap: 18px;
+    gap: 16px;
     min-height: 0;
     padding: 0;
     border: 0;
@@ -785,11 +855,6 @@
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     color: var(--ink);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    font-variant-caps: all-small-caps;
-    letter-spacing: 0.3em;
-    line-height: 1.7;
     text-align: left;
     white-space: normal;
   }
@@ -798,17 +863,36 @@
     display: none;
   }
 
+  .watchWide {
+    display: none;
+  }
+
+  .watchPhone {
+    display: grid;
+    gap: 2px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.3em;
+    line-height: 1.5;
+  }
+
+  .watchPhone span {
+    color: var(--champagne);
+  }
+
   .play {
     position: relative;
     flex: none;
-    width: 64px;
-    height: 64px;
+    width: 58px;
+    height: 58px;
     padding-left: 3px;
-    border: 1px solid var(--champagne);
-    background: rgb(var(--shade) / 0.35);
+    border: 1px solid rgb(216 184 120 / 0.8);
+    background: rgb(4 10 28 / 0.4);
     color: var(--champagne);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 28px -6px rgb(216 184 120 / 0.45);
   }
 
   .play svg {
@@ -826,10 +910,104 @@
     border-radius: inherit;
     animation: ring 3.2s var(--ease-out) 1.6s infinite;
   }
+
+  /* ─── Frame counter, arrows and the running bar ─── */
+  .slider {
+    position: absolute;
+    right: var(--page-margin);
+    bottom: 152px;
+    z-index: 3;
+    display: grid;
+    justify-items: end;
+    gap: 8px;
+    width: 124px;
+  }
+
+  .slideCaption {
+    overflow: hidden;
+    max-width: 100%;
+    color: rgb(var(--on-media) / 0.6);
+    font-size: 0.6875rem;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.16em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .slideNav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-right: -8px;
+  }
+
+  .counter {
+    margin-right: 6px;
+    color: rgb(var(--on-media) / 0.6);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
+  }
+
+  .counter b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .arrow {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: var(--ink);
+    transition: background-color var(--dur-1) var(--ease-standard), transform var(--dur-1) var(--ease-out);
+  }
+
+  .arrow:active {
+    transform: scale(0.9);
+    background: rgb(216 184 120 / 0.18);
+  }
+
+  .arrow:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--champagne);
+  }
+
+  .progress {
+    position: relative;
+    width: 100%;
+    height: 2px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: rgb(var(--on-media) / 0.2);
+  }
+
+  .progress > span {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, var(--champagne-lo), var(--champagne-hi));
+    transform-origin: 0 50%;
+    transform: scaleX(var(--slide-at, 1));
+  }
+
+  .progress > span[data-run] {
+    animation: run var(--slide-ms, 6500ms) linear both;
+  }
 }
 
 @keyframes arrive {
   from { transform: scale(1.14); filter: brightness(0.6) saturate(0.8); }
+}
+
+@keyframes push {
+  from { transform: scale(1.16); }
+  to { transform: scale(1.04); }
+}
+
+@keyframes run {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 @keyframes ring {
@@ -839,7 +1017,11 @@
 
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
   .image,
+  .slide[data-on] .slideImage,
   .play::after {
     animation: none;
+  }
+  .slide {
+    transition: none;
   }
 }

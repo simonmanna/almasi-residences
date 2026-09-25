@@ -84,6 +84,7 @@ export default async function HomePage() {
         kicker={home('heroKicker')}
         title={homeHeading('heroTitle') || dev?.name || ''}
         subtitle={home('heroSubtitle')}
+        tagline={home('heroTagline') || 'A rare place to call home.'}
         place={dev ? `${dev.city}, ${dev.country === 'RW' ? 'Rwanda' : dev.country}` : ''}
         primary={primaryCta}
         handover={handover}

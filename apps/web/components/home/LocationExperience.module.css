@@ -158,8 +158,8 @@
 
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
-  /* Full width above the list, as before: the cap belongs to the wide layout. */
-  .mapCol { position: static; order: -1; max-width: none; justify-self: stretch; }
+  /* Full width after the list: the places first, then the map that plots them. */
+  .mapCol { position: static; max-width: none; justify-self: stretch; }
 }
 
 /* A phone gives the place its full width; the figures share the line below. */

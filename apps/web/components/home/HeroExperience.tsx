@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type TouchEvent } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { formatMoney } from '@avida/types';
@@ -21,6 +21,21 @@ const INTRO_KEY = 'almasi:intro-seen';
  * cropped away — the silhouette is the first thing a buyer should see.
  */
 const HERO_STILL = '/media/hero-wide-v2.png';
+
+/**
+ * Phones only: the opening frame becomes a slow cinematic sequence. The first
+ * slide is the still above (with its glows and film); the rest are laid over
+ * it and cross-fade in turn. Each crop is aimed at its subject for a portrait
+ * screen. They are never rendered on a wide screen, so desktop never loads them.
+ */
+const PHONE_SLIDES = [
+  { src: HERO_STILL, caption: 'Dusk on the corner', focus: '68% 50%' },
+  { src: '/media/almasi/pool.jpg', caption: 'Garden-deck pool', focus: '34% 50%' },
+  { src: '/media/almasi/ph-terrace.jpg', caption: 'Penthouse terrace', focus: '42% 50%' },
+  { src: '/media/almasi/aerial.jpg', caption: 'Kimihurura, above', focus: '50% 50%' },
+] as const;
+const SLIDE_MS = 6500;
+const pad = (n: number) => String(n).padStart(2, '0');
 
 /** Thin line icons for the facts panel. One stroke weight, one 24-unit box. */
 const icons = {
@@ -102,6 +117,7 @@ export function HeroExperience({
   kicker,
   title,
   subtitle,
+  tagline,
   place,
   primary,
   handover,
@@ -109,6 +125,8 @@ export function HeroExperience({
   kicker: string;
   title: string;
   subtitle: string;
+  /** One short serif line under the title on a phone: "A rare place to call home." */
+  tagline?: string;
   /** "Kimihurura, Kigali" — from the property record. */
   place: string;
   primary: { label: string; href: string };
@@ -151,6 +169,57 @@ export function HeroExperience({
   const [skippable, setSkippable] = useState(false);
   const [filmPlaying, setFilmPlaying] = useState(false);
   const [filmPaused, setFilmPaused] = useState(false);
+  const [phone, setPhone] = useState(false);
+  const [slide, setSlide] = useState(0);
+  const [still, setStill] = useState(false);
+  const touchRef = useRef<{ x: number; y: number } | null>(null);
+  const count = PHONE_SLIDES.length;
+  const go = (step: number) => setSlide((s) => (s + step + count) % count);
+
+  // The sequence exists only on a phone; the query is live so a rotated tablet
+  // or a resized window gains or loses it cleanly.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => {
+      setPhone(mq.matches);
+      setStill(reduced.matches);
+    };
+    sync();
+    mq.addEventListener('change', sync);
+    reduced.addEventListener('change', sync);
+    return () => {
+      mq.removeEventListener('change', sync);
+      reduced.removeEventListener('change', sync);
+    };
+  }, []);
+
+  // Advances on its own, restarting the clock whenever the visitor steps it by
+  // hand. It holds while the intro plays, the tab is hidden or the film runs.
+  useEffect(() => {
+    if (!phone || still || filmPlaying) return;
+    let t = 0;
+    const tick = () => {
+      if (document.hidden || document.documentElement.dataset.intro === 'playing') t = window.setTimeout(tick, 1000);
+      else setSlide((s) => (s + 1) % count);
+    };
+    t = window.setTimeout(tick, SLIDE_MS);
+    return () => window.clearTimeout(t);
+  }, [phone, still, filmPlaying, slide, count]);
+
+  const onTouchStart = (e: TouchEvent) => {
+    const t = e.touches[0];
+    if (t) touchRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: TouchEvent) => {
+    const start = touchRef.current;
+    const t = e.changedTouches[0];
+    touchRef.current = null;
+    if (!phone || !start || !t) return;
+    const dx = t.clientX - start.x;
+    // A horizontal flick steps the frame; anything more vertical is a scroll.
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(t.clientY - start.y) * 1.4) go(dx < 0 ? 1 : -1);
+  };
 
   useIsoLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -270,7 +339,10 @@ export function HeroExperience({
       className={styles.hero}
       data-ground="night"
       data-nav-over
+      data-slide={phone ? slide : undefined}
       aria-labelledby="hero-title"
+      onTouchStart={phone ? onTouchStart : undefined}
+      onTouchEnd={phone ? onTouchEnd : undefined}
     >
       <div className={styles.media} data-media-scroll>
         <div className={styles.aperture} data-aperture>
@@ -298,6 +370,25 @@ export function HeroExperience({
                 <HeroFilm paused={filmPaused} onPlaying={() => setFilmPlaying(true)} />
               </div>
             </div>
+            {phone &&
+              PHONE_SLIDES.slice(1).map((s, i) => (
+                <div
+                  key={s.src}
+                  className={styles.slide}
+                  data-on={slide === i + 1 ? '' : undefined}
+                  aria-hidden="true"
+                >
+                  <Image
+                    src={s.src}
+                    alt=""
+                    fill
+                    sizes="100vw"
+                    quality={75}
+                    className={styles.slideImage}
+                    style={{ objectPosition: s.focus }}
+                  />
+                </div>
+              ))}
           </div>
           <div className={styles.sheen} data-sheen aria-hidden="true" />
         </div>
@@ -333,6 +424,11 @@ export function HeroExperience({
           </span>
         </h1>
         <div className={styles.aside}>
+          {tagline && (
+            <p className={styles.tagline} data-hero-fade>
+              {tagline}
+            </p>
+          )}
           <p className={styles.lede} data-hero-fade>
             {subtitle}
           </p>
@@ -358,7 +454,11 @@ export function HeroExperience({
                   <path d="M0 0.8v12.4a.8.8 0 0 0 1.22.68l10-6.2a.8.8 0 0 0 0-1.36l-10-6.2A.8.8 0 0 0 0 .8Z" />
                 </svg>
               </span>
-              Experience in 3D
+              <span className={styles.watchWide}>Experience in 3D</span>
+              <span className={styles.watchPhone}>
+                Property tour
+                <span>in 3D</span>
+              </span>
             </Link>
           </div>
         </div>
@@ -402,6 +502,36 @@ export function HeroExperience({
           </button>
         )}
       </div>
+
+      {phone && (
+        <div className={styles.slider} data-hero-fade>
+          <p className={styles.slideCaption} aria-live="polite">
+            {PHONE_SLIDES[slide]?.caption}
+          </p>
+          <div className={styles.slideNav}>
+            <span className={styles.counter}>
+              <b>{pad(slide + 1)}</b> / {pad(count)}
+            </span>
+            <button type="button" className={styles.arrow} aria-label="Previous picture" onClick={() => go(-1)}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                <path d="M15 5l-7 7 7 7" />
+              </svg>
+            </button>
+            <button type="button" className={styles.arrow} aria-label="Next picture" onClick={() => go(1)}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                <path d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+          <span className={styles.progress} aria-hidden="true">
+            <span
+              key={slide}
+              data-run={still || filmPlaying ? undefined : ''}
+              style={{ '--slide-ms': `${SLIDE_MS}ms`, '--slide-at': (slide + 1) / count } as React.CSSProperties}
+            />
+          </span>
+        </div>
+      )}
 
       {skippable && (
         <button type="button" className={styles.skip} onClick={() => tlRef.current?.progress(1)}>

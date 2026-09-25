@@ -9,6 +9,12 @@ import styles from './MobileQuickNav.module.css';
 
 /** One 24-unit box, one 1.25 stroke: drawn to sit inside a champagne ring. */
 const ICONS: Record<string, ReactNode> = {
+  all: (
+    <>
+      <path d="M4 10.5 12 4l8 6.5" />
+      <path d="M6 9v10.5h12V9M10 19.5v-5h4v5" />
+    </>
+  ),
   'one-bedroom': (
     <>
       <path d="M3.5 19V8.5M3.5 14h17v5M20.5 19v-3.5A1.5 1.5 0 0 0 19 14" />
@@ -67,9 +73,9 @@ function Glyph({ name, size = 24 }: { name: string; size?: number }) {
 }
 
 const SHORT: Record<ResidenceType, string> = {
-  'one-bedroom': 'One bed',
-  'two-bedroom': 'Two bed',
-  'three-bedroom': 'Three bed',
+  'one-bedroom': '1 Bed',
+  'two-bedroom': '2 Bed',
+  'three-bedroom': '3 Bed',
   penthouse: 'Penthouse',
 };
 
@@ -87,6 +93,7 @@ export function MobileQuickNav() {
     .reduce<number | null>((min, p) => (min === null || p < min ? p : min), null);
 
   const shortcuts = [
+    { href: '/residences', label: 'All', icon: 'all', title: 'All residences' },
     ...types.map((t) => ({ href: `/residences?type=${t}`, label: SHORT[t], icon: t, title: TYPE_TEXT[t] })),
     { href: '/3d-design', label: '3D tour', icon: 'tour', title: 'Walk through a residence in 3D' },
     { href: '/location', label: 'Location', icon: 'location', title: 'The neighbourhood' },
@@ -94,39 +101,37 @@ export function MobileQuickNav() {
 
   return (
     <nav className={styles.quick} aria-label="Find a residence">
-      <Link href="/residences" className={styles.finder}>
-        <span className={styles.pin} aria-hidden="true">
-          <Glyph name="location" size={22} />
-        </span>
-        <span className={styles.finderText}>
-          <span className={styles.finderTitle}>Find your residence</span>
-          <span className={styles.finderSub}>
-            {summary.available} available
-            {from !== null && <> · from {formatMoney({ amountMinor: from, currency })}</>}
+      <div className={styles.deck}>
+        <Link href="/residences" className={styles.finder}>
+          <span className={styles.pin} aria-hidden="true">
+            <Glyph name="location" size={22} />
           </span>
-        </span>
-        <span className={styles.go} aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M13 6l6 6-6 6" />
-          </svg>
-        </span>
-      </Link>
+          <span className={styles.finderText}>
+            <span className={styles.finderTitle}>Find your residence</span>
+            <span className={styles.finderSub}>
+              {summary.available} available
+              {from !== null && <> · from {formatMoney({ amountMinor: from, currency })}</>}
+            </span>
+          </span>
+          <span className={styles.go} aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </span>
+        </Link>
 
-      <ul className={styles.shortcuts}>
-        {shortcuts.map((s, i) => (
-          <li key={s.href} style={{ '--i': i } as CSSProperties}>
-            <Link href={s.href} className={styles.shortcut} aria-label={s.title}>
-              <span className={styles.ring}>
-                <svg className={styles.ringLine} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-                  <circle cx="32" cy="32" r="31" pathLength="1" />
-                </svg>
-                <Glyph name={s.icon} />
-              </span>
-              <span className={styles.label}>{s.label}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+        <ul className={styles.shortcuts}>
+          {shortcuts.map((s, i) => (
+            <li key={s.href} style={{ '--i': i } as CSSProperties}>
+              {/* "All" leads, lit, as the default way in. */}
+              <Link href={s.href} className={styles.shortcut} aria-label={s.title} data-lead={i === 0 ? '' : undefined}>
+                <Glyph name={s.icon} size={22} />
+                <span className={styles.label}>{s.label}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </nav>
   );
 }
