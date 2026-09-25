@@ -248,7 +248,7 @@ export function StatusLegend({ className, tone = 'board' }: { className?: string
   if (tone === 'model') {
     return (
       <ul className={`${styles.legend} ${className ?? ''}`} aria-label="Key">
-        {(['available', 'reserved', 'sold', 'unavailable'] as const).map((s) => (
+        {(['available', 'reserved', 'booked', 'sold', 'unavailable'] as const).map((s) => (
           <li key={s} className="status" data-status={s}>
             {STATUS_TEXT[s]}
           </li>

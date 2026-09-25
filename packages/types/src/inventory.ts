@@ -4,11 +4,11 @@ export const UNIT_STATUSES = ['AVAILABLE', 'RESERVED', 'BOOKED', 'SOLD', 'UNAVAI
 export type UnitStatus = (typeof UNIT_STATUSES)[number];
 
 /**
- * The sales pipeline as the business talks about it. UNAVAILABLE is a residence
- * the developer has withheld and is deliberately absent: it stays a valid stored
- * value but is never offered in a picker or shown as a legend entry.
+ * The statuses the admin offers in pickers, filters and legends. UNAVAILABLE is
+ * a residence the developer has withheld from sale; the sales team sets it like
+ * any other status and the website shows it as unavailable.
  */
-export const VISIBLE_UNIT_STATUSES = ['AVAILABLE', 'RESERVED', 'BOOKED', 'SOLD'] as const;
+export const VISIBLE_UNIT_STATUSES = ['AVAILABLE', 'RESERVED', 'BOOKED', 'SOLD', 'UNAVAILABLE'] as const;
 
 export const ORIENTATIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
 export type Orientation = (typeof ORIENTATIONS)[number];

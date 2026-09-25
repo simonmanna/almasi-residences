@@ -8,8 +8,8 @@
 .intro {
   position: relative;
   isolation: isolate;
-  min-height: clamp(560px, 78vh, 900px);
-  padding-block: var(--section-y);
+  min-height: 0;
+  padding-block: clamp(40px, 4.5vw, 72px);
   overflow: hidden;
 
   /* Dusk, bottom to top — the ground the words sit on. */
@@ -50,7 +50,7 @@
   align-items: flex-start;
   gap: clamp(16px, 1.9vw, 24px);
   max-width: 38rem;
-  padding-block: clamp(20px, 4vw, 56px);
+  padding-block: clamp(4px, 1.5vw, 24px);
 }
 
 .eyebrow {
@@ -168,7 +168,7 @@
   position: relative;
   isolation: isolate;
   align-self: stretch;
-  min-height: clamp(480px, 64vh, 760px);
+  min-height: clamp(380px, 52vh, 600px);
   margin-right: calc(var(--page-margin) * -1);
   border: 1px solid rgb(var(--on-media) / 0.16);
   border-right: 0;
@@ -246,12 +246,12 @@
 @media (max-width: 900px) {
   .intro {
     min-height: 0;
-    padding-top: calc(var(--nav-h) + 32px);
+    padding-block: 36px 0;
   }
 
   .inner {
     grid-template-columns: 1fr;
-    gap: clamp(28px, 6vw, 44px);
+    gap: 24px;
   }
 
   .statement {
@@ -261,7 +261,7 @@
 
   .media {
     min-height: 0;
-    aspect-ratio: 3 / 2;
+    aspect-ratio: 16 / 9;
     margin-inline: calc(var(--page-margin) * -1);
     border-inline: 0;
     border-radius: 0;
@@ -286,9 +286,10 @@
   .lead {
     max-width: 100%;
   }
+  /* Three figures on one line: the section is a pause, not a page. */
   .stats {
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
     background: transparent;
     border: 0;
     border-top: 1px solid var(--line);
@@ -296,11 +297,15 @@
     backdrop-filter: none;
     overflow: visible;
   }
-  .stat:first-child {
-    grid-column: 1 / -1;
-  }
   .stat {
-    padding: 16px 0 0;
+    padding: 14px 0 0;
+  }
+  .stat :global(.stat__value) {
+    font-size: 1.375rem;
+  }
+  .stat :global(.stat__label) {
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
   }
   .stat + .stat {
     border-left: 0;

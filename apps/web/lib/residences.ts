@@ -19,9 +19,8 @@ export type ResidenceType = 'one-bedroom' | 'two-bedroom' | 'three-bedroom' | 'p
 export type PublicStatus = PublicUnitStatus;
 
 export const RESIDENCE_TYPES: readonly ResidenceType[] = ['one-bedroom', 'two-bedroom', 'three-bedroom', 'penthouse'];
-export const PUBLIC_STATUSES: readonly PublicStatus[] = ['available', 'reserved', 'booked', 'sold'];
+export const PUBLIC_STATUSES: readonly PublicStatus[] = ['available', 'reserved', 'booked', 'sold', 'unavailable'];
 
-/** UNAVAILABLE is held back by the developer and is never offered as a filter. */
 export const PUBLIC_STATUS: Record<UnitStatus, PublicStatus> = PUBLIC_UNIT_STATUS;
 
 export const STATUS_TEXT: Record<PublicStatus, string> = {
