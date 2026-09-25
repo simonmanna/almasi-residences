@@ -837,6 +837,15 @@
     line-height: 1.6;
   }
 
+  .ledeAsTagline {
+    max-width: 100%;
+    font-family: var(--font-display);
+    font-size: 1.3125rem;
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--ink);
+  }
+
   /* The finder below the frame is the way in; the frame keeps the invitation. */
   .ctas {
     margin-top: 26px;

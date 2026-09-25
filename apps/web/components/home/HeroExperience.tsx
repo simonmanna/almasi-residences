@@ -134,6 +134,9 @@ export function HeroExperience({
   handover?: string | null;
 }) {
   const [lineA, ...rest] = title.trim().split(/\s+/);
+  // When the CMS subtitle already says the tagline, it is set once, as the tagline.
+  const norm = (t?: string) => (t ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const taglineIsLede = !!tagline && norm(tagline) === norm(subtitle);
   const lineB = rest.join(' ');
   const { summary, currency } = useInventory();
 
@@ -424,12 +427,12 @@ export function HeroExperience({
           </span>
         </h1>
         <div className={styles.aside}>
-          {tagline && (
+          {tagline && !taglineIsLede && (
             <p className={styles.tagline} data-hero-fade>
               {tagline}
             </p>
           )}
-          <p className={styles.lede} data-hero-fade>
+          <p className={taglineIsLede ? `${styles.lede} ${styles.ledeAsTagline}` : styles.lede} data-hero-fade>
             {subtitle}
           </p>
           {/* One way in, and one quiet alternative. A third button only made the
