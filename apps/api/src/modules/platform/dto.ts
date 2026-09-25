@@ -33,6 +33,7 @@ import {
   BUYER_STAGES,
   CONSTRUCTION_STATUSES,
   DEVELOPMENT_STATUSES,
+  SITE_THEMES,
   VIEWING_STATUSES,
   MEDIA_COLLECTIONS,
   MEDIA_PROVENANCES,
@@ -93,6 +94,7 @@ export class UpdatePropertyDto {
   @IsOptional() @IsEmail() contactEmail?: string | null;
   @IsOptional() @IsString() @MaxLength(40) whatsappNumber?: string | null;
   @IsOptional() @IsBoolean() whatsappIconVisible?: boolean;
+  @IsOptional() @IsIn(SITE_THEMES) siteTheme?: string;
   @IsOptional() @IsString() @MaxLength(300) officeAddress?: string | null;
   @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(500) mapsUrl?: string | null;
   @IsOptional() @IsString() @MaxLength(200) officeHours?: string | null;

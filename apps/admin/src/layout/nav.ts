@@ -19,6 +19,7 @@ import {
   Film,
   Frame,
   Gauge,
+  Globe,
   Handshake,
   HardHat,
   HelpCircle,
@@ -35,6 +36,7 @@ import {
   MapPinned,
   MessageCircle,
   Newspaper,
+  Palette,
   LayoutDashboard,
   PenTool,
   Search,
@@ -70,6 +72,8 @@ export interface NavItem {
 
 export interface NavGroup {
   title: string;
+  /** Shown beside the title, and alone when the sidebar narrows to a rail. */
+  icon?: LucideIcon;
   items: NavItem[];
 }
 
@@ -84,6 +88,7 @@ export const NAV: NavGroup[] = [
   },
   {
     title: 'Property and Pricing',
+    icon: Building2,
     items: [
       { label: 'Overview', to: '/property', icon: Building2, sub: 'The project, its address and who is building it' },
       { label: 'Floors', to: '/floors', icon: Layers, sub: 'Every level of the building and what is on it' },
@@ -98,28 +103,11 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
-    title: 'CRM',
-    items: [
-      { label: 'CRM dashboard', to: '/crm', icon: UserRoundSearch, needs: 'enquiry.view', title: 'CRM', sub: 'Today\'s work, pipeline health and recent activity' },
-      { label: 'Leads', to: '/enquiries', icon: Inbox, needs: 'enquiry.view', sub: 'Search, qualify, assign and follow up every lead' },
-      { label: 'Pipeline', to: '/pipeline', icon: KanbanSquare, needs: 'enquiry.view', sub: 'Drag opportunities through every sales stage' },
-      { label: 'Tasks', to: '/crm/tasks', icon: ListTodo, needs: 'enquiry.view', sub: 'Follow-ups: overdue, today and upcoming' },
-      { label: 'Activities', to: '/crm/activities', icon: Activity, needs: 'enquiry.view', sub: 'Every call, message, meeting and change' },
-      { label: 'Viewings', to: '/viewings', icon: CalendarCheck, needs: 'enquiry.view', sub: 'Schedule appointments and record outcomes' },
-      { label: 'Deals', to: '/crm/deals', icon: Handshake, needs: 'enquiry.view', sub: 'Negotiations, reservations, contracts and sales' },
-      { label: 'Approvals', to: '/approvals', icon: BadgeCheck, needs: 'enquiry.view', sub: 'Discounts, reservations and sales waiting for a decision' },
-      { label: 'Reservations', to: '/reservations', icon: KeyRound, sub: 'Holds, deposits, expiry and conversion to sale' },
-      { label: 'Contacts', to: '/buyers', icon: Contact, needs: 'buyer.view', sub: 'Clients, buyers and owners' },
-      { label: 'Campaigns', to: '/crm/campaigns', icon: Megaphone, needs: 'enquiry.view', sub: 'Marketing campaigns and what they sold' },
-      { label: 'Team', to: '/crm/team', icon: Users, needs: 'enquiry.view', min: 'TEAM', title: 'Sales team', sub: 'Workload, overdue work and pipeline by person' },
-      { label: 'Reports', to: '/crm/reports', icon: BarChart3, needs: 'reports.view', title: 'CRM reports', sub: 'Sources, conversion, speed and lost reasons' },
-      { label: 'CRM settings', to: '/crm/settings', icon: SlidersHorizontal, needs: 'enquiry.view', sub: 'Pipeline stages, scoring and assignment' },
-    ],
-  },
-  {
     title: 'Website',
+    icon: Globe,
     items: [
       { label: 'Page content', to: '/content/home', icon: FileText, needs: 'content.view', sub: 'Headlines and words, page by page' },
+      { label: 'Theme', to: '/theme', icon: Palette, needs: 'property.view', title: 'Website theme', sub: 'The look every visitor sees on the public website' },
       { label: 'WhatsApp & Telephone', to: '/whatsapp', icon: MessageCircle, needs: 'property.view', sub: 'The numbers buyers reach you on, and whether the WhatsApp button shows' },
       { label: 'Amenities', to: '/amenities', icon: Sparkles, sub: 'Pool, gym, restaurant and the rest of the building' },
       { label: 'Residences', to: '/residences', icon: DoorOpen, needs: 'residence.view', sub: 'Every home: status, price, specifications and media' },
@@ -145,7 +133,28 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    title: 'CRM',
+    icon: UserRoundSearch,
+    items: [
+      { label: 'CRM dashboard', to: '/crm', icon: UserRoundSearch, needs: 'enquiry.view', title: 'CRM', sub: 'Today\'s work, pipeline health and recent activity' },
+      { label: 'Leads and Enquiries', to: '/enquiries', icon: Inbox, needs: 'enquiry.view', sub: 'Every enquiry from the website, and every lead: search, qualify, assign and follow up' },
+      { label: 'Pipeline', to: '/pipeline', icon: KanbanSquare, needs: 'enquiry.view', sub: 'Drag opportunities through every sales stage' },
+      { label: 'Tasks', to: '/crm/tasks', icon: ListTodo, needs: 'enquiry.view', sub: 'Follow-ups: overdue, today and upcoming' },
+      { label: 'Activities', to: '/crm/activities', icon: Activity, needs: 'enquiry.view', sub: 'Every call, message, meeting and change' },
+      { label: 'Viewings', to: '/viewings', icon: CalendarCheck, needs: 'enquiry.view', sub: 'Schedule appointments and record outcomes' },
+      { label: 'Deals', to: '/crm/deals', icon: Handshake, needs: 'enquiry.view', sub: 'Negotiations, reservations, contracts and sales' },
+      { label: 'Approvals', to: '/approvals', icon: BadgeCheck, needs: 'enquiry.view', sub: 'Discounts, reservations and sales waiting for a decision' },
+      { label: 'Reservations', to: '/reservations', icon: KeyRound, sub: 'Holds, deposits, expiry and conversion to sale' },
+      { label: 'Contacts', to: '/buyers', icon: Contact, needs: 'buyer.view', sub: 'Clients, buyers and owners' },
+      { label: 'Campaigns', to: '/crm/campaigns', icon: Megaphone, needs: 'enquiry.view', sub: 'Marketing campaigns and what they sold' },
+      { label: 'Team', to: '/crm/team', icon: Users, needs: 'enquiry.view', min: 'TEAM', title: 'Sales team', sub: 'Workload, overdue work and pipeline by person' },
+      { label: 'Reports', to: '/crm/reports', icon: BarChart3, needs: 'reports.view', title: 'CRM reports', sub: 'Sources, conversion, speed and lost reasons' },
+      { label: 'CRM settings', to: '/crm/settings', icon: SlidersHorizontal, needs: 'enquiry.view', sub: 'Pipeline stages, scoring and assignment' },
+    ],
+  },
+  {
     title: 'Media',
+    icon: Images,
     items: [
       { label: 'Images', to: '/media', icon: Image, sub: 'Photographs and renders for the website' },
       { label: 'Galleries', to: '/galleries', icon: Images, sub: 'Curated sets the public gallery shows' },
@@ -156,10 +165,12 @@ export const NAV: NavGroup[] = [
   },
   {
     title: 'Reports',
+    icon: BarChart3,
     items: [{ label: 'Sales overview', to: '/sales', icon: BarChart3, sub: 'Value sold, reserved and still to sell' }],
   },
   {
     title: 'Settings',
+    icon: Settings,
     items: [
       { label: 'Users & access', to: '/users', icon: UsersRound, needs: 'user.view', title: 'Users & access', sub: 'People, their roles and what they can do' },
       { label: 'Roles & permissions', to: '/settings/roles', icon: ShieldCheck, needs: 'user.view', title: 'Roles & permissions', sub: 'Reusable roles and what each may do' },

@@ -7,7 +7,7 @@ import { telHref, whatsappHref } from '../../lib/contact';
 import { useContact } from '../providers/ContactProvider';
 import { useEnquiry } from '../enquiry/EnquiryProvider';
 import { useLenis } from './SmoothScroll';
-import { ThemeSwitcher, useTheme } from './ThemeSwitcher';
+import { useTheme } from './useTheme';
 import { Wordmark } from './Wordmark';
 import styles from './SiteNav.module.css';
 
@@ -119,7 +119,6 @@ export function SiteNav() {
         </nav>
 
         <div className={styles.actions}>
-          <ThemeSwitcher />
           <button
             type="button"
             className={`btn btn--solid btn--sm ${styles.enquire}`}

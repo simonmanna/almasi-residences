@@ -173,7 +173,7 @@ export default function LeadDetail({ params }: { params: Record<string, string> 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editable]);
 
-  if (error) return <><PageHead title="Lead" crumbs={[{ label: 'CRM', to: '/crm' }, { label: 'Leads', to: '/enquiries' }]} /><ErrorBox error={error} onRetry={refetch} /></>;
+  if (error) return <><PageHead title="Lead" crumbs={[{ label: 'CRM', to: '/crm' }, { label: 'Leads and Enquiries', to: '/enquiries' }]} /><ErrorBox error={error} onRetry={refetch} /></>;
   if (!lead) return <div className="stack"><Skeleton h={140} /><div className="lead-grid"><Skeleton h={420} /><Skeleton h={420} /><Skeleton h={420} /></div></div>;
 
   const unit = lead.primaryUnit ?? lead.units[0] ?? null;
@@ -205,7 +205,7 @@ export default function LeadDetail({ params }: { params: Record<string, string> 
   return (
     <>
       <PageHead
-        crumbs={[{ label: 'CRM', to: '/crm' }, { label: 'Leads', to: '/enquiries' }, { label: lead.name }]}
+        crumbs={[{ label: 'CRM', to: '/crm' }, { label: 'Leads and Enquiries', to: '/enquiries' }, { label: lead.name }]}
         title={
           <span className="lead-title">
             {lead.name}

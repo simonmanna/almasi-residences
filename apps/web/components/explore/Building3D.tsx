@@ -10,7 +10,7 @@ import {
   type MutableRefObject,
 } from 'react';
 import * as THREE from 'three';
-import { useTheme } from '../layout/ThemeSwitcher';
+import { useTheme } from '../layout/useTheme';
 import {
   FLOOR_H,
   LEVELS,

@@ -18,7 +18,7 @@ import { CursorLabel } from '../components/layout/CursorLabel';
 import { PreviewBanner } from '../components/layout/PreviewBanner';
 import { AnalyticsTracker } from '../components/layout/AnalyticsTracker';
 import { WhatsAppLauncher } from '../components/layout/WhatsAppLauncher';
-import { MOTION_SCRIPT, THEME_SCRIPT } from '../lib/theme';
+import { DEFAULT_THEME, MOTION_SCRIPT, THEME_NIGHT, isThemeId } from '../lib/theme';
 import { RevealObserver } from '../components/ui/RevealObserver';
 import '../styles/tokens.css';
 import '../styles/themes.css';
@@ -126,12 +126,20 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  viewportFit: 'cover',
-  themeColor: '#3A281B',
-};
+/** The look the admin chose (Website → Theme). Visitors never choose it. */
+async function siteTheme() {
+  const t = await getDevelopment().then((d) => d.siteTheme).catch(() => null);
+  return isThemeId(t) ? t : DEFAULT_THEME;
+}
+
+export async function generateViewport(): Promise<Viewport> {
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
+    themeColor: THEME_NIGHT[await siteTheme()],
+  };
+}
 
 /** GA4 through gtag, loaded after the page is interactive. */
 const ga4Script = (id: string) =>
@@ -166,13 +174,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const gtm = seo?.site?.gtmContainerId ?? null;
   const bathrooms = Object.fromEntries((dev?.typologies ?? []).map((t) => [t.slug, t.bathrooms]));
   const contact = contactFrom(dev?.contact, dev?.name);
+  const theme = isThemeId(dev?.siteTheme) ? dev.siteTheme : DEFAULT_THEME;
 
   return (
-    <html lang="en-GB" className={`${display.variable} ${ui.variable} ${cormorant.variable} ${dmSerif.variable} ${manrope.variable}`} suppressHydrationWarning>
+    <html lang="en-GB" data-theme={theme} className={`${display.variable} ${ui.variable} ${cormorant.variable} ${dmSerif.variable} ${manrope.variable}`} suppressHydrationWarning>
       <head>
         {/* Before first paint: decide whether the home page opens with its intro. */}
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
-        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_SCRIPT + MOTION_SCRIPT }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: MOTION_SCRIPT }} />
         <noscript>
           <style>{NOSCRIPT_CSS}</style>
         </noscript>

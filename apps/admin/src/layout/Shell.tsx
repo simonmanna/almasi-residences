@@ -180,28 +180,16 @@ export function Shell({ children }: { children: ReactNode }) {
   const { user, can, signOut } = useAuth();
   const { path } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('admin:nav') ?? '{}') as Record<string, boolean>;
-    } catch {
-      return {};
-    }
-  });
   const current = navFor(path);
+  const currentGroup = NAV.find((g) => g.items.includes(current!))?.title ?? null;
+  // An accordion: every group starts closed except the one holding this page,
+  // and opening one closes the rest.
+  const [openGroup, setOpenGroup] = useState<string | null>(currentGroup);
 
   useEffect(() => setMenuOpen(false), [path]);
-  // Navigating into a collapsed group opens it once; after that the user's toggle wins.
   useEffect(() => {
-    const group = NAV.find((g) => g.items.some((i) => i === current));
-    if (group && collapsed[group.title]) setCollapsed((c) => ({ ...c, [group.title]: false }));
-  }, [path]);
-  useEffect(() => {
-    try {
-      localStorage.setItem('admin:nav', JSON.stringify(collapsed));
-    } catch {
-      /* storage may be unavailable; the menu still works */
-    }
-  }, [collapsed]);
+    if (currentGroup) setOpenGroup(currentGroup);
+  }, [currentGroup]);
 
   return (
     <div className="app">
@@ -217,22 +205,34 @@ export function Shell({ children }: { children: ReactNode }) {
           {NAV.map((group) => {
             const items = group.items.filter((i) => !i.needs || can(i.needs, i.min));
             if (!items.length) return null;
-            const closed = !!collapsed[group.title];
+            const header = group.title !== 'Overview';
+            const closed = header && openGroup !== group.title;
             return (
-              <div key={group.title} className="nav-group">
-                {group.title !== 'Overview' && (
-                  <button type="button" className="nav-title" aria-expanded={!closed} onClick={() => setCollapsed((c) => ({ ...c, [group.title]: !closed }))}>
-                    {group.title}
-                    <ChevronDown size={13} />
+              <div key={group.title} className="nav-group" data-open={header ? !closed : undefined}>
+                {header && (
+                  <button
+                    type="button"
+                    className="nav-title"
+                    aria-expanded={!closed}
+                    data-current={group.title === currentGroup || undefined}
+                    title={group.title}
+                    onClick={() => setOpenGroup(closed ? group.title : null)}
+                  >
+                    {group.icon && <span className="nav-title-icon"><group.icon size={17} /></span>}
+                    <span className="nav-title-text">{group.title}</span>
+                    <ChevronDown size={16} className="nav-title-chevron" />
                   </button>
                 )}
-                {!closed &&
-                  items.map((item) => (
-                    <Link key={item.to} to={item.to} className="nav-item" aria-current={item === current ? 'page' : undefined} title={item.label}>
-                      <item.icon size={18} />
-                      <span>{item.label}</span>
-                    </Link>
-                  ))}
+                {!closed && (
+                  <div className={header ? 'nav-children' : undefined}>
+                    {items.map((item) => (
+                      <Link key={item.to} to={item.to} className="nav-item" aria-current={item === current ? 'page' : undefined} title={item.label}>
+                        <item.icon size={18} />
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

@@ -43,6 +43,7 @@ export class DevelopmentService {
         contactEmail: true,
         whatsappNumber: true,
         whatsappIconVisible: true,
+        siteTheme: true,
         officeAddress: true,
         mapsUrl: true,
         officeHours: true,

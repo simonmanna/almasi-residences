@@ -61,6 +61,7 @@ const ROUTES: [string, Page, Permission?][] = [
   ['/selected-residences', page(() => import('./pages/SelectedResidences')), 'content.view'],
   ['/experience-section', page(() => import('./pages/ExperienceSection')), 'content.view'],
   ['/film-section', page(() => import('./pages/FilmSection')), 'content.view'],
+  ['/theme', page(() => import('./pages/Theme')), 'property.view'],
   ['/whatsapp', page(() => import('./pages/WhatsApp')), 'property.view'],
   ['/faqs', page(() => import('./pages/Faqs')), 'content.view'],
   ['/placements', page(() => import('./pages/Placements')), 'content.view'],

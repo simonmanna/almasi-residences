@@ -179,6 +179,9 @@ export const CONSTRUCTION_STATUSES = [
   'HANDOVER',
   'COMPLETED',
 ] as const;
+/** The public website's looks. The admin picks one; visitors never choose. */
+export const SITE_THEMES = ['blue', 'wooden', 'sky'] as const;
+export type SiteTheme = (typeof SITE_THEMES)[number];
 export const DEVELOPMENT_STATUSES = ['ANNOUNCED', 'SELLING', 'SOLD_OUT', 'COMPLETED'] as const;
 export const MILESTONE_TRIGGERS = [
   'ON_RESERVATION',

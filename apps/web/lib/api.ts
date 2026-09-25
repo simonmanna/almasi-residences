@@ -322,6 +322,8 @@ export interface DevelopmentDto {
   architect?: string | null;
   contractor?: string | null;
   contact?: ContactDto;
+  /** The look the admin chose: 'blue' | 'wooden' | 'sky'. */
+  siteTheme?: string;
   typologies: TypologyDto[];
   amenities: AmenitySummaryDto[];
   landmarks: LandmarkDto[];

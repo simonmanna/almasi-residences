@@ -96,7 +96,7 @@ export default function Enquiries() {
 
   return (
     <>
-      <PageHead title="Leads" sub={data ? `${data.meta.total} ${s.view ? VIEWS.find((v) => v.value === s.view)?.label.toLowerCase() : 'leads'} · ${data.overdue} overdue · ${data.unassigned} unassigned` : 'Every lead, from every source'}>
+      <PageHead title="Leads and Enquiries" sub={data ? `${data.meta.total} ${s.view ? VIEWS.find((v) => v.value === s.view)?.label.toLowerCase() : 'leads'} · ${data.overdue} overdue · ${data.unassigned} unassigned` : 'Every lead, from every source'}>
         {can('enquiry.export') && <a className="btn" href={downloadUrl(`/admin/enquiries/export.csv${query}`)}><Download size={15} /> Export</a>}
         {editable && <Button variant="primary" icon={<Plus size={16} />} onClick={() => setAdding(true)} title="Shortcut: N">New lead</Button>}
       </PageHead>
