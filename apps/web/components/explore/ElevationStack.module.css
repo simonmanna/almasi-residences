@@ -309,6 +309,8 @@ button.mark[aria-pressed='true'] {
   white-space: nowrap;
 }
 
+.subShort { display: none; }
+
 .common {
   display: grid;
   align-content: center;
@@ -372,11 +374,19 @@ button.mark[aria-pressed='true'] {
   .mark { justify-content: center; padding-right: 0; min-height: 44px; }
   .markLong { display: none; }
   .markShort { display: inline; }
-  .unit { min-height: 44px; padding: 4px 2px; border-radius: 5px; }
-  .code { font-size: 0.8125rem; }
-  .sub { display: none; }
+  .unit { min-height: 48px; padding: 4px 2px; gap: 1px; border-radius: 5px; }
+  .code { font-size: 0.75rem; }
+  .sub { font-size: 0.5625rem; letter-spacing: -0.01em; }
   .live { top: 4px; right: 4px; }
-  .common { min-height: 44px; padding: 4px 8px; }
+  .common { min-height: 48px; padding: 4px 8px; }
+}
+
+/* A small-phone board: the status or price still reads, just smaller. */
+@container (max-width: 340px) {
+  .code { font-size: 0.6875rem; }
+  .sub { font-size: 0.5rem; }
+  .subLong { display: none; }
+  .subShort { display: inline; }
 }
 
 @media (prefers-reduced-motion: reduce) {

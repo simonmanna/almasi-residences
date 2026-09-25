@@ -436,3 +436,64 @@
     animation: none;
   }
 }
+
+/* ─── Elevation: a residence opens as a dialog over the board ──────────── */
+
+.dialog {
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 22px;
+  background: var(--surface-raised, var(--surface));
+  color: var(--ink);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.35);
+  overflow: hidden;
+}
+
+.dialog[open] {
+  animation: detail-rise 0.3s var(--ease-out);
+}
+
+.dialog::backdrop {
+  background: rgb(8 10 14 / 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.dialogBody {
+  position: relative;
+  max-height: calc(100dvh - 48px);
+  padding: 28px 24px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dialogClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--ink);
+  transition: background-color var(--dur-2) var(--ease-standard);
+}
+
+/* Two facts to a row even on a phone, so the dialog rarely needs to scroll. */
+.dialog .facts { grid-template-columns: 1fr 1fr; column-gap: 16px; }
+.dialog .summaryCode { padding-right: 52px; }
+
+@media (hover: hover) {
+  .dialogClose:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog[open] { animation: none; }
+}

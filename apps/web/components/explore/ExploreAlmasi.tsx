@@ -14,6 +14,7 @@ import {
 import { prefersLightMedia, useReducedMotion } from '../../lib/motion';
 import { useInventory } from '../providers/InventoryProvider';
 import { useEnquiry } from '../enquiry/EnquiryProvider';
+import { useLenis } from '../layout/SmoothScroll';
 import { ElevationStack, StatusLegend } from './ElevationStack';
 import type { ViewCommand, ViewCommandKind } from './Building3D';
 import styles from './ExploreAlmasi.module.css';
@@ -44,20 +45,25 @@ export function ExploreAlmasi({
   heading = 'Explore Almasi',
   lede = 'Turn the building, lift out a floor, and see every residence as it stands today. Lit means available.',
   matchIds = null,
+  defaultMode = 'elevation',
 }: {
   id?: string;
   heading?: string;
   lede?: string;
   matchIds?: ReadonlySet<string> | null;
+  /** The homepage opens on the sales board; a page that asked for the model opens on it. */
+  defaultMode?: 'model' | 'elevation';
 }) {
   const { residences, floors, summary } = useInventory();
   const { open } = useEnquiry();
   const reduced = useReducedMotion();
   const stageRef = useRef<HTMLDivElement>(null);
   const labelRefs = useRef(new Map<string, HTMLElement>());
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const lenis = useLenis();
 
   const [webgl, setWebgl] = useState<boolean | null>(null);
-  const [mode, setMode] = useState<'model' | 'elevation'>('model');
+  const [mode, setMode] = useState<'model' | 'elevation'>(defaultMode);
   const [quality, setQuality] = useState<'high' | 'low'>('high');
   const [near, setNear] = useState(false);
   const [onScreen, setOnScreen] = useState(false);
@@ -132,6 +138,31 @@ export function ExploreAlmasi({
   };
 
   const showModel = mode === 'model' && webgl !== false;
+  // The elevation fills the width, so a residence opens over it rather than
+  // in a panel beside it.
+  const inDialog = !showModel && selected !== null;
+
+  useEffect(() => {
+    const d = dialogRef.current;
+    if (!d) return;
+    if (inDialog && !d.open) {
+      d.showModal();
+      lenis?.stop();
+    } else if (!inDialog && d.open) {
+      d.close();
+    }
+  }, [inDialog, lenis]);
+
+  const enquire = (r: Residence) =>
+    open({
+      residence: {
+        id: r.id,
+        label: r.label,
+        summary: `${TYPE_TEXT[r.type]}, ${r.areaSqm} m², ${r.floorLabel.toLowerCase()}`,
+      },
+      intent: 'INFORMATION',
+      source: 'explore',
+    });
 
   return (
     <section id={id} className={styles.explore} data-ground="night" aria-labelledby={`${id}-title`}>
@@ -144,6 +175,9 @@ export function ExploreAlmasi({
         </div>
         <div className={styles.lede}><p>{lede}</p><Link href="/3d-design" className={styles.designLink}>Enter the 3D Design experience ↗</Link></div>
         <div className={styles.switch} role="group" aria-label="How to show the building">
+          <button type="button" aria-pressed={mode === 'elevation'} onClick={() => setMode('elevation')}>
+            Elevation
+          </button>
           <button
             type="button"
             aria-pressed={mode === 'model'}
@@ -151,9 +185,6 @@ export function ExploreAlmasi({
             onClick={() => setMode('model')}
           >
             3D model
-          </button>
-          <button type="button" aria-pressed={mode === 'elevation'} onClick={() => setMode('elevation')}>
-            Elevation
           </button>
         </div>
       </div>
@@ -245,114 +276,139 @@ export function ExploreAlmasi({
           </div>
         )}
 
-        <aside className={styles.panel} aria-label="Floors and residences">
-          <div className={styles.floors} role="group" aria-label="Choose a floor">
-            <button
-              type="button"
-              className={styles.floor}
-              aria-pressed={focusLevel === null}
-              onClick={() => chooseFloor(null)}
-            >
-              <span className={styles.floorMark}>All</span>
-              <span>Whole building</span>
-            </button>
-            {floors.map((f) => (
+        {showModel && (
+          <aside className={styles.panel} aria-label="Floors and residences">
+            <div className={styles.floors} role="group" aria-label="Choose a floor">
               <button
-                key={f.level}
                 type="button"
                 className={styles.floor}
-                aria-pressed={focusLevel === f.level}
-                onClick={() => chooseFloor(f.level)}
+                aria-pressed={focusLevel === null}
+                onClick={() => chooseFloor(null)}
               >
-                <span className={styles.floorMark}>{f.mark}</span>
-                <span>{floorName(f)}</span>
+                <span className={styles.floorMark}>All</span>
+                <span>Whole building</span>
               </button>
-            ))}
-          </div>
+              {floors.map((f) => (
+                <button
+                  key={f.level}
+                  type="button"
+                  className={styles.floor}
+                  aria-pressed={focusLevel === f.level}
+                  onClick={() => chooseFloor(f.level)}
+                >
+                  <span className={styles.floorMark}>{f.mark}</span>
+                  <span>{floorName(f)}</span>
+                </button>
+              ))}
+            </div>
 
-          <div className={styles.detail} aria-live="polite">
-            {selected ? (
-              <ResidenceSummary
-                r={selected}
-                onBack={() => setSelectedId(null)}
-                onEnquire={() =>
-                  open({
-                    residence: {
-                      id: selected.id,
-                      label: selected.label,
-                      summary: `${TYPE_TEXT[selected.type]}, ${selected.areaSqm} m², ${selected.floorLabel.toLowerCase()}`,
-                    },
-                    intent: 'INFORMATION',
-                    source: 'explore',
-                  })
-                }
-              />
-            ) : focusFloor && focusFloor.level < 0 ? (
-              <p className={styles.note}>
-                The basement holds a parking bay for every residence, with storage and the building’s plant.
-                Lifts run from here to every floor.
-              </p>
-            ) : focusFloor ? (
-              <>
-                <p className={styles.detailHead}>
-                  {floorName(focusFloor)}: {focusFloor.available} of {focusFloor.total} available
+            <div className={styles.detail} aria-live="polite">
+              {selected ? (
+                <ResidenceSummary
+                  r={selected}
+                  onBack={() => setSelectedId(null)}
+                  onEnquire={() => enquire(selected)}
+                />
+              ) : focusFloor && focusFloor.level < 0 ? (
+                <p className={styles.note}>
+                  The basement holds a parking bay for every residence, with storage and the building’s plant.
+                  Lifts run from here to every floor.
                 </p>
-                <ul className={styles.units}>
-                  {floorUnits.map((r) => {
-                    const price = visiblePriceMinor(r);
-                    return (
-                      <li key={r.id}>
-                        <button
-                          type="button"
-                          className={styles.unit}
-                          onClick={() => selectResidence(r)}
-                          onMouseEnter={() => setHoveredId(r.id)}
-                          onMouseLeave={() => setHoveredId(null)}
-                          onFocus={() => setHoveredId(r.id)}
-                          onBlur={() => setHoveredId(null)}
-                        >
-                          <span className={styles.unitCode}>{r.label}</span>
-                          <span className={styles.unitMeta}>
-                            {TYPE_TEXT[r.type]}
-                            <br />
-                            <span className="tabular">{r.areaSqm} m²</span>
-                          </span>
-                          <span className={styles.unitEnd}>
-                            <span className="status" data-status={r.publicStatus}>
-                              {STATUS_TEXT[r.publicStatus]}
+              ) : focusFloor ? (
+                <>
+                  <p className={styles.detailHead}>
+                    {floorName(focusFloor)}: {focusFloor.available} of {focusFloor.total} available
+                  </p>
+                  <ul className={styles.units}>
+                    {floorUnits.map((r) => {
+                      const price = visiblePriceMinor(r);
+                      return (
+                        <li key={r.id}>
+                          <button
+                            type="button"
+                            className={styles.unit}
+                            onClick={() => selectResidence(r)}
+                            onMouseEnter={() => setHoveredId(r.id)}
+                            onMouseLeave={() => setHoveredId(null)}
+                            onFocus={() => setHoveredId(r.id)}
+                            onBlur={() => setHoveredId(null)}
+                          >
+                            <span className={styles.unitCode}>{r.label}</span>
+                            <span className={styles.unitMeta}>
+                              {TYPE_TEXT[r.type]}
+                              <br />
+                              <span className="tabular">{r.areaSqm} m²</span>
                             </span>
-                            {price !== null && (
-                              <span className="tabular muted">
-                                {formatMoney({ amountMinor: price, currency: r.currency })}
+                            <span className={styles.unitEnd}>
+                              <span className="status" data-status={r.publicStatus}>
+                                {STATUS_TEXT[r.publicStatus]}
                               </span>
-                            )}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </>
-            ) : (
-              <p className={styles.note}>
-                {summary.available} of {summary.total} residences are available today. Choose a floor to see
-                each one, or open the full list of <Link href="/residences" className="link-line">residences</Link>.
-              </p>
-            )}
-          </div>
-        </aside>
+                              {price !== null && (
+                                <span className="tabular muted">
+                                  {formatMoney({ amountMinor: price, currency: r.currency })}
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              ) : (
+                <p className={styles.note}>
+                  {summary.available} of {summary.total} residences are available today. Choose a floor to see
+                  each one, or open the full list of <Link href="/residences" className="link-line">residences</Link>.
+                </p>
+              )}
+            </div>
+          </aside>
+        )}
       </div>
+
+      <dialog
+        ref={dialogRef}
+        className={styles.dialog}
+        aria-label={selected ? `Residence ${selected.label}` : 'Residence'}
+        onClose={() => {
+          lenis?.start();
+          if (!showModel) setSelectedId(null);
+        }}
+        onClick={(e) => e.target === e.currentTarget && e.currentTarget.close()}
+      >
+        {inDialog && selected && (
+          <div className={styles.dialogBody} data-lenis-prevent>
+            <button
+              type="button"
+              className={styles.dialogClose}
+              aria-label="Close"
+              onClick={() => dialogRef.current?.close()}
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+            <ResidenceSummary
+              r={selected}
+              onEnquire={() => {
+                dialogRef.current?.close();
+                enquire(selected);
+              }}
+            />
+          </div>
+        )}
+      </dialog>
     </section>
   );
 }
 
-function ResidenceSummary({ r, onBack, onEnquire }: { r: Residence; onBack: () => void; onEnquire: () => void }) {
+function ResidenceSummary({ r, onBack, onEnquire }: { r: Residence; onBack?: () => void; onEnquire: () => void }) {
   const price = visiblePriceMinor(r);
   return (
     <div className={styles.summary}>
-      <button type="button" className={`${styles.back} link-line`} onClick={onBack}>
-        Back to {r.floorLabel.toLowerCase()}
-      </button>
+      {onBack && (
+        <button type="button" className={`${styles.back} link-line`} onClick={onBack}>
+          Back to {r.floorLabel.toLowerCase()}
+        </button>
+      )}
       <p className={styles.summaryCode}>{r.label}</p>
       <dl className={styles.facts}>
         <div>

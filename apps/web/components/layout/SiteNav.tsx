@@ -24,8 +24,8 @@ export const NAV_LINKS = [
 type Mode = 'over' | 'solid' | 'clear';
 
 /**
- * Transparent over cinematic imagery, solid once the page moves, out of the way
- * while scrolling down and back on the way up. A page marks its full-bleed
+ * Transparent over cinematic imagery, solid once the page moves, and fixed to
+ * the top of every page so it is always within reach. A page marks its full-bleed
  * opening image with `data-nav-over`; pages on the night ground mark their
  * <main> with `data-nav-ground="night"`.
  */
@@ -37,7 +37,6 @@ export function SiteNav() {
   const [overMedia, setOverMedia] = useState(false);
   const [pageGround, setPageGround] = useState<'stone' | 'night'>('stone');
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -58,15 +57,7 @@ export function SiteNav() {
   }, [pathname]);
 
   useEffect(() => {
-    let last = window.scrollY;
-    const onScroll = () => {
-      const y = window.scrollY;
-      setScrolled(y > 24);
-      if (Math.abs(y - last) > 8) {
-        setHidden(y > last && y > 520);
-        last = y;
-      }
-    };
+    const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -96,7 +87,6 @@ export function SiteNav() {
       className={styles.nav}
       data-mode={mode}
       data-ground={ground}
-      data-hidden={hidden && !menuOpen ? 'true' : 'false'}
     >
       <div className={styles.inner}>
         <Link href="/" className={styles.brand} aria-label={contact.developmentName ? `${contact.developmentName}, home` : "Home"}>

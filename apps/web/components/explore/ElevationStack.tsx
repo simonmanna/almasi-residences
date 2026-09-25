@@ -14,6 +14,15 @@ import styles from './ElevationStack.module.css';
 
 const KEY_ORDER: readonly PublicStatus[] = ['available', 'reserved', 'booked', 'sold', 'unavailable'];
 
+/** For a tile a small phone leaves about 30px wide; the colour and the key carry the rest. */
+const STATUS_SHORT: Record<PublicStatus, string> = {
+  available: 'Avail.',
+  reserved: 'Resv.',
+  booked: 'Bkd.',
+  sold: 'Sold',
+  unavailable: 'N/A',
+};
+
 /** `C2` → `C`; `PH-A` → `PH-A`. Columns line up by the letter a residence shares with the floors above and below it. */
 const columnKey = (code: string) => code.replace(/\d+$/, '');
 
@@ -112,7 +121,16 @@ export function ElevationStack({
       >
         {r.publicStatus === 'available' && <span className={styles.live} aria-hidden="true" />}
         <span className={styles.code}>{r.label}</span>
-        <span className={styles.sub}>{price ?? STATUS_TEXT[r.publicStatus]}</span>
+        {price ? (
+          <span className={styles.sub}>{price}</span>
+        ) : (
+          <span className={styles.sub}>
+            <span className={styles.subLong}>{STATUS_TEXT[r.publicStatus]}</span>
+            <span className={styles.subShort} aria-hidden="true">
+              {STATUS_SHORT[r.publicStatus]}
+            </span>
+          </span>
+        )}
       </button>
     );
   };

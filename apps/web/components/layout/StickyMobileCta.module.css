@@ -5,9 +5,11 @@
   bottom: 0;
   z-index: var(--z-cta);
   display: none;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  /* One row however many actions the contact details allow. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 6px;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(14px);
@@ -18,6 +20,17 @@
 
 .bar[data-shown='true'] {
   transform: none;
+}
+
+/* Three across on a 320px phone: trim the pill padding, never the label. */
+.bar > :global(.btn) {
+  min-width: 0;
+  margin: 0;
+  padding-inline: 4px;
+  gap: 6px;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 @media (max-width: 767px) {

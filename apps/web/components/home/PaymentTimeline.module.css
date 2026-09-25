@@ -148,3 +148,13 @@
     left: -40px;
   }
 }
+
+/* Phones: the same four steps, set tighter so the plan reads in one or two swipes. */
+@media (max-width: 600px) {
+  .timeline { gap: 28px; padding-left: 32px; }
+  .dot { left: -32px; top: 4px; }
+  .stage { gap: 4px; }
+  .percent { font-size: 2.75rem; }
+  .label { font-size: var(--fs-base); }
+  .foot { margin-top: 32px; }
+}

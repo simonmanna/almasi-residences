@@ -296,6 +296,7 @@ export function ResidenceExplorer({
 
       {view === 'building' ? (
         <ExploreAlmasi
+          defaultMode="model"
           id="residences-3d"
           heading="The building, filtered"
           lede="Residences outside your filters fade back; the ones that match stay lit."

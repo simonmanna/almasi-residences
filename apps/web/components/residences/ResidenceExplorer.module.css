@@ -33,7 +33,7 @@
 /* ─── Filter bar ───────────────────────────────────────────────────── */
 .bar {
   position: sticky;
-  top: 0;
+  top: var(--nav-h);
   z-index: 30;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);

@@ -139,7 +139,7 @@
   --page-max: 1600px;
   --page-margin: clamp(20px, 5vw, 88px);
   --gutter: clamp(16px, 2vw, 28px);
-  --nav-h: 76px;
+  --nav-h: 64px;
 
   /* Corners stay architectural: nearly square. Controls use 1, menus 2; the
      theme's cards, media and buttons read their own radius below. */

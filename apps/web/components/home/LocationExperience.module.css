@@ -162,6 +162,22 @@
   .mapCol { position: static; order: -1; max-width: none; justify-self: stretch; }
 }
 
+/* A phone gives the place its full width; the figures share the line below. */
+@media (max-width: 600px) {
+  .row {
+    grid-template-columns: 10px auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'dot name name name'
+      '.   cat  dist time';
+    row-gap: 2px;
+  }
+  .dist {
+    justify-self: start;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .row,
   .dot { transition: none; }

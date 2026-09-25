@@ -514,13 +514,34 @@
    keeps its proportions, and the words sit beneath it on solid ground. This is
    the same 900px line at which every other section drops to one column. */
 @media (max-width: 900px) {
+  /* The nav is fixed and solid-edged over the top of the frame, so the band
+     starts beneath it, and the section grows rather than let the copy climb
+     into the render on a short phone. */
+  .hero {
+    --band: min(38svh, 42.85vw);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: auto;
+    min-height: 100svh;
+    padding-top: calc(var(--nav-h) + var(--band) + 12px);
+  }
+
   /* On portrait screens the panoramic still becomes an uncropped cinematic
      band above the copy. The viewport cap trims only a little sky/road. */
   .media {
-    inset: 0 0 auto 0;
+    inset: var(--nav-h) 0 auto 0;
     width: 100%;
-    height: min(38svh, 42.85vw);
+    height: var(--band);
     max-height: none;
+    /* The grain overscans by half; in a band that would spill onto the copy. */
+    overflow: hidden;
+  }
+
+  .content {
+    position: relative;
+    inset: auto;
+    width: 100%;
   }
 
   /* No overscan in the self-contained band. */
@@ -628,8 +649,8 @@
 /* Short phones: the copy is bottom-anchored and grows upward, so on a small
    viewport it starts climbing into the render. The band gives way first. */
 @media (max-width: 420px), (max-height: 760px) and (max-width: 900px) {
-  .media {
-    height: min(26svh, 42.85vw);
+  .hero {
+    --band: min(30svh, 42.85vw);
   }
 
   .title {
