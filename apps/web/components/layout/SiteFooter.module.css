@@ -125,3 +125,8 @@
   margin: 0;
   padding: 0;
 }
+
+/* Phone (Sapphire): column labels in champagne, like every other section label. */
+@media (max-width: 767px) {
+  .grid :global(.mark) { color: var(--champagne); letter-spacing: 0.26em; }
+}

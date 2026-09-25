@@ -23,6 +23,7 @@ import { RevealObserver } from '../components/ui/RevealObserver';
 import '../styles/tokens.css';
 import '../styles/themes.css';
 import '../styles/app.css';
+import '../styles/mobile.css';
 
 // Self-hosted through next/font: preloaded, and a metric-matched fallback so
 // the swap does not shift the layout.

@@ -132,22 +132,79 @@
   .media { aspect-ratio: 4 / 3; }
 }
 
-/* Phones: a swipeable row, the next card peeking in, instead of a screen per card. */
+/* ─── Phone: three plates of the building, one under the other ────────
+   Set against the swipeable featured row that follows, these stay still: a
+   wide photograph per kind of residence, its name and figures laid on the
+   lower edge, the opening price in champagne. */
 @media (max-width: 767px) {
-  .grid {
-    display: flex;
-    gap: 14px;
-    margin-inline: calc(-1 * var(--page-margin));
-    padding: 0 var(--page-margin) 6px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: var(--page-margin);
-    scrollbar-width: none;
+  .head { gap: 14px; margin-bottom: 28px; }
+
+  .grid { grid-template-columns: 1fr; gap: 14px; }
+
+  .card {
+    position: relative;
+    display: block;
+    border-radius: var(--radius-card);
   }
-  .grid::-webkit-scrollbar { display: none; }
-  .item {
-    flex: 0 0 84%;
-    scroll-snap-align: start;
+
+  .media {
+    aspect-ratio: 16 / 12;
   }
+
+  .media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgb(5 12 32 / 0.3) 0%,
+      transparent 26%,
+      rgb(5 12 32 / 0.66) 60%,
+      rgb(5 12 32 / 0.96) 100%
+    );
+    pointer-events: none;
+  }
+
+  .text {
+    position: absolute;
+    inset: auto 0 0 0;
+    gap: 4px;
+    padding: 0 20px 18px;
+    background: none;
+  }
+
+  .line,
+  .cta { display: none; }
+
+  .name {
+    font-size: 1.875rem;
+    color: #F2EFE8;
+  }
+
+  .size {
+    font-size: 1.0625rem;
+    color: rgb(242 239 232 / 0.8);
+  }
+
+  .meta {
+    margin-top: 8px;
+    border-top-color: rgb(169 186 226 / 0.2);
+  }
+
+  .meta div { padding-top: 10px; }
+  .meta dt { color: rgb(242 239 232 / 0.62); font-size: 0.6875rem; letter-spacing: 0.04em; }
+  .meta dd { color: #F2EFE8; }
+  .meta div:last-child dd {
+    color: var(--champagne);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    line-height: 1.1;
+  }
+
+  .badge {
+    border: 1px solid rgb(216 184 120 / 0.28);
+    background: rgb(6 15 38 / 0.72);
+    font-weight: 600;
+  }
+  .badge::before { background: var(--champagne); box-shadow: 0 0 0 3px rgb(216 184 120 / 0.2); }
 }

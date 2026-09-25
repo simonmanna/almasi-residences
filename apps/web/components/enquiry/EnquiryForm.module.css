@@ -89,3 +89,17 @@
   gap: 12px;
   margin-top: 8px;
 }
+
+/* Phone (Sapphire): pill options, the chosen one in champagne. */
+@media (max-width: 767px) {
+  .segment span {
+    border-color: rgb(169 186 226 / 0.24);
+    border-radius: 999px;
+  }
+  .segment input:checked + span {
+    background: var(--champagne);
+    border-color: var(--champagne);
+    color: #0A1530;
+    font-weight: 600;
+  }
+}

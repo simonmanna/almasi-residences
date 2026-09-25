@@ -497,3 +497,24 @@
 @media (prefers-reduced-motion: reduce) {
   .dialog[open] { animation: none; }
 }
+
+/* Phone (Sapphire): the view switch as a lit pill in a glass track. */
+@media (max-width: 767px) {
+  .switch {
+    justify-self: start;
+    padding: 4px;
+    border-color: rgb(169 186 226 / 0.22);
+    border-radius: 999px;
+    background: rgb(10 21 48 / 0.6);
+  }
+  .switch button {
+    border-radius: 999px;
+    padding: 0 22px;
+    font-weight: 600;
+  }
+  .switch button[aria-pressed='true'] {
+    background: var(--champagne);
+    color: #0A1530;
+    box-shadow: 0 8px 20px -10px rgb(216 184 120 / 0.7);
+  }
+}

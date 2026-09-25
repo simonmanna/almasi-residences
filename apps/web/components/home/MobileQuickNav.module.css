@@ -1,0 +1,198 @@
+/* Phones only. The desktop page never renders a box for it. */
+.quick {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .quick {
+    position: relative;
+    z-index: 3;
+    display: grid;
+    gap: 30px;
+    margin-top: -104px;
+    padding: 0 var(--page-margin) 44px;
+    background: linear-gradient(to bottom, transparent 0, #060F26 72px);
+  }
+
+  /* ─── The finder: a pane of dark glass over the foot of the frame ── */
+  .finder {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    min-height: 84px;
+    padding: 12px 12px 12px 20px;
+    border: 1px solid rgb(169 186 226 / 0.22);
+    border-radius: 22px;
+    background:
+      linear-gradient(160deg, rgb(255 255 255 / 0.07), transparent 42%),
+      rgb(10 21 48 / 0.62);
+    box-shadow:
+      inset 0 1px 0 rgb(242 239 232 / 0.08),
+      0 24px 50px -20px rgb(1 5 16 / 0.9);
+    backdrop-filter: blur(22px) saturate(1.3);
+    -webkit-backdrop-filter: blur(22px) saturate(1.3);
+    color: var(--ink);
+    animation: rise 0.9s var(--ease-out) 0.35s both;
+    transition: transform var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-standard);
+  }
+
+  .finder:active {
+    transform: scale(0.985);
+    border-color: rgb(216 184 120 / 0.45);
+  }
+
+  .pin {
+    display: grid;
+    color: var(--ink);
+    opacity: 0.9;
+  }
+
+  .finderText {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .finderTitle {
+    font-family: var(--font-display);
+    font-size: 1.3125rem;
+    font-weight: 500;
+    line-height: 1.1;
+  }
+
+  .finderSub {
+    overflow: hidden;
+    color: var(--ink-muted);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .go {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background:
+      radial-gradient(120% 120% at 30% 20%, var(--champagne-hi), var(--champagne) 45%, var(--champagne-lo));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      0 10px 24px -8px rgb(216 184 120 / 0.6);
+    color: #0A1530;
+  }
+
+  /* ─── Ways in ─────────────────────────────────────────────────── */
+  .shortcuts {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    margin: 0 calc(-1 * var(--page-margin));
+    padding: 4px var(--page-margin) 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    list-style: none;
+  }
+
+  .shortcuts::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shortcuts li {
+    flex: 0 0 auto;
+    animation: rise 0.8s var(--ease-out) both;
+    animation-delay: calc(0.55s + var(--i) * 70ms);
+  }
+
+  .shortcut {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    min-width: 60px;
+    color: var(--champagne);
+  }
+
+  .ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 30%, rgb(62 112 255 / 0.1), transparent 70%);
+    transition: transform var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-standard);
+  }
+
+  /* The hairline draws itself round once, the way a jeweller's loupe settles. */
+  .ringLine {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    transform: rotate(-90deg);
+  }
+
+  .ringLine circle {
+    fill: none;
+    stroke: rgb(169 186 226 / 0.32);
+    stroke-width: 1;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: draw 1.2s var(--ease-out) forwards;
+
+  }
+
+  .shortcuts li .ringLine circle {
+    animation-delay: calc(0.7s + var(--i) * 70ms);
+  }
+
+  .shortcut:active .ring {
+    transform: scale(0.94);
+    background-color: rgb(216 184 120 / 0.12);
+  }
+
+  .shortcut:focus-visible {
+    outline: none;
+  }
+
+  .shortcut:focus-visible .ring {
+    box-shadow: 0 0 0 2px var(--champagne);
+  }
+
+  .label {
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    font-variant-caps: all-small-caps;
+    white-space: nowrap;
+    font-size: 0.75rem;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(6px);
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finder,
+  .shortcuts li,
+  .ringLine circle {
+    animation: none;
+  }
+  .ringLine circle {
+    stroke-dashoffset: 0;
+  }
+}

@@ -1,0 +1,182 @@
+/**
+ * Sapphire — the phone's own world.
+ *
+ * Most buyers arrive on a phone, at night, from a link someone sent them. So
+ * below 768px the site stops following the admin's desktop theme and puts on
+ * one fixed dress: midnight sapphire grounds, a cool electric-blue light
+ * falling from the upper right, champagne metal for the few things that
+ * matter (the price, the next step), and an editorial Garamond over a quiet
+ * grotesk. Desktop is untouched: every rule here lives inside the query.
+ *
+ * Selectors are doubled (`:root:root:root`) so this layer outranks every
+ * `[data-theme] [data-ground]` pairing in themes.css without !important.
+ */
+@media (max-width: 767px) {
+  /* ─── Personality ──────────────────────────────────────────────── */
+  :root:root:root {
+    --champagne: #D8B878;
+    --champagne-hi: #EBD3A0;
+    --champagne-lo: #A8854A;
+    --sapphire-glow: 62 112 255;
+
+    --font-display: var(--font-cormorant, 'Cormorant Garamond'), 'Iowan Old Style', Georgia, serif;
+    --font-ui: var(--font-manrope, 'Manrope'), ui-sans-serif, system-ui, sans-serif;
+    --display-tracking: 0.2;
+    --display-weight: 500;
+
+    --radius-card: 18px;
+    --radius-media: 14px;
+    --radius-btn: 999px;
+    --btn-caps: normal;
+    --btn-tracking: 0.04em;
+    --btn-weight: 600;
+    --btn-h: 52px;
+    --btn-shadow: 0 10px 30px -12px rgba(216, 184, 120, 0.55);
+
+    --card-surface: #0E1A3A;
+    --card-ink: #F2EFE8;
+    --card-muted: #A9B4CC;
+    --card-accent: #D8B878;
+    --card-line: rgba(169, 186, 226, 0.14);
+    --card-border: 1px solid rgba(169, 186, 226, 0.18);
+    --card-frame: inset 0 1px 0 rgba(242, 239, 232, 0.06);
+    --card-shadow: 0 2px 6px rgba(2, 6, 18, 0.4), 0 28px 60px -24px rgba(2, 6, 18, 0.9);
+    --card-shadow-hover: var(--card-shadow);
+    --card-lift: 0px;
+    --card-texture: none;
+
+    --texture: none;
+    --texture-quiet: none;
+    --ambient-quiet: none;
+    --ambient-night: none;
+    --ambient: radial-gradient(90% 40% at 100% 0%, rgb(var(--sapphire-glow) / 0.13), transparent 72%);
+
+    --shade: 5 12 32;
+    --on-media: 242 239 232;
+    --dusk-base: #040A1C;
+    --dusk-low: #081533;
+    --dusk-mid: #10234D;
+    --dusk-high: #1C3E7A;
+
+    --nav-rule: var(--champagne);
+    --nav-opacity: 92%;
+    --nav-blur: 22px;
+    --nav-shadow: 0 1px 0 rgba(169, 186, 226, 0.1), 0 18px 40px -20px rgba(0, 0, 0, 0.8);
+    --section-y: 64px;
+    --page-margin: 20px;
+  }
+
+  /* ─── Grounds: three depths of one blue, so sections still breathe ── */
+  :root:root:root,
+  :root:root [data-ground],
+  :root:root [data-ground='stone'] {
+    --surface: #0A1530;
+    --surface-raised: #0F1E40;
+    --surface-sunk: #071027;
+    --ink: #F2EFE8;
+    --ink-muted: #A9B4CC;
+    --line: #1E2D52;
+    --accent: #D8B878;
+    --accent-weak: #8A7446;
+    --on-accent: #0A1530;
+    --foliage: #86A89C;
+    --scrim: rgba(4, 9, 22, 0.6);
+    --elev: 0 2px 6px rgba(2, 6, 18, 0.4), 0 24px 60px -20px rgba(2, 6, 18, 0.85);
+    --status-available: #E2C28A;
+    --status-reserved: #E0913F;
+    --status-sold: #6FC6DC;
+    --status-unavailable: #8C93A6;
+    --cat-business: #8EB4F4;
+    --cat-shopping: #E0995A;
+    --cat-health: #6FC0B2;
+    --cat-school: #A3BD8C;
+    --cat-airport: #CF9BC0;
+    --cat-leisure: #D1C46E;
+    --cat-embassy: #E88E7C;
+    --map-ground: #081330;
+  }
+
+  :root:root [data-ground='night'] {
+    --surface: #060F26;
+    --surface-raised: #0C1A3A;
+    --surface-sunk: #040A1C;
+    --line: #1A2849;
+  }
+
+  :root:root [data-ground='quiet'] {
+    --surface: #0C1936;
+    --surface-raised: #122347;
+    --surface-sunk: #091430;
+    --line: #213258;
+  }
+
+  body { background-color: #060F26; }
+
+  /* ─── The metal: one solid button, champagne on every ground ─────── */
+  :root:root:root .btn--solid {
+    --btn-bg: var(--champagne);
+    --btn-ink: #0A1530;
+    --btn-border: var(--champagne);
+    --btn-fill: var(--champagne-hi);
+    --btn-fill-ink: #0A1530;
+    background-image: linear-gradient(160deg, rgb(255 255 255 / 0.28), transparent 46%);
+    box-shadow: var(--btn-shadow);
+  }
+  :root:root:root .btn--ghost {
+    --btn-border: rgba(169, 186, 226, 0.28);
+    --btn-ink: var(--ink);
+    --btn-fill: rgba(169, 186, 226, 0.12);
+    --btn-fill-ink: var(--ink);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  :root:root:root .chip[aria-pressed='true'] {
+    background: var(--champagne);
+    border-color: var(--champagne);
+    color: #0A1530;
+  }
+
+  /* ─── Section headers: gold label and rule, a Garamond headline ──── */
+  :root:root .eyebrow {
+    gap: 14px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.34em;
+    color: var(--champagne);
+  }
+  :root:root .eyebrow::before { display: none; }
+  :root:root .eyebrow::after {
+    content: '';
+    width: 56px;
+    height: 1px;
+    background: linear-gradient(90deg, currentColor, transparent);
+  }
+  :root:root .kicker-lg {
+    font-size: 2.5rem;
+    font-weight: 500;
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  :root:root .title-sm {
+    font-size: 1.3125rem;
+    font-style: italic;
+    line-height: 1.3;
+    color: var(--ink-muted);
+  }
+  :root:root .h3 { font-weight: 500; }
+  :root:root .lead { font-size: 1rem; line-height: 1.6; }
+  :root:root .link-line {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    font-variant-caps: all-small-caps;
+    color: var(--ink);
+  }
+
+  /* ─── Browser surfaces carry the world too ──────────────────────── */
+  ::selection { background: var(--champagne); color: #0A1530; }
+  :root:root :focus-visible { outline-color: var(--champagne); }
+  html { scrollbar-color: #24375F #060F26; }
+  input, textarea, select { caret-color: var(--champagne); }
+}

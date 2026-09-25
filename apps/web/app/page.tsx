@@ -17,6 +17,7 @@ import { developmentJsonLd } from '../lib/seo';
 import { titleCaseHeading } from '../lib/text';
 import { HeroExperience } from '../components/home/HeroExperience';
 import { Introduction } from '../components/home/Introduction';
+import { MobileQuickNav } from '../components/home/MobileQuickNav';
 import { ExploreAlmasi } from '../components/explore/ExploreAlmasi';
 import { ResidencesPreview } from '../components/home/ResidencesPreview';
 import { FeaturedResidences } from '../components/home/FeaturedResidences';
@@ -87,6 +88,7 @@ export default async function HomePage() {
         primary={primaryCta}
         handover={handover}
       />
+      <MobileQuickNav />
       <Introduction handover={handover} title={homeHeading('introTitle')} body={home('introBody')} kicker={titleCaseHeading(home('heroKicker'))} developmentName={dev?.name ?? ''} buildingConfig={dev?.buildingConfig} primary={primaryCta} secondary={secondaryCta} />
       <ExploreAlmasi />
       <ResidencesPreview cards={cards} kicker={homeHeading('residencesKicker')} title={homeHeading('residencesTitle')} />

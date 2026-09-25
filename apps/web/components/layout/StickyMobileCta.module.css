@@ -1,3 +1,4 @@
+/* The phone's tab bar: three ways to reach the sales team, one of them lit. */
 .bar {
   position: fixed;
   left: 0;
@@ -8,12 +9,15 @@
   /* One row however many actions the contact details allow. */
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
-  gap: 6px;
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  gap: 4px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgb(169 186 226 / 0.14);
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.04), transparent 60%),
+    rgb(6 15 38 / 0.86);
+  box-shadow: 0 -18px 40px -24px rgb(0 0 0 / 0.9);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
   transform: translateY(110%);
   transition: transform var(--dur-3) var(--ease-out);
 }
@@ -22,15 +26,52 @@
   transform: none;
 }
 
-/* Three across on a 320px phone: trim the pill padding, never the label. */
-.bar > :global(.btn) {
+.tab {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
   min-width: 0;
-  margin: 0;
-  padding-inline: 4px;
-  gap: 6px;
-  font-size: 0.875rem;
-  letter-spacing: 0.02em;
+  min-height: 56px;
+  padding: 4px 2px;
+  border-radius: 14px;
+  color: #A9B4CC;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-2) var(--ease-standard), transform var(--dur-1) var(--ease-out);
+}
+
+.tab:active {
+  transform: scale(0.94);
+  color: #F2EFE8;
+}
+
+.tab:focus-visible {
+  outline: 2px solid #D8B878;
+  outline-offset: -2px;
+}
+
+/* Enquire is the one that is lit: champagne glyph, and a short rule under it
+   like the reference's active tab. */
+.tab[data-primary] {
+  color: #D8B878;
+}
+
+.tab[data-primary]::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 28px;
+  height: 2px;
+  border-radius: 2px;
+  background: #D8B878;
+  transform: translateX(-50%);
 }
 
 @media (max-width: 767px) {

@@ -111,22 +111,193 @@
   }
 }
 
-/* Phones: a swipeable row, the next card peeking in, instead of a screen per card. */
+/* Phone-only parts of the card: the desktop card never shows them. */
+.plate,
+.where,
+.facts,
+.save {
+  display: none;
+}
+
+/* ─── Phone: cinematic cards in a swipeable row ─────────────────────
+   The photograph is the card; the name, the facts and the price sit on it
+   in the lower third, over a fall of sapphire, and the next residence
+   peeks in from the right edge to say there are more. */
 @media (max-width: 767px) {
+  .head {
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .eyebrow { margin-bottom: 14px; }
+  .kicker { margin-bottom: 10px; }
+
   .grid {
     display: flex;
     gap: 14px;
     margin-inline: calc(-1 * var(--page-margin));
-    padding: 0 var(--page-margin) 6px;
+    padding: 4px var(--page-margin) 10px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
     scroll-padding-inline: var(--page-margin);
     scrollbar-width: none;
   }
+
   .grid::-webkit-scrollbar { display: none; }
+
   .item {
-    flex: 0 0 84%;
+    position: relative;
+    flex: 0 0 88%;
     scroll-snap-align: start;
   }
+
+  .card {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border: 1px solid rgb(169 186 226 / 0.2);
+    border-radius: var(--radius-card);
+    background: var(--surface-sunk);
+    box-shadow: var(--card-shadow);
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+
+  .card:active { transform: scale(0.99); }
+
+  .media {
+    aspect-ratio: 4 / 5;
+    border-radius: 0;
+  }
+
+  .media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgb(5 12 32 / 0.35) 0%,
+      transparent 22%,
+      transparent 40%,
+      rgb(5 12 32 / 0.72) 66%,
+      rgb(5 12 32 / 0.96) 100%
+    );
+    pointer-events: none;
+  }
+
+  .text {
+    position: absolute;
+    inset: auto 0 0 0;
+    gap: 8px;
+    padding: 0 20px 20px;
+  }
+
+  .text > :global(.eyebrow),
+  .size,
+  .line,
+  .meta,
+  .cta {
+    display: none;
+  }
+
+  .text :global(.h3) {
+    font-size: 1.875rem;
+    line-height: 1.05;
+    color: #F2EFE8;
+  }
+
+  .plate {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px 8px 12px;
+    border: 1px solid rgb(216 184 120 / 0.28);
+    border-radius: 999px;
+    background: rgb(6 15 38 / 0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #F2EFE8;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.22em;
+  }
+
+  .plate svg { color: var(--champagne); }
+
+  .where {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgb(242 239 232 / 0.86);
+    font-size: 0.8125rem;
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-top: 8px;
+    padding-top: 14px;
+    border-top: 1px solid rgb(169 186 226 / 0.18);
+    color: rgb(242 239 232 / 0.86);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .facts span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .facts svg { opacity: 0.85; }
+
+  .price {
+    margin-left: auto;
+    color: var(--champagne);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .save {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgb(242 239 232 / 0.22);
+    border-radius: 50%;
+    background: rgb(6 15 38 / 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #F2EFE8;
+    transition: transform var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-standard);
+  }
+
+  .save:active { transform: scale(0.9); }
+
+  .save[aria-pressed='true'] {
+    color: var(--champagne);
+    border-color: rgb(216 184 120 / 0.5);
+  }
+
+  .save[aria-pressed='true'] svg {
+    fill: currentColor;
+    animation: beat 0.5s var(--ease-out);
+  }
+}
+
+@keyframes beat {
+  40% { transform: scale(1.3); }
 }

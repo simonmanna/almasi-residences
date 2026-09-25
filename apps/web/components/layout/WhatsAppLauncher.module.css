@@ -32,10 +32,10 @@
   outline-offset: 3px;
 }
 
+/* Phones carry WhatsApp in the tab bar along the foot of the screen. */
 @media (max-width: 767px) {
   .launcher {
-    right: max(16px, env(safe-area-inset-right));
-    bottom: calc(84px + env(safe-area-inset-bottom));
+    display: none;
   }
 }
 

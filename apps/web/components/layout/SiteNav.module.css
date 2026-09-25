@@ -224,3 +224,11 @@
 @keyframes link-in {
   from { opacity: 0; transform: translateY(24px); }
 }
+
+/* Phone (Sapphire): a longer, champagne hamburger, as in the reference. */
+@media (max-width: 767px) {
+  .menuButton { color: var(--ink); }
+  .menuIcon,
+  .menuIcon::before { width: 28px; background: var(--champagne); }
+  .menuIcon::before { width: 18px; }
+}
