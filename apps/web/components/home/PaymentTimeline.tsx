@@ -31,7 +31,7 @@ export function PaymentTimeline({
 }) {
   const { summary, currency } = useInventory();
   const priced = RESIDENCE_TYPES.filter((t) => summary.byType[t].priceFromMinor !== null);
-  const [type, setType] = useState<ResidenceType>(priced.includes('two-bedroom') ? 'two-bedroom' : priced[0] ?? 'two-bedroom');
+  const [type, setType] = useState<ResidenceType>(priced.includes('one-bedroom') ? 'one-bedroom' : priced[0] ?? 'one-bedroom');
   const price = summary.byType[type].priceFromMinor;
   const root = useRef<HTMLElement>(null);
   const stages = [...milestones].sort((a, b) => a.sortOrder - b.sortOrder);
