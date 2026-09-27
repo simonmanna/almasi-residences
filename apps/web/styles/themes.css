@@ -194,14 +194,17 @@
   --map-ground:         #15324F;
 }
 
+/* The alternating band between full sections. Not paper white — glass: a pale
+   azure with daylight caught along its top edge (see --ambient-quiet). */
 [data-theme="sky"] [data-ground="quiet"] {
-  --surface:            #E4F0FB;
-  --surface-raised:     #EEF6FD;
-  --surface-sunk:       #D8E9F7;
+  --surface:            #DCEBFA;
+  --surface-raised:     #EDF6FE;
+  --surface-sunk:       #CFE3F6;
   --ink:                #15375E;
   --ink-muted:          #48647F;
-  --line:               #C1D2E0;
-  --accent:             #1D6DB0;
+  --line:               #B9CFE4;
+  /* Deepened a step against the glass ground; #1D6DB0 falls to 4.48:1 on it. */
+  --accent:             #1B66A6;
   --accent-weak:        #8CBFE6;
   --on-accent:          #FFFFFF;
   --foliage:            #3F6E5E;
@@ -247,7 +250,10 @@
   --card-lift:          -6px;
   --texture: none;
   --card-texture: none;
-  --ambient-quiet: none;
+  /* Sheet glass over water: a bright rim at the top, azure settling below. */
+  --ambient-quiet:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.12) 22%, transparent 46%),
+    radial-gradient(120% 70% at 78% 0%, rgba(166, 216, 250, 0.38), transparent 68%);
   --texture-quiet: none;
   --ambient-night: initial;
   --nav-rule: currentColor;

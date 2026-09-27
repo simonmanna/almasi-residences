@@ -441,6 +441,10 @@
   }
   .rowActions > a { width: auto; }
   .rowActions > a + a { margin-top: 0; }
+  /* The header row is what normally clears the panel's rounded top edge and its
+     sheen. With the header gone, the first residence sat under both — its
+     thumbnail and code clipped by the corner radius. Inset the rows instead. */
+  :global(:root:not([data-theme='blue'], [data-theme='sky'])) .table { padding-block: 10px; }
   :global(:root:not([data-theme='blue'], [data-theme='sky'])) .row { padding: 14px 16px; }
   :global(:root:not([data-theme='blue'], [data-theme='sky'])) .table :is(th, td) { padding: 0; }
   :global(:root:not([data-theme='blue'], [data-theme='sky'])) .rowActions { flex-wrap: wrap; }
