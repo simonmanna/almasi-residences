@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next';
-import { getInsights, getInventory, getLocationPages, getResidenceCards, getSeoEntities } from '../lib/api';
+import { PAGE_VISIBILITY } from '@avida/types';
+import { getInsights, getInventory, getLocationPages, getPagesSafe, getResidenceCards, getSeoEntities } from '../lib/api';
+import { isVisible } from '../lib/page-visibility';
 import { toResidences } from '../lib/residences';
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -18,14 +20,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Audit §21.4 — a failed read throws, so revalidation keeps the last good sitemap
   // rather than publishing one with every residence missing.
   const residences = toResidences(await getInventory());
-  const [locations, posts, cards, unitSeo, locationSeo, postSeo] = await Promise.all([
+  const [locations, posts, cards, unitSeo, locationSeo, postSeo, cms] = await Promise.all([
     getLocationPages().catch(() => []),
     getInsights().catch(() => []),
     getResidenceCards().catch(() => []),
     getSeoEntities('UNIT').catch(() => ({})),
     getSeoEntities('LOCATION_PAGE').catch(() => ({})),
     getSeoEntities('POST').catch(() => ({})),
+    getPagesSafe(),
   ]);
+  // A page the admin switched off (Website → Pages and navigation) answers
+  // "page not found"; a sitemap must not send a crawler to it.
+  const shown = (path: string) => {
+    const def = PAGE_VISIBILITY.find((p) => path === p.path || path.startsWith(`${p.path}/`));
+    return !def || isVisible(cms, def.key);
+  };
   // A page the admin hid from search does not belong in the sitemap: asking a
   // crawler to fetch what it is told to ignore is a contradiction.
   const indexable = (seo: Record<string, { robotsIndex: boolean }>, id: string) => seo[id]?.robotsIndex !== false;
@@ -58,8 +67,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const residenceImages = new Map(cards.filter((c) => c.cover).map((c) => [c.slug, [absolute(c.cover!.url)]]));
 
   return [
-    ...pages,
-    ...residences.filter((r) => indexable(unitSeo, r.id)).map((r) => ({
+    ...pages.filter((p) => shown(p.url.slice(SITE.length) || '/')),
+    ...(shown('/residences') ? residences.filter((r) => indexable(unitSeo, r.id)) : []).map((r) => ({
       url: `${SITE}/residences/${r.slug}`,
       lastModified: now,
       changeFrequency: 'daily' as const,

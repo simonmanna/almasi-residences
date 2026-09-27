@@ -4,6 +4,7 @@ import { pageMetadata } from '../../../lib/page-metadata';
 import { filterFromSearch } from '../../../lib/residences';
 import { ResidenceExplorer } from '../../../components/residences/ResidenceExplorer';
 import { SiteFooter } from '../../../components/layout/SiteFooter';
+import { assertPageVisible } from '../../../lib/page-visibility';
 
 /** The admin's metadata for /residences (Website → SEO); live counts fill any {tokens} in it. */
 export function generateMetadata(): Promise<Metadata> {
@@ -15,6 +16,8 @@ export default async function ResidencesPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await assertPageVisible('residences');
+
   // A residence shows its type's artwork: the inventory is a lightweight stack
   // and carries no media of its own.
   const [params, cards, dev] = await Promise.all([

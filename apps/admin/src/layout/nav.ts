@@ -107,6 +107,8 @@ export const NAV: NavGroup[] = [
     icon: Globe,
     items: [
       { label: 'Page content', to: '/content/home', icon: FileText, needs: 'content.view', sub: 'Headlines and words, page by page' },
+      { label: 'Pages and navigation', to: '/page-visibility', icon: Signpost, needs: 'content.view', sub: 'Which pages the website offers, and which appear in the top navigation' },
+      { label: 'Enquiry', to: '/enquiry-section', icon: Inbox, needs: 'content.view', title: 'Enquiry', sub: 'The Enquire button and the homepage enquiry section' },
       { label: 'Theme', to: '/theme', icon: Palette, needs: 'property.view', title: 'Website theme', sub: 'The look every visitor sees on the public website' },
       { label: 'WhatsApp & Telephone', to: '/whatsapp', icon: MessageCircle, needs: 'property.view', sub: 'The numbers buyers reach you on, and whether the WhatsApp button shows' },
       { label: 'Amenities', to: '/amenities', icon: Sparkles, sub: 'Pool, gym, restaurant and the rest of the building' },

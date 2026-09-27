@@ -84,7 +84,7 @@ const SHORT: Record<ResidenceType, string> = {
  * row of ways in — each residence type that exists, the 3D tour and the
  * neighbourhood. Counts and the opening price are read live from the inventory.
  */
-export function MobileQuickNav() {
+export function MobileQuickNav({ show3dTour, showLocation }: { show3dTour: boolean; showLocation: boolean }) {
   const { summary, currency } = useInventory();
   const types = typesPresent(summary);
   const from = types
@@ -95,8 +95,8 @@ export function MobileQuickNav() {
   const shortcuts = [
     { href: '/residences', label: 'All', icon: 'all', title: 'All residences' },
     ...types.map((t) => ({ href: `/residences?type=${t}`, label: SHORT[t], icon: t, title: TYPE_TEXT[t] })),
-    { href: '/3d-design', label: '3D tour', icon: 'tour', title: 'Walk through a residence in 3D' },
-    { href: '/location', label: 'Location', icon: 'location', title: 'The neighbourhood' },
+    ...(show3dTour ? [{ href: '/3d-design', label: '3D tour', icon: 'tour', title: 'Walk through a residence in 3D' }] : []),
+    ...(showLocation ? [{ href: '/location', label: 'Location', icon: 'location', title: 'The neighbourhood' }] : []),
   ];
 
   return (

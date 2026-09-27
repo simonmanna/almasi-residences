@@ -11,7 +11,7 @@ import styles from './StickyMobileCta.module.css';
  * away as the phone's own tab bar. It steps aside wherever a page already offers the same actions
  * (elements marked `data-hide-sticky-cta`, such as the enquiry section and footer).
  */
-export function StickyMobileCta() {
+export function StickyMobileCta({ showEnquire }: { showEnquire: boolean }) {
   const { open } = useEnquiry();
   const [suppressed, setSuppressed] = useState(false);
 
@@ -44,16 +44,18 @@ export function StickyMobileCta() {
 
   return (
     <div className={styles.bar} data-shown={shown ? 'true' : 'false'} data-ground="night" aria-hidden={!shown} data-analytics-source="sticky-cta">
-      <button
-        type="button"
-        className={styles.tab}
-        data-primary
-        tabIndex={shown ? 0 : -1}
-        onClick={() => open({ source: 'sticky-cta' })}
-      >
-        <Glyph d="M4 6.5h16v11H4ZM4.5 7l7.5 6 7.5-6" />
-        Enquire
-      </button>
+      {showEnquire && (
+        <button
+          type="button"
+          className={styles.tab}
+          data-primary
+          tabIndex={shown ? 0 : -1}
+          onClick={() => open({ source: 'sticky-cta' })}
+        >
+          <Glyph d="M4 6.5h16v11H4ZM4.5 7l7.5 6 7.5-6" />
+          Enquire
+        </button>
+      )}
       {tel && (
         <a className={styles.tab} href={tel} tabIndex={shown ? 0 : -1} aria-label="Call the sales team">
           <Glyph d="M8.2 3.8 6 4.3a2 2 0 0 0-1.5 2.1c.6 7 6.1 12.5 13.1 13.1a2 2 0 0 0 2.1-1.5l.5-2.2a1 1 0 0 0-.6-1.1l-3-1.3a1 1 0 0 0-1.1.2l-1.3 1.3a10 10 0 0 1-4.9-4.9l1.3-1.3a1 1 0 0 0 .2-1.1l-1.3-3a1 1 0 0 0-1.1-.6Z" />

@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { fillCopyTokens, formatQuarter } from '@avida/types';
-import { DEVELOPMENT_SLUG, getDevelopment, getInventory, getMediaSlotsSafe, getSeo } from '../lib/api';
+import { DEVELOPMENT_SLUG, getDevelopment, getInventory, getMediaSlotsSafe, getPagesSafe, getSeo } from '../lib/api';
+import { navLinksFor } from '../lib/page-visibility';
 import { organizationJsonLd, websiteJsonLd } from '../lib/seo';
 import { copyTokenValues } from '../lib/copy-tokens';
 import { summarise, toResidences } from '../lib/residences';
@@ -167,7 +168,10 @@ async function loadShell() {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [{ dev, inventory }, slots, seo] = await Promise.all([loadShell(), getMediaSlotsSafe(), getSeo().catch(() => null)]);
+  const [{ dev, inventory }, slots, seo, pages] = await Promise.all([loadShell(), getMediaSlotsSafe(), getSeo().catch(() => null), getPagesSafe()]);
+  // Website → Pages and navigation, and Website → Enquiry. Absent (never saved) means shown.
+  const navLinks = navLinksFor(pages);
+  const showEnquire = pages.enquirySection?.showEnquireButton !== false;
   // §SEO — who publishes the site, and the site itself. Emitted once here so
   // every page inherits the same identity instead of repeating it.
   const identity = [organizationJsonLd(dev, seo?.site ?? null, null), dev?.name ? websiteJsonLd(dev.name) : null].filter(Boolean);
@@ -205,11 +209,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ContactProvider contact={contact}>
             <InventoryProvider initial={inventory} bathrooms={bathrooms} slug={DEVELOPMENT_SLUG}>
               <EnquiryProvider>
-                <SiteNav />
+                <SiteNav links={navLinks} showEnquire={showEnquire} />
                 <MediaSlotsProvider slots={slots}>
                   <RouteFade>{children}</RouteFade>
                 </MediaSlotsProvider>
-                <StickyMobileCta />
+                <StickyMobileCta showEnquire={showEnquire} />
               </EnquiryProvider>
             </InventoryProvider>
           </ContactProvider>

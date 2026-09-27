@@ -4,6 +4,7 @@ import { pageMetadata } from '../../lib/page-metadata';
 import { PageHeader, TitleLines } from '../../components/layout/PageHero';
 import { EnquireSection } from '../../components/home/EnquireSection';
 import { SiteFooter } from '../../components/layout/SiteFooter';
+import { assertPageVisible } from '../../lib/page-visibility';
 
 export const revalidate = 3600;
 
@@ -12,6 +13,8 @@ export function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function EnquirePage() {
+  await assertPageVisible('enquire');
+
   const pages = await getPagesSafe();
   return (
     <main id="main">

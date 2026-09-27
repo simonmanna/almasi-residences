@@ -8,6 +8,7 @@ import { PaymentTimeline } from '../../components/home/PaymentTimeline';
 import { EnquireSection } from '../../components/home/EnquireSection';
 import { SiteFooter } from '../../components/layout/SiteFooter';
 import styles from './buying.module.css';
+import { assertPageVisible } from '../../lib/page-visibility';
 
 export const revalidate = 3600;
 
@@ -23,6 +24,8 @@ type Step = { title: string; body: string };
  * published FAQs, and the people behind the project the property record's.
  */
 export default async function BuyingPage() {
+  await assertPageVisible('buying');
+
   const [dev, pages] = await Promise.all([getDevelopment().catch(() => null), getPagesSafe()]);
   const milestones = [...(dev?.milestones ?? [])].sort((x, y) => x.sortOrder - y.sortOrder);
   const handover = dev?.handoverDate ? formatQuarter(dev.handoverDate) : null;

@@ -5,6 +5,7 @@ import { videoJsonLd } from '../../lib/seo';
 import { pageMetadata } from '../../lib/page-metadata';
 import { FilmPlayer } from '../../components/film/FilmPlayer';
 import { SiteFooter } from '../../components/layout/SiteFooter';
+import { assertPageVisible } from '../../lib/page-visibility';
 
 export const revalidate = 3600;
 
@@ -14,6 +15,8 @@ export function generateMetadata(): Promise<Metadata> {
 
 /** The film is a library file with chapters, edited in the admin (roadmap item 23). */
 export default async function FilmPage() {
+  await assertPageVisible('film');
+
   const [film, pages, videos] = await Promise.all([getFilm().catch(() => null), getPagesSafe(), getVideos().catch(() => [])]);
   if (!film) notFound();
   // §SEO — a VideoObject with the transcript the admin wrote: the only text a

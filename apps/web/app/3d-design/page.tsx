@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { DigitalTwin } from '../../components/digital-twin/DigitalTwin';
+import { assertPageVisible } from '../../lib/page-visibility';
 
 export const metadata: Metadata = {
   title: '3D Design | Explore Almasi',
@@ -8,6 +9,8 @@ export const metadata: Metadata = {
   alternates: { canonical: '/3d-design' },
 };
 
-export default function DesignPage() {
+export default async function DesignPage() {
+  await assertPageVisible('design3d');
+
   return <DigitalTwin />;
 }

@@ -13,6 +13,7 @@ import {
   type DevelopmentDto,
 } from '../lib/api';
 import { pageMetadata } from '../lib/page-metadata';
+import { isVisible } from '../lib/page-visibility';
 import { developmentJsonLd } from '../lib/seo';
 import { titleCaseHeading } from '../lib/text';
 import { HeroExperience } from '../components/home/HeroExperience';
@@ -75,6 +76,8 @@ export default async function HomePage() {
   // Website → Experience and Website → Film. Absent (never saved) means shown.
   const showExperience = pages.experienceSection?.showExperienceSection !== false;
   const showFilm = pages.filmSection?.showFilmSection !== false;
+  // Website → Enquiry.
+  const showEnquiry = pages.enquirySection?.showEnquirySection !== false;
   const section = (page: string, key: string) => titleCaseHeading(copy(pages, page, key));
 
   return (
@@ -89,7 +92,7 @@ export default async function HomePage() {
         primary={primaryCta}
         handover={handover}
       />
-      <MobileQuickNav />
+      {isVisible(pages, 'residences') && <MobileQuickNav show3dTour={isVisible(pages, 'design3d')} showLocation={isVisible(pages, 'location')} />}
       <Introduction handover={handover} title={homeHeading('introTitle')} body={home('introBody')} kicker={titleCaseHeading(home('heroKicker'))} developmentName={dev?.name ?? ''} buildingConfig={dev?.buildingConfig} primary={primaryCta} secondary={secondaryCta} />
       <ExploreAlmasi />
       <ResidencesPreview cards={cards} kicker={homeHeading('residencesKicker')} title={homeHeading('residencesTitle')} />
@@ -118,7 +121,7 @@ export default async function HomePage() {
       <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} ground="quiet" />
       <ProgressPreview updates={progress} kicker={homeHeading('progressKicker')} title={copyLines(pages, 'home', 'progressTitle').map(titleCaseHeading)} />
       {showFilm && <FilmTeaser kicker={section('filmSection', 'kicker')} title={section('filmSection', 'title')} cta={copy(pages, 'filmSection', 'cta')} />}
-      <EnquireSection compact ground="quiet" />
+      {showEnquiry && <EnquireSection compact ground="quiet" />}
       <SiteFooter />
     </main>
   );

@@ -5,6 +5,7 @@ import { pageMetadata } from '../../../lib/page-metadata';
 import { PageHeader, TitleLines } from '../../../components/layout/PageHero';
 import { SiteFooter } from '../../../components/layout/SiteFooter';
 import styles from './progress.module.css';
+import { assertPageVisible } from '../../../lib/page-visibility';
 
 export const revalidate = 3600;
 
@@ -17,6 +18,8 @@ export function generateMetadata(): Promise<Metadata> {
  * dated, specific, and the percentage as recorded rather than as a claim.
  */
 export default async function ProgressPage() {
+  await assertPageVisible('progress');
+
   const [updates, pages] = await Promise.all([getProgress().catch(() => []), getPagesSafe()]);
   const empty = copy(pages, 'progress', 'emptyText');
   return (

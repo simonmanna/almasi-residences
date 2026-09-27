@@ -15,6 +15,7 @@ import { breadcrumbJsonLd, imageJsonLd, residenceJsonLd } from '../../../lib/seo
 import { Breadcrumbs } from '../../../components/layout/Breadcrumbs';
 import { ResidenceDetail } from '../../../components/residence/ResidenceDetail';
 import { SiteFooter } from '../../../components/layout/SiteFooter';
+import { assertPageVisible } from '../../../lib/page-visibility';
 
 /** Status changes reach this page within a minute; admin saves revalidate it at once (§37). */
 export const revalidate = 60;
@@ -76,6 +77,8 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
 }
 
 export default async function ResidencePage({ params }: { params: Promise<{ code: string }> }) {
+  await assertPageVisible('residences');
+
   const { code } = await params;
   const data = await getResidencePage(code).catch(() => null);
   if (!data) notFound();

@@ -5,6 +5,7 @@ import { PageHeader, TitleLines } from '../../components/layout/PageHero';
 import { LocationExperience } from '../../components/home/LocationExperience';
 import { EnquireSection } from '../../components/home/EnquireSection';
 import { SiteFooter } from '../../components/layout/SiteFooter';
+import { assertPageVisible } from '../../lib/page-visibility';
 
 export const revalidate = 3600;
 
@@ -13,6 +14,8 @@ export function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LocationPage() {
+  await assertPageVisible('location');
+
   const [dev, pages, slots] = await Promise.all([getDevelopment().catch(() => null), getPagesSafe(), getMediaSlotsSafe()]);
   const showNearbyPlaces = pages.locationSection?.showNearbyPlaces === true || copy(pages, 'locationSection', 'showNearbyPlaces') === 'true';
   return (

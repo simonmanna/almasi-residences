@@ -10,6 +10,8 @@
  * Nothing here repeats business data: counts, areas and the handover date are
  * written as {tokens} (fillCopyTokens) and filled from live inventory.
  */
+import { PAGE_VISIBILITY } from '@avida/types';
+
 export const contentDefaults: Record<string, { title: string; content: Record<string, unknown> }> = {
   home: {
     title: 'Homepage',
@@ -70,6 +72,17 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
       note: 'Straight-line distances from the site. Drive times are estimates at an average city speed.',
       showNearbyPlaces: true,
     },
+  },
+  enquirySection: {
+    title: 'Enquiry',
+    content: {
+      showEnquireButton: true,
+      showEnquirySection: true,
+    },
+  },
+  pageVisibility: {
+    title: 'Pages and navigation',
+    content: Object.fromEntries(PAGE_VISIBILITY.map((p) => [p.key, true])),
   },
   about: {
     title: 'About the project',

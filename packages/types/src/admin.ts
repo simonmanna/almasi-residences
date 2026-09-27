@@ -310,6 +310,43 @@ export interface ContentPageDef {
   fields: ContentField[];
 }
 
+export interface PageVisibilityDef {
+  /** The key under the `pageVisibility` content page. */
+  key: string;
+  label: string;
+  /** The public route it governs. */
+  path: string;
+  /** Whether the page also has a link in the top navigation. */
+  inNav: boolean;
+}
+
+/**
+ * The public pages an admin may switch off (Website → Pages and navigation).
+ * A page switched off loses its navigation link, leaves the sitemap and
+ * answers "page not found" — see `isPageVisible`. The homepage is not listed:
+ * a site with no homepage is not a site.
+ */
+export const PAGE_VISIBILITY: PageVisibilityDef[] = [
+  { key: 'residences', label: 'Residences', path: '/residences', inNav: true },
+  { key: 'tour', label: 'Visual Tour', path: '/tour', inNav: true },
+  { key: 'design3d', label: '3D Tour', path: '/3d-design', inNav: true },
+  { key: 'amenities', label: 'Amenities', path: '/amenities', inNav: true },
+  { key: 'location', label: 'Location', path: '/location', inNav: true },
+  { key: 'gallery', label: 'Gallery', path: '/gallery', inNav: true },
+  { key: 'buying', label: 'Buying', path: '/buying', inNav: true },
+  { key: 'film', label: 'Film', path: '/film', inNav: false },
+  { key: 'progress', label: 'Construction progress', path: '/progress', inNav: false },
+  { key: 'enquire', label: 'Enquire', path: '/enquire', inNav: false },
+];
+
+/**
+ * A page is shown unless the admin switched it off. Absent (never saved) means
+ * shown, so a site that predates this setting keeps every page it had.
+ */
+export function isPageVisible(pageVisibility: Record<string, unknown> | undefined, key: string): boolean {
+  return pageVisibility?.[key] !== false;
+}
+
 /**
  * Every editable page and the keys it owns. The public site reads these keys
  * and renders nothing for a key left empty (roadmap item 26): it never prints
@@ -384,6 +421,23 @@ export const CONTENT_PAGES: ContentPageDef[] = [
       { key: 'note', label: 'Footnote', type: 'text', help: 'Small print beneath the list, e.g. how distances are measured.' },
       { key: 'showNearbyPlaces', label: 'Show nearby places', type: 'boolean', help: 'Toggle to show/hide the nearby places list and map on the homepage and location page.' },
     ],
+  },
+  {
+    key: 'enquirySection',
+    title: 'Enquiry',
+    description: 'How the website invites an enquiry: the Enquire button in the navigation and the enquiry section on the homepage.',
+    fields: [
+      { key: 'showEnquireButton', label: 'Show the Enquire button', type: 'boolean', help: 'Off hides the Enquire button in the top navigation, the menu and the mobile bar. The /enquire page stays live.' },
+      { key: 'showEnquirySection', label: 'Show the homepage enquiry section', type: 'boolean', help: 'Off hides the enquiry block at the foot of the homepage.' },
+    ],
+  },
+  {
+    key: 'pageVisibility',
+    title: 'Pages and navigation',
+    description: 'Which pages the website offers. A page switched off leaves the top navigation and the menu, drops out of the sitemap, and its address answers “page not found”.',
+    fields: PAGE_VISIBILITY.map(
+      (p): ContentField => ({ key: p.key, label: p.label, type: 'boolean', help: `The ${p.path} page.` }),
+    ),
   },
   {
     key: 'about',

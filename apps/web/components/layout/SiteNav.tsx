@@ -11,15 +11,10 @@ import { useTheme } from './useTheme';
 import { Wordmark } from './Wordmark';
 import styles from './SiteNav.module.css';
 
-export const NAV_LINKS = [
-  { href: '/residences', label: 'Residences' },
-  { href: '/tour', label: 'Visual Tour' },
-  { href: '/3d-design', label: '3D Tour' },
-  { href: '/amenities', label: 'Amenities' },
-  { href: '/location', label: 'Location' },
-  { href: '/gallery', label: 'Gallery' },
-  { href: '/buying', label: 'Buying' },
-] as const;
+export interface NavLink {
+  href: string;
+  label: string;
+}
 
 type Mode = 'over' | 'solid' | 'clear';
 
@@ -29,7 +24,7 @@ type Mode = 'over' | 'solid' | 'clear';
  * opening image with `data-nav-over`; pages on the night ground mark their
  * <main> with `data-nav-ground="night"`.
  */
-export function SiteNav() {
+export function SiteNav({ links, showEnquire }: { links: NavLink[]; showEnquire: boolean }) {
   const pathname = usePathname();
   const { open } = useEnquiry();
   const lenis = useLenis();
@@ -95,7 +90,7 @@ export function SiteNav() {
 
         <nav aria-label="Primary" className={styles.links}>
           <ul>
-            {NAV_LINKS.map((l) => {
+            {links.map((l) => {
               const active = pathname === l.href || pathname.startsWith(`${l.href}/`);
               return (
                 <li key={l.href}>
@@ -109,13 +104,15 @@ export function SiteNav() {
         </nav>
 
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={`btn btn--solid btn--sm ${styles.enquire}`}
-            onClick={() => open({ source: 'nav' })}
-          >
-            Enquire
-          </button>
+          {showEnquire && (
+            <button
+              type="button"
+              className={`btn btn--solid btn--sm ${styles.enquire}`}
+              onClick={() => open({ source: 'nav' })}
+            >
+              Enquire
+            </button>
+          )}
           <button
             type="button"
             className={styles.menuButton}
@@ -152,7 +149,7 @@ export function SiteNav() {
           </div>
           <nav aria-label="Menu">
             <ol className={styles.menuLinks}>
-              {[{ href: '/', label: 'Home' }, ...NAV_LINKS].map((l, i) => (
+              {[{ href: '/', label: 'Home' }, ...links].map((l, i) => (
                 <li key={l.href} style={{ '--i': i } as React.CSSProperties}>
                   <Link href={l.href} className={styles.menuLink} onClick={() => menuRef.current?.close()}>
                     {l.label}
@@ -162,16 +159,18 @@ export function SiteNav() {
             </ol>
           </nav>
           <div className={styles.menuFoot}>
-            <button
-              type="button"
-              className="btn btn--solid"
-              onClick={() => {
-                menuRef.current?.close();
-                open({ source: 'menu' });
-              }}
-            >
-              Enquire
-            </button>
+            {showEnquire && (
+              <button
+                type="button"
+                className="btn btn--solid"
+                onClick={() => {
+                  menuRef.current?.close();
+                  open({ source: 'menu' });
+                }}
+              >
+                Enquire
+              </button>
+            )}
             {wa && (
               <a className="btn btn--ghost" href={wa} target="_blank" rel="noopener noreferrer">
                 WhatsApp

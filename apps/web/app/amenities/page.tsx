@@ -5,6 +5,7 @@ import { PageHeader, TitleLines } from '../../components/layout/PageHero';
 import { AmenityExperience } from '../../components/home/AmenityExperience';
 import { EnquireSection } from '../../components/home/EnquireSection';
 import { SiteFooter } from '../../components/layout/SiteFooter';
+import { assertPageVisible } from '../../lib/page-visibility';
 
 export const revalidate = 3600;
 
@@ -14,6 +15,8 @@ export function generateMetadata(): Promise<Metadata> {
 
 /** The amenities are managed in the admin (§19); the heading is CMS copy, the header image a placement. */
 export default async function AmenitiesPage() {
+  await assertPageVisible('amenities');
+
   const [pages, amenities, dev, slots] = await Promise.all([getPagesSafe(), getAmenities().catch(() => []), getDevelopment().catch(() => null), getMediaSlotsSafe()]);
   return (
     <main id="main">

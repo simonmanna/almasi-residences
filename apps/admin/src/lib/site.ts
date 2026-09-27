@@ -8,6 +8,8 @@ export const PAGE_PATH: Record<string, string> = {
   experienceSection: '/',
   filmSection: '/',
   locationSection: '/',
+  enquirySection: '/',
+  pageVisibility: '/',
   about: '/buying',
   residences: '/residences',
   amenities: '/amenities',

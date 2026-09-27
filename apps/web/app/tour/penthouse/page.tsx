@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getWalkthrough } from '../../../lib/api';
 import { pageMetadata } from '../../../lib/page-metadata';
 import { TourExperience } from '../../../components/tour/TourExperience';
+import { assertPageVisible } from '../../../lib/page-visibility';
 
 export const revalidate = 3600;
 
@@ -11,6 +12,8 @@ export function generateMetadata(): Promise<Metadata> {
 
 /** The stations are a walkthrough edited in the admin (Website → Tours, roadmap item 22). */
 export default async function PenthouseTourPage() {
+  await assertPageVisible('tour');
+
   const tour = await getWalkthrough('penthouse').catch(() => null);
   return (
     <main id="main" data-nav-ground="night">

@@ -5,6 +5,7 @@ import { pageMetadata } from '../../lib/page-metadata';
 import { PageHeader, TitleLines } from '../../components/layout/PageHero';
 import { GalleryGrid } from '../../components/gallery/GalleryGrid';
 import { SiteFooter } from '../../components/layout/SiteFooter';
+import { assertPageVisible } from '../../lib/page-visibility';
 
 export const revalidate = 3600;
 
@@ -14,6 +15,8 @@ export function generateMetadata(): Promise<Metadata> {
 
 /** The galleries are the ones published in the admin (§16), in the admin's order. */
 export default async function GalleryPage() {
+  await assertPageVisible('gallery');
+
   const [pages, galleries] = await Promise.all([getPagesSafe(), getGalleries().catch(() => [])]);
   return (
     <main id="main">
