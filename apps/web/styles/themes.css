@@ -66,14 +66,16 @@
   --map-ground:         #0C1824;
 }
 
+/* The alternating band: cool sky glass between the night sections, not paper
+   white. Tokens are its settled mid-tone; --ambient-quiet paints the light. */
 [data-theme="blue"] [data-ground="quiet"] {
-  --surface:            #E9F0F6;
-  --surface-raised:     #F1F6FA;
-  --surface-sunk:       #DCE6EF;
-  --ink:                #11202E;
-  --ink-muted:          #4C6274;
-  --line:               #C5D2DC;
-  --accent:             #256C99;
+  --surface:            #D5E5F3;
+  --surface-raised:     #E7F1FA;
+  --surface-sunk:       #C8DBEC;
+  --ink:                #0F1F2E;
+  --ink-muted:          #3F5669;
+  --line:               #AFC6DA;
+  --accent:             #1C5C88;
   --accent-weak:        #78A9C8;
   --on-accent:          #FFFFFF;
   --foliage:            #496F66;
@@ -119,7 +121,13 @@
   --card-lift:          -3px;
   --texture: none;
   --card-texture: none;
-  --ambient-quiet: none;
+  /* Frosted sky: daylight caught on the top edge, an azure bloom upper right,
+     a cooler pool lower left, the glass deepening as it nears the night below. */
+  --ambient-quiet:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.14) 18%, transparent 42%, rgba(37, 108, 153, 0.14) 100%),
+    radial-gradient(90% 75% at 88% 4%, rgba(176, 220, 250, 0.7), transparent 64%),
+    radial-gradient(70% 60% at 6% 96%, rgba(120, 169, 212, 0.34), transparent 70%),
+    linear-gradient(115deg, #E4EFF8 0%, #D3E4F3 46%, #C6DAEC 100%);
   --texture-quiet: none;
   --ambient-night: initial;
   --nav-rule: currentColor;
@@ -298,3 +306,16 @@ html[data-theme-shift] *::after {
 /* Sky Blue's daylight wash belongs to the paper ground only; its dusk sections
    stay clean. (Selector shape kept out of the contrast test's theme parser.) */
 [data-ground="night"]:where([data-theme="sky"] *) { --ambient: none; }
+
+/* Blue's sky-glass band: every layer spans the section, and the pane carries a
+   lit top edge and a faint shadowed foot where it meets the night. */
+@media (min-width: 768px) {
+  [data-ground="quiet"][data-ground]:where([data-theme="blue"] *) {
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 -1px 0 rgba(15, 31, 46, 0.08);
+  }
+}
