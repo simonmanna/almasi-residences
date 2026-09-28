@@ -42,6 +42,9 @@ if ! swapon --show | grep -q /swapfile; then
   echo '/swapfile none swap sw 0 0' >> /etc/fstab
 fi
 
+# Faster delivery to distant mobile visitors (BBR, HTTP/3 buffers).
+bash "$REPO/scripts/vps/tune-network.sh"
+
 echo "15 3 * * * root bash $REPO/scripts/vps/backup.sh >> /var/log/avida-backup.log 2>&1" \
   > /etc/cron.d/avida-backup
 

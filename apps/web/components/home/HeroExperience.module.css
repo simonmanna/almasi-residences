@@ -470,19 +470,27 @@
   visibility: visible;
 }
 
+:global(html[data-intro='pending']) .intro {
+  animation: intro-fallback 0.4s 2.2s forwards;
+}
+
 :global(html[data-intro='pending']) .aperture {
   clip-path: inset(50% 50% 50% 50%);
-  animation: aperture-fallback 1.6s 6s var(--ease-in-out) forwards;
+  animation: aperture-fallback 0.9s 2.2s var(--ease-in-out) forwards;
 }
 
 :global(html[data-intro='pending']) .content,
 :global(html[data-intro='pending']) .foot {
   opacity: 0;
-  animation: fade-fallback 1s 7s forwards;
+  animation: fade-fallback 0.6s 2.6s forwards;
 }
 
 @keyframes aperture-fallback {
   to { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes intro-fallback {
+  to { opacity: 0; }
 }
 
 @keyframes fade-fallback {

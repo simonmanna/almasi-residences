@@ -14,6 +14,8 @@ import { HeroFilm } from './HeroFilm';
 import styles from './HeroExperience.module.css';
 
 const INTRO_KEY = 'almasi:intro-seen';
+/** Past this, the CSS fallback has opened the hero (HeroExperience.module.css), so the intro is skipped. */
+const INTRO_LATE_MS = 2200;
 
 /**
  * The opening frame: the whole building on its corner at dusk, crown to
@@ -233,15 +235,18 @@ export function HeroExperience({
       delete html.dataset.intro;
       return;
     }
-    firstVisitRef.current ??= html.dataset.intro === 'pending';
+    // On a slow phone the page can hydrate after the CSS fallback has already
+    // opened the frame; replaying the intro then would hide what is on screen.
+    firstVisitRef.current ??= html.dataset.intro === 'pending' && performance.now() < INTRO_LATE_MS;
     const firstVisit = firstVisitRef.current && !finishedRef.current;
+    if (!firstVisit && html.dataset.intro === 'pending') delete html.dataset.intro;
 
     const finish = () => {
       finishedRef.current = true;
       delete html.dataset.intro;
       setSkippable(false);
       try {
-        sessionStorage.setItem(INTRO_KEY, '1');
+        localStorage.setItem(INTRO_KEY, '1');
       } catch {
         /* private mode: the intro simply plays again next time */
       }

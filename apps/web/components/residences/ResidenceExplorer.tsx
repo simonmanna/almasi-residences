@@ -14,6 +14,7 @@ import {
   SORT_TEXT,
   STATUS_TEXT,
   TYPE_TEXT,
+  filterFromSearch,
   filterToSearch,
   isFiltering,
   matchesFilter,
@@ -89,8 +90,24 @@ export function ResidenceExplorer({
     setFiltersOpen(window.matchMedia('(min-width: 821px)').matches);
   }, []);
 
+  // The page is static, so a filtered link (/residences?type=…) arrives with
+  // the defaults and is narrowed here; Back and Forward re-read the URL too.
+  const fromUrl = useRef(false);
+  useEffect(() => {
+    const read = () => {
+      const next = filterFromSearch(new URLSearchParams(window.location.search));
+      fromUrl.current = true;
+      setFilter(next.filter);
+      setSort(next.sort);
+    };
+    if (window.location.search) read();
+    window.addEventListener('popstate', read);
+    return () => window.removeEventListener('popstate', read);
+  }, []);
+
   // The first run is the render the URL already describes; pushing it would
-  // cost the visitor a Back press that does nothing.
+  // cost the visitor a Back press that does nothing. A change read from the
+  // URL only tidies it in place.
   const urlSynced = useRef(false);
   useEffect(() => {
     const qs = filterToSearch(filter, sort);
@@ -99,9 +116,15 @@ export function ResidenceExplorer({
       urlSynced.current = true;
       return;
     }
+    if (url === window.location.pathname + window.location.search) {
+      fromUrl.current = false;
+      return;
+    }
     // Next syncs its router with the native History API, so Back undoes one
     // filter without a server round-trip.
-    window.history.pushState(null, '', url);
+    if (fromUrl.current) window.history.replaceState(window.history.state, '', url);
+    else window.history.pushState(null, '', url);
+    fromUrl.current = false;
   }, [filter, sort]);
 
   const matches = useMemo(() => residences.filter((r) => matchesFilter(r, filter)), [residences, filter]);

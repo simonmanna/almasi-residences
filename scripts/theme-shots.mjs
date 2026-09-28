@@ -19,7 +19,7 @@ for (const theme of themes) {
   await ctx.addInitScript((t) => {
     try {
       localStorage.setItem('almasi:theme', t);
-      sessionStorage.setItem('almasi:intro-seen', '1');
+      localStorage.setItem('almasi:intro-seen', '1');
     } catch {}
   }, theme);
   const page = await ctx.newPage();

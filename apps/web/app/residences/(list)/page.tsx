@@ -11,21 +11,22 @@ export function generateMetadata(): Promise<Metadata> {
   return pageMetadata('/residences', { title: 'Residences' });
 }
 
-export default async function ResidencesPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+/**
+ * Static and refreshed like every other page: the filters in the URL are
+ * applied by ResidenceExplorer in the browser, so a filtered link is served
+ * from the same cached page instead of being rendered per request.
+ */
+export const revalidate = 3600;
+
+const DEFAULTS = filterFromSearch({});
+
+export default async function ResidencesPage() {
   await assertPageVisible('residences');
 
   // A residence shows its type's artwork: the inventory is a lightweight stack
   // and carries no media of its own.
-  const [params, cards, dev] = await Promise.all([
-    searchParams,
-    getTypologyCards().catch(() => []),
-    getDevelopment().catch(() => null),
-  ]);
-  const { filter, sort } = filterFromSearch(params);
+  const [cards, dev] = await Promise.all([getTypologyCards().catch(() => []), getDevelopment().catch(() => null)]);
+  const { filter, sort } = DEFAULTS;
   const place = dev ? `${dev.city}, ${dev.country === 'RW' ? 'Rwanda' : dev.country}` : '';
   return (
     <main id="main">
