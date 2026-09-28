@@ -190,10 +190,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <noscript>
           <style>{NOSCRIPT_CSS}</style>
         </noscript>
-        {/* §5.2 — preconnect to the API origin (the rewrite is same-origin
-            in production, but tooling and preview servers may differ). */}
-        {process.env.API_INTERNAL_URL && (
-          <link rel="dns-prefetch" href={new URL(process.env.API_INTERNAL_URL).origin} />
+        {/* Residence and gallery images come from the media bucket's origin. */}
+        {process.env.NEXT_PUBLIC_MEDIA_URL && (
+          <link rel="preconnect" href={new URL(process.env.NEXT_PUBLIC_MEDIA_URL).origin} />
         )}
         {identity.length > 0 && (
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(identity) }} />

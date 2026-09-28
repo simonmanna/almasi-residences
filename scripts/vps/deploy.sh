@@ -36,5 +36,20 @@ echo "› building web + proxy"
 dc build web caddy
 dc up -d --wait web caddy
 
+# Warm the page cache and the image optimizer so the first visitor after a
+# deploy is not the one who waits for renders and resizes.
+echo "› warming caches"
+base="${SCHEME}://${DOMAIN}"
+for path in / /residences /gallery /amenities /location /3d-design /tour/penthouse; do
+  curl -s -o /dev/null --max-time 30 "$base$path" || true
+done
+for img in hero-wide-v2.png introduction-arrival-v2.png; do
+  for w in 640 828 1080 1280 1600 1920 2560; do
+    for accept in image/avif image/webp; do
+      curl -s -o /dev/null --max-time 30 -H "Accept: $accept" "$base/_next/image?url=%2Fmedia%2F$img&w=$w&q=82" || true
+    done
+  done
+done
+
 dc ps
 echo "✓ live at ${SCHEME}://${DOMAIN}  (admin: ${SCHEME}://admin.${DOMAIN})"

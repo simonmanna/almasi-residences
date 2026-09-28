@@ -269,6 +269,8 @@ export function HeroExperience({
           .set(q('[data-intro]'), { autoAlpha: 0 }, 4.1)
           .from(q('[data-hero-line]'), { yPercent: 110, duration: 1.4, stagger: 0.1 }, 3.6)
           .from(q('[data-hero-fade]'), { opacity: 0, y: 18, duration: 1.1, stagger: 0.08 }, 4.0);
+        // Same choreography, played at double speed: the headline lands at ~2s.
+        tl.timeScale(2);
       } else {
         tl.set(q('[data-intro]'), { autoAlpha: 0 })
           .fromTo(q('[data-media-inner]'), { scale: 1.12 }, { scale: 1, duration: 2.6, ease: 'power3.out' }, 0)

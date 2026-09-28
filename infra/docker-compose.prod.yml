@@ -165,6 +165,10 @@ services:
       NODE_ENV: production
       API_INTERNAL_URL: http://api:3001
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:?}
+    volumes:
+      # Optimized images survive redeploys; only this subfolder, so no stale
+      # fetch/ISR cache from an older build is ever reused.
+      - webimagecache:/app/apps/web/.next/cache/images
     depends_on:
       api: { condition: service_healthy }
     healthcheck:
@@ -215,3 +219,4 @@ volumes:
   caddydata:
   caddyconfig:
   seedmedia:
+  webimagecache:

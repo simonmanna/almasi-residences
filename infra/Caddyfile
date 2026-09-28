@@ -5,7 +5,19 @@
 }
 
 (common) {
-	encode zstd gzip
+	encode {
+		zstd
+		gzip
+		match {
+			header Content-Type text/*
+			header Content-Type application/json*
+			header Content-Type application/javascript*
+			header Content-Type application/xml*
+			header Content-Type application/manifest+json*
+			header Content-Type image/svg+xml*
+			header Content-Type model/gltf-binary*
+		}
+	}
 	header -Server
 }
 
@@ -60,5 +72,12 @@
 	request_body {
 		max_size 2GB
 	}
+	# Rendered media keys carry a per-upload UUID and are never rewritten, so
+	# browsers may keep them for a year instead of revalidating every visit.
+	@media {
+		method GET HEAD
+		path /avida-media/media/*
+	}
+	header @media Cache-Control "public, max-age=31536000, immutable"
 	reverse_proxy minio:9000
 }

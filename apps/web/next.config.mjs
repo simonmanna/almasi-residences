@@ -64,6 +64,9 @@ const contentSecurityPolicy = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Caddy compresses (zstd/gzip) in front; compressing here too wastes Node CPU.
+  compress: process.env.NODE_ENV !== 'production',
+  poweredByHeader: false,
   // Keep the development-only Next.js badge out of the public UI.
   devIndicators: false,
   // Lets a second server (preview, e2e) run beside `pnpm dev` without both
@@ -77,6 +80,8 @@ const nextConfig = {
     deviceSizes: [640, 828, 1080, 1280, 1600, 1920, 2560],
     imageSizes: [96, 160, 256, 384, 512],
     qualities: [60, 70, 75, 82],
+    // Sources are never edited in place, so an optimized variant stays valid.
+    minimumCacheTTL: 31536000,
   },
   async rewrites() {
     return [{ source: '/api/v1/:path*', destination: `${API_URL}/api/v1/:path*` }];
@@ -99,6 +104,10 @@ const nextConfig = {
         // Rendered media is replaced under a new name, never edited in place.
         source: '/media/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        source: '/:dir(models|themes|fonts)/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=2592000' }],
       },
     ];
   },
