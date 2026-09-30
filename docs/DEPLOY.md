@@ -60,7 +60,7 @@ account on the server:
 ```bash
 cd /opt/avida
 docker compose -f infra/docker-compose.prod.yml --env-file .env.production \
-  run --rm --no-deps api node scripts/create-admin.mjs you@example.com "Your Name" OWNER
+  --profile tools run --rm --no-deps tools node scripts/create-admin.mjs you@example.com "Your Name" OWNER
 ```
 
 The command prints a password and an `otpauth://` URI. Add the URI to an

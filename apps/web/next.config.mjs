@@ -67,6 +67,10 @@ const nextConfig = {
   // Caddy compresses (zstd/gzip) in front; compressing here too wastes Node CPU.
   compress: process.env.NODE_ENV !== 'production',
   poweredByHeader: false,
+  // The Docker image ships only the traced server files, not the workspace.
+  // Traced from the repo root so workspace packages (@avida/types) come along.
+  output: 'standalone',
+  outputFileTracingRoot: fileURLToPath(new URL('../../', import.meta.url)),
   // Keep the development-only Next.js badge out of the public UI.
   devIndicators: false,
   // Lets a second server (preview, e2e) run beside `pnpm dev` without both

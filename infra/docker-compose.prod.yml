@@ -118,9 +118,6 @@ services:
     environment: *app-env
     ports:
       - '127.0.0.1:${API_HOST_PORT:-3001}:3001'
-    volumes:
-      # Only written by `pnpm db:seed`, which deploy.sh runs in this image.
-      - seedmedia:/app/apps/web/public/seed-media
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -134,6 +131,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+
+  # One-off jobs only (never started by `up`): migrations, seed, create-admin.
+  #   dc run --rm --no-deps tools pnpm --filter @avida/db migrate:deploy
+  tools:
+    build: { <<: *build, target: tools }
+    image: avida-tools
+    profiles: ['tools']
+    environment: *app-env
+    volumes:
+      # Only written by `pnpm db:seed`.
+      - seedmedia:/app/apps/web/public/seed-media
 
   worker:
     build: { <<: *build, target: worker }

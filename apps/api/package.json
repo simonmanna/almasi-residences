@@ -2,6 +2,10 @@
   "name": "@avida/api",
   "version": "0.1.0",
   "private": true,
+  "files": [
+    "dist",
+    "scripts"
+  ],
   "scripts": {
     "dev": "nest start --watch",
     "start:dev": "nest start",

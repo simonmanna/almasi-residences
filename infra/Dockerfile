@@ -2,13 +2,15 @@
 #
 # One recipe for the single-VPS deploy (docs/DEPLOY.md). Build context is the
 # repo root. Targets:
-#   api     NestJS API; also runs migrations, seed and create-admin
-#   worker  media pipeline, with ffmpeg
-#   web     Next.js public site
+#   api     NestJS API, production dependencies only
+#   worker  media pipeline, with ffmpeg, production dependencies only
+#   web     Next.js public site (standalone server output)
 #   caddy   TLS proxy, serving the admin SPA as static files
+#   tools   the whole built workspace: migrations, seed, create-admin
 #
-# The workspace is installed whole rather than pruned per app: a bigger image,
-# but one that behaves exactly like a local checkout.
+# The workspace is built whole; the runtime images then carry only what their
+# app needs (`pnpm deploy --prod`, Next standalone). Anything that needs the
+# Prisma CLI or tsx runs from `tools`.
 
 FROM node:24-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm \
@@ -37,11 +39,24 @@ COPY . .
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 RUN pnpm turbo run build --filter=@avida/api --filter=@avida/worker
 
-FROM build AS api
-# The Prisma CLI (migrations run from this image) probes for libssl.
+# Each app with only its production dependencies; workspace packages are
+# copied in by their `files` lists (packages/db ships dist + generated client).
+FROM build AS pruned
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm --filter=@avida/api deploy --prod /out/api \
+ && pnpm --filter=@avida/worker deploy --prod /out/worker
+
+# Migrations, seed and create-admin: the full workspace, dev tools included.
+FROM build AS tools
+# The Prisma CLI probes for libssl.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openssl \
  && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production
+WORKDIR /app/apps/api
+
+FROM base AS api
+COPY --from=pruned /out/api /app/apps/api
 ENV NODE_ENV=production
 WORKDIR /app/apps/api
 EXPOSE 3001
@@ -54,7 +69,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 FROM media-base AS worker
-COPY --from=build /app /app
+COPY --from=pruned /out/worker /app/apps/worker
 ENV NODE_ENV=production
 WORKDIR /app/apps/worker
 CMD ["node", "dist/main.js"]
@@ -85,11 +100,16 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     API_INTERNAL_URL=$API_INTERNAL_URL
 RUN pnpm turbo run build --filter=@avida/web
 
-FROM web-build AS web
-ENV NODE_ENV=production
+# Standalone output: the traced server plus the static assets it expects
+# beside it. Same /app/apps/web layout, so the image-cache volume still fits.
+FROM base AS web
+ENV NODE_ENV=production     HOSTNAME=0.0.0.0     PORT=3000
+COPY --from=web-build /app/apps/web/.next/standalone /app
+COPY --from=web-build /app/apps/web/.next/static /app/apps/web/.next/static
+COPY --from=web-build /app/apps/web/public /app/apps/web/public
 WORKDIR /app/apps/web
 EXPOSE 3000
-CMD ["node_modules/.bin/next", "start", "-p", "3000"]
+CMD ["node", "server.js"]
 
 # ─── admin SPA, baked into the proxy image ────────────────────────────────
 FROM build AS admin-build
