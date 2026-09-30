@@ -278,6 +278,7 @@ export function ResidenceExplorer({
                   </button>
                 ))}
               </fieldset>
+              <div className={styles.controlsRow}>
               <div className={styles.selects}>
                 <label className="field">
                   <span className="field-label">Price up to</span>
@@ -310,6 +311,7 @@ export function ResidenceExplorer({
                 </label>
               </div>
               {filtersOpen && statusRow}
+              </div>
             </div>
           </details>
 

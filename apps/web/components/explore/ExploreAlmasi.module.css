@@ -1,6 +1,6 @@
 .explore {
   position: relative;
-  padding-top: var(--section-y);
+  padding-top: clamp(28px, 3vw, 48px);
   background:
     radial-gradient(120% 70% at 45% 38%, var(--surface-raised) 0%, transparent 62%),
     var(--surface);
@@ -11,11 +11,11 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: end;
   gap: 32px;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .kicker {
-  margin-bottom: 18px;
+  margin-bottom: 10px;
 }
 
 .lede {

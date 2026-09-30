@@ -7,7 +7,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: end;
   gap: 20px 32px;
-  margin-bottom: clamp(24px, 3vw, 48px);
+  margin-bottom: clamp(18px, 2vw, 32px);
 }
 
 .kicker {

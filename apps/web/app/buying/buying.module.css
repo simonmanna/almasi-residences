@@ -1,6 +1,8 @@
 .steps {
   display: grid;
   gap: 32px;
+  margin-top: clamp(16px, 2vw, 28px);
+  padding-top: clamp(24px, 3vw, 48px);
   padding-bottom: var(--section-y);
 }
 

@@ -116,12 +116,11 @@
 
 .selects {
   display: flex;
-  flex-wrap: wrap;
   gap: 20px;
 }
 
 .selects :global(.field) {
-  min-width: 190px;
+  min-width: 170px;
 }
 
 .status {
@@ -137,12 +136,23 @@
   font-size: var(--fs-sm);
 }
 
-.groups > .status {
-  flex: 1 1 auto;
-  justify-content: flex-end;
+/* Price and sort on the left, the count and view switch in the right corner. */
+.controlsRow {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 32px;
 }
-.groups > .status .resultCount { color: var(--ink-muted); }
-.groups > .status .views { margin-left: 0; }
+.controlsRow > .status {
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.controlsRow > .status .resultCount { color: var(--ink-muted); white-space: nowrap; }
+.controlsRow > .status .views { margin-left: 0; flex: none; }
+.controlsRow > .status .savedSummary { margin-left: 0; white-space: nowrap; }
 
 .views {
   display: inline-flex;
@@ -402,6 +412,10 @@
   .group > button {
     white-space: nowrap;
   }
+  .selects,
+  .controlsRow,
+  .controlsRow > .status { flex-wrap: wrap; }
+  .controlsRow > .status { margin-left: 0; justify-content: space-between; flex: 1 1 100%; }
   /* Phones get one card per residence; the table header gives way. */
   .table, .table tbody { display: block; }
   .table thead { display: none; }

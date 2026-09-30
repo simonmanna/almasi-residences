@@ -81,7 +81,7 @@ export default async function HomePage() {
   const section = (page: string, key: string) => titleCaseHeading(copy(pages, page, key));
 
   return (
-    <main id="main">
+    <main id="main" className="home">
       {dev && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(developmentJsonLd(dev)) }} />}
       <HeroExperience
         kicker={home('heroKicker')}

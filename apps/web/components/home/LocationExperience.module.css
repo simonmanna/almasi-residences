@@ -7,7 +7,7 @@
   /* The map is a measured square — its height is its width — so the column is
      the only size lever it has. The list takes the larger share: the places
      are the subject, the map is the instrument beside them. */
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: start;
   gap: clamp(32px, 5vw, 80px);
 }
@@ -150,9 +150,10 @@
 .mapCol {
   position: sticky;
   top: calc(var(--nav-h) + 32px);
-  /* A 1600px page would otherwise hand the map 750px of sky. Capped, and held
+  /* Capped so a very wide page does not hand the map a wall of sky, and held
      to the section's right margin. */
-  max-width: 520px;
+  max-width: 680px;
+  width: 100%;
   justify-self: end;
 }
 

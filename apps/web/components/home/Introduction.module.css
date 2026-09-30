@@ -9,7 +9,7 @@
   position: relative;
   isolation: isolate;
   min-height: 0;
-  padding-block: clamp(40px, 4.5vw, 72px);
+  padding-block: clamp(24px, 2.6vw, 44px);
   overflow: hidden;
 
   /* Dusk, bottom to top — the ground the words sit on. */
@@ -246,7 +246,7 @@
 @media (max-width: 900px) {
   .intro {
     min-height: 0;
-    padding-block: 36px 0;
+    padding-block: 24px 0;
   }
 
   .inner {
