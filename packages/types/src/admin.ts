@@ -355,6 +355,10 @@ export function isPageVisible(pageVisibility: Record<string, unknown> | undefine
  *
  * Text fields may name live figures in braces — see COPY_TOKEN_HELP.
  */
+/** The live figures the residences page header can name, on top of COPY_TOKEN_HELP. */
+export const RESIDENCES_HEADER_TOKEN_HELP =
+  'Live figures: {total}, {available} (highlighted), {typeList} (“11 one bedroom apartments, 14 two bedroom apartments, 3 penthouses”), {place} (“Kigali, Rwanda”), {areaMin} and {areaMax} (m², all residences).';
+
 export const CONTENT_PAGES: ContentPageDef[] = [
   {
     key: 'home',
@@ -453,11 +457,11 @@ export const CONTENT_PAGES: ContentPageDef[] = [
   {
     key: 'residences',
     title: 'Residences page',
-    description: 'The heading of the residence explorer. The residences themselves come from Property → Residences.',
+    description: 'The header of the residence explorer. The residences themselves come from Property → Residences.',
     fields: [
-      { key: 'heroKicker', label: 'Kicker', type: 'text', help: 'Small line above the title.' },
-      { key: 'heroTitle', label: 'Title', type: 'text', help: 'A line break is written as “|”.' },
-      { key: 'heroLede', label: 'Introduction', type: 'textarea' },
+      { key: 'heroTitle', label: 'Title', type: 'text', help: 'The large heading, e.g. “Residences”.' },
+      { key: 'heroTally', label: 'Summary line', type: 'text', help: `The small line under the title. ${RESIDENCES_HEADER_TOKEN_HELP}` },
+      { key: 'heroLede', label: 'Introduction', type: 'textarea', help: `Empty shows nothing. ${RESIDENCES_HEADER_TOKEN_HELP}` },
     ],
   },
   {

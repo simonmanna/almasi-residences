@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { formatMoney, toMajorUnits, toMinorUnits } from '@avida/types';
+import { fillCopyTokens, formatMoney, toMajorUnits, toMinorUnits } from '@avida/types';
 import type { PublicMediaDto, TypologyCardDto } from '../../lib/api';
 import {
   EMPTY_FILTER,
@@ -26,6 +26,7 @@ import {
   type SortKey,
 } from '../../lib/residences';
 import { track } from '../../lib/analytics';
+import { copyTokenValues } from '../../lib/copy-tokens';
 import { useResidenceShortlist } from '../../lib/shortlist';
 import { useInventory } from '../providers/InventoryProvider';
 import { ElevationStack, StatusLegend } from '../explore/ElevationStack';
@@ -61,6 +62,7 @@ export function ResidenceExplorer({
   initialSort,
   cards = [],
   place = '',
+  header = {},
 }: {
   initialFilter: ResidenceFilter;
   initialSort: SortKey;
@@ -68,6 +70,8 @@ export function ResidenceExplorer({
   cards?: TypologyCardDto[];
   /** "Kimihurura, Kigali" — from the property record, never written here. */
   place?: string;
+  /** Website → Residences page; live figures are filled in here, from the live inventory. */
+  header?: { title?: string; tally?: string; lede?: string };
 }) {
   const { residences, floors, summary, currency } = useInventory();
   const router = useRouter();
@@ -161,6 +165,25 @@ export function ResidenceExplorer({
   const floorOptions = floors.filter((f) => f.total > 0).sort((a, b) => a.level - b.level);
   const statusCount = (s: string) => residences.filter((r) => r.publicStatus === s).length;
 
+  // {available} is drawn in the accent colour, so it is filled with a marker and split on it.
+  const MARK = '';
+  const tokens = {
+    ...copyTokenValues(summary),
+    available: MARK,
+    typeList: typesPresent(summary)
+      .map((t) => `${summary.byType[t].total} ${t === 'penthouse' ? 'penthouses' : `${TYPE_TEXT[t].toLowerCase()} apartments`}`)
+      .join(', '),
+    place,
+    areaMin: areas.length ? areaMin : null,
+    areaMax: areas.length ? areaMax : null,
+  };
+  const fillHeader = (text = '') =>
+    fillCopyTokens(text, tokens)
+      .split(MARK)
+      .flatMap((part, i) => (i === 0 ? [part] : [<span key={i} className={`tabular ${styles.kicker}`}>{summary.available}</span>, part]));
+  const tally = fillHeader(header.tally);
+  const lede = fillHeader(header.lede);
+
   const resultCount = (
     <p aria-live="polite" className={styles.resultCount}>
       <span className="tabular">{matches.length}</span> of <span className="tabular">{summary.total}</span>{' '}
@@ -195,17 +218,9 @@ export function ResidenceExplorer({
   return (
     <>
       <header className={`container ground-band ${styles.header}`} data-ground="night" data-nav-over>
-        <h1 className={`display ${styles.title}`}>Residences</h1>
-        <p className={`small ${styles.tally}`}>
-          <span className="tabular">{summary.total}</span> residences ·{' '}
-          <span className={`tabular ${styles.kicker}`}>{summary.available}</span> available
-        </p>
-        <p className="lead">
-          {typesPresent(summary).map((t) => `${summary.byType[t].total} ${t === 'penthouse' ? 'penthouses' : `${TYPE_TEXT[t].toLowerCase()} apartments`}`).join(', ')}
-          {place ? ` for sale in ${place}` : ' for sale'}
-          {areas.length > 0 ? `, from ${areaMin} to ${areaMax} m²` : ''}.
-          {' '}Availability is live from the sales team’s own records.
-        </p>
+        <h1 className={`display ${styles.title}`}>{header.title || 'Residences'}</h1>
+        {header.tally && <p className={`small ${styles.tally}`}>{tally}</p>}
+        {header.lede && <p className="lead">{lede}</p>}
         <dl className={styles.counts}>
           {typesPresent(summary).map((t) => (
             <div key={t}>
@@ -231,6 +246,7 @@ export function ResidenceExplorer({
               {filtering && <span className={styles.badge}>on</span>}
             </summary>
             <div className={styles.groups}>
+              <div className={styles.filterRow}>
               <fieldset className={styles.group}>
                 <legend>Residence</legend>
                 {typesPresent(summary).map((t) => (
@@ -270,6 +286,8 @@ export function ResidenceExplorer({
                   </button>
                 ))}
               </fieldset>
+              </div>
+              <div className={styles.controlsRow}>
               <fieldset className={styles.group}>
                 <legend>Availability</legend>
                 {PUBLIC_STATUSES.map((s) => (
@@ -278,7 +296,6 @@ export function ResidenceExplorer({
                   </button>
                 ))}
               </fieldset>
-              <div className={styles.controlsRow}>
               <div className={styles.selects}>
                 <label className="field">
                   <span className="field-label">Price up to</span>

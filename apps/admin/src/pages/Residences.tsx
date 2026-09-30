@@ -28,6 +28,7 @@ import { floorName, useFloors, useTypes } from '../lib/ref';
 import { Link, navigate, useDebounced, useSearchState } from '../lib/router';
 import type { Paged, ResidenceRow } from '../lib/types';
 import { InlinePrice } from '../components/InlinePrice';
+import { PageCopyCard } from '../components/PageCopyCard';
 import { StatusSelect } from '../components/StatusSelect';
 import { useToast } from '../components/Toast';
 import { Badge, Button, Card, Checkbox, Empty, ErrorBox, Input, MediaImg, Menu, Modal, Field, PageHead, Pagination, Select, Skeleton, useConfirm } from '../components/ui';
@@ -251,6 +252,8 @@ export default function Residences() {
           </Link>
         )}
       </PageHead>
+
+      {!archivedView && can('content.view') && <PageCopyCard pageKey="residences" title="Website header — /residences" />}
 
       <Card>
         <div className="card-head" style={{ gap: 10 }}>

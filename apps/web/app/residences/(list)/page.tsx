@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getDevelopment, getTypologyCards } from '../../../lib/api';
+import { copy, getDevelopment, getPagesSafe, getTypologyCards } from '../../../lib/api';
 import { pageMetadata } from '../../../lib/page-metadata';
 import { filterFromSearch } from '../../../lib/residences';
 import { ResidenceExplorer } from '../../../components/residences/ResidenceExplorer';
@@ -25,12 +25,18 @@ export default async function ResidencesPage() {
 
   // A residence shows its type's artwork: the inventory is a lightweight stack
   // and carries no media of its own.
-  const [cards, dev] = await Promise.all([getTypologyCards().catch(() => []), getDevelopment().catch(() => null)]);
+  const [cards, dev, pages] = await Promise.all([getTypologyCards().catch(() => []), getDevelopment().catch(() => null), getPagesSafe()]);
   const { filter, sort } = DEFAULTS;
   const place = dev ? `${dev.city}, ${dev.country === 'RW' ? 'Rwanda' : dev.country}` : '';
   return (
     <main id="main">
-      <ResidenceExplorer initialFilter={filter} initialSort={sort} cards={cards} place={place} />
+      <ResidenceExplorer
+        initialFilter={filter}
+        initialSort={sort}
+        cards={cards}
+        place={place}
+        header={{ title: copy(pages, 'residences', 'heroTitle'), tally: copy(pages, 'residences', 'heroTally'), lede: copy(pages, 'residences', 'heroLede') }}
+      />
       <SiteFooter />
     </main>
   );

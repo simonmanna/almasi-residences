@@ -97,9 +97,9 @@ export const contentDefaults: Record<string, { title: string; content: Record<st
   residences: {
     title: 'Residences page',
     content: {
-      heroKicker: 'Residences',
-      heroTitle: 'Every residence',
-      heroLede: '{available} of {total} residences are available today. Filter by type, floor, size, price and status.',
+      heroTitle: 'Residences',
+      heroTally: '{total} residences · {available} available',
+      heroLede: '{typeList} for sale in {place}, from {areaMin} to {areaMax} m². Availability is live from the sales team’s own records.',
     },
   },
   amenities: {
