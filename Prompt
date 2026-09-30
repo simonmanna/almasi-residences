@@ -33,3 +33,48 @@ Reuse the existing engine and data model; share one building geometry source bet
 5. Report: what changed, screenshots, FPS observed, anything from the PDF you could not model.
 
 Do not commit or deploy unless I ask.
+
+You are working in the Real-Estate-Website repo (cloned from GitHub; run from repo root). Scope: ONLY the 3D building designs and the pages that host them. Do not touch unrelated pages, API, CRM, or admin.
+
+## Goal
+Rebuild the Almasi Residence 3D building so it matches the REAL architectural design, looks premium and realistic, and animates smoothly. Then restyle the /3d-design page in the site's blue theme with a much more attractive, smoother UI.
+
+## Source of truth (read first, fully)
+- real-estate-design/ALMASI RESIDENCES update.pdf  — official plans: floor count, massing, facade, balconies, podium, roof, unit layouts, materials, colours. Read every page.
+- real-estate-design/design.jpeg                   — hero exterior reference.
+- Secondary refs only: real-estate-3d-view/*.png, apps/web/public/media/twin/*, docs/3D-DESIGN.md.
+Extract a short spec (floors, floor heights, footprint/setbacks, facade rhythm, balcony pattern, glazing, crown/roof, podium/entrance, landscape, material palette) BEFORE coding. Where the PDF and current code disagree, the PDF wins.
+
+## Where the 3D lives
+- 3D Design page: apps/web/app/3d-design/page.tsx → apps/web/components/digital-twin/DigitalTwin.tsx (+ DigitalTwin.module.css, ambience.ts)
+- Procedural engine (Three.js): apps/web/components/digital-twin/engine/{Engine,building,geometry,materials,textures,atmosphere,landscape,residence,penthouse}.ts
+- Data: apps/web/lib/digital-twin.ts, apps/web/lib/building-model.ts, packages/types/src/building.ts
+- Home page 3D + "The Building" section 3D tab: apps/web/components/explore/Building3D.tsx and apps/web/components/explore/ExploreAlmasi.tsx
+- Tests: apps/web/tests/digital-twin.test.ts, apps/web/tests/building-model.test.ts
+Reuse the existing engine and data model; share one building geometry source between the home/Building tab and /3d-design so both show the same real design. Do not create a parallel engine.
+
+## Requirements
+1. Building accuracy — massing, floor count, facade, balconies, roof/crown, podium and entrance match the PDF/design.jpeg. Floor/unit data in lib/building-model.ts must stay consistent with the new geometry (floor picking, unit highlighting still work).
+2. Realistic look — PBR materials (MeshPhysicalMaterial: glass with transmission/reflection, stone/concrete with roughness + normal detail), HDRI/RoomEnvironment reflections, ACES filmic tone mapping, soft shadows, SSAO or baked AO, subtle bloom on lit windows, warm interior window glow at dusk, landscaping/ground that grounds the tower. Aim for near-render quality stills.
+3. Smooth animation — 60fps target. Damped/eased camera (no snapping), cinematic intro fly-in, smooth orbit with inertia, eased floor-selection transitions, gentle time-of-day/lighting transitions, hover highlights that fade. Respect prefers-reduced-motion.
+4. Performance — dev GPU is Intel Iris Xe: merge/instance repeated geometry (windows, balconies, railings), cap devicePixelRatio (≤1.75), adaptive quality tier (drop SSAO/shadow res/bloom on low FPS), lazy-load 3D (dynamic import, ssr:false), show poster image while loading, dispose everything on unmount. No layout shift.
+5. /3d-design page — switch to the site's existing BLUE theme (reuse the theme tokens/CSS variables already in apps/web; do not hard-code a new palette). Premium, calm UI: glass panels, clean typography, smooth transitions between views (exterior / floors / residence / penthouse), polished controls and loading state. Responsive down to 375px, keyboard accessible.
+6. Home page 3D + "The Building" 3D tab — use the updated accurate building, same quality settings (lighter tier OK), smooth entrance animation.
+
+## Tools & software (install whatever you need)
+You may install and use any software that improves accuracy or realism. Machine: Windows 11, Git Bash, Node 22, Python 3.11/3.13 + uv, pnpm. Check if a tool is already installed before installing it. Tell me each install and why.
+- Blender (latest LTS). Install with `winget install BlenderFoundation.Blender` and run it headless (`blender -b -P script.py`). Extend blender/scripts/build_digital_twin.py to model the building from the PDF plans: real massing, facade, balconies, materials, baked AO/lightmaps. Export GLB to apps/web/public/models/.
+- GLB optimisation: `npx @gltf-transform/cli` for draco/meshopt compression, KTX2/WebP textures, dedup and instancing. Target a GLB under about 8 MB with LODs.
+- PDF and image reading: poppler (`pdftoppm`), PyMuPDF (`uv pip install pymupdf`), or ImageMagick. Export the PDF plan pages as PNGs so you can read dimensions and elevations.
+- Web libraries if needed: three addons (GLTFLoader, DRACOLoader, KTX2Loader, RGBELoader), postprocessing (SSAO, bloom, SMAA), a free CC0 HDRI (Poly Haven) saved to apps/web/public/hdri/, and gsap or maath for camera easing.
+- Browser checks: Playwright for screenshots and FPS measurement.
+Preferred pipeline: build the high-detail model in Blender, export an optimised GLB, and load it in the existing engine (keep the procedural engine as a fallback). Commit the Blender scripts so the model can be rebuilt. Don't commit huge .blend files unless I ask. Put any new install steps in docs/3D-DESIGN.md.
+
+## Process
+1. git status. Read the PDF + design.jpeg + listed files. Write the spec summary.
+2. Plan changes file-by-file; show plan before large edits.
+3. Implement engine/geometry → materials/lighting → animation → page UI/theme → home/Building tab.
+4. Verify: pnpm lint, typecheck, tests (update tests for new geometry). Run the web dev server, open /3d-design and the home page, check console for errors/WebGL warnings, test orbit, floor picking, view switches, mobile width, dark/light. Take screenshots and compare side-by-side with real-estate-design/design.jpeg; iterate until it clearly resembles the real building.
+5. Report: what changed, screenshots, FPS observed, anything from the PDF you could not model.
+
+Do not commit or deploy unless I ask.
