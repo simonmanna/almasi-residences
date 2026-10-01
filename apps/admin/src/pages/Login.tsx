@@ -2,10 +2,12 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { KeyRound, LogIn } from 'lucide-react';
 import { API_ORIGIN, get, post } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useBrandLogo } from '../lib/brand';
 import { Alert, Button, Field, Input } from '../components/ui';
 
 export function Login() {
   const { refresh } = useAuth();
+  const logo = useBrandLogo();
   // A failed Google sign-in comes back as ?login_error=… — show it once, then tidy the address.
   const [error, setError] = useState<string | null>(() => new URLSearchParams(window.location.search).get('login_error'));
   const [busy, setBusy] = useState(false);
@@ -48,6 +50,7 @@ export function Login() {
       <main className="login-panel">
         <div className="login-card">
           <div>
+            {logo && <img className="brand-logo" src={logo} alt="" style={{ width: 56, height: 56, marginBottom: 14 }} />}
             <div className="brand-name" style={{ fontFamily: 'var(--display)', letterSpacing: '.32em', color: 'var(--sky-800)', fontWeight: 700 }}>ALMASI</div>
             <div className="muted small" style={{ letterSpacing: '.3em', marginTop: 4 }}>RESIDENCES · ADMIN</div>
           </div>

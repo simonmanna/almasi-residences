@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Bell, ChevronDown, KeyRound, LogOut, Menu as MenuIcon, Search, Settings } from 'lucide-react';
 import { get, post, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useBrandLogo } from '../lib/brand';
 import { ago, initials } from '../lib/format';
 import { invalidate, useQuery } from '../lib/query';
 import { Link, navigate, useDebounced, useLocation } from '../lib/router';
@@ -9,6 +10,8 @@ import { Menu } from '../components/ui';
 import { NAV, navFor } from './nav';
 
 function BrandMark() {
+  const logo = useBrandLogo();
+  if (logo) return <img className="brand-mark brand-logo" src={logo} alt="" />;
   return (
     <svg className="brand-mark" viewBox="0 0 48 40" aria-hidden="true">
       <path d="M24 2 44 16 24 38 4 16Z" fill="#dcedfc" />

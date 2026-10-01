@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { effectivePriceMinor } from '@avida/types';
 import { PrismaService } from '../../common/prisma.service.js';
+import { StorageService } from '../../common/storage.service.js';
 import { live } from '../../common/preview.js';
 
 const LIVE = () => ({ ...live() });
 
 @Injectable()
 export class DevelopmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   /**
    * §5.3 — the full development payload. Media assets arrive grouped by time
@@ -48,6 +52,7 @@ export class DevelopmentService {
         mapsUrl: true,
         officeHours: true,
         socials: true,
+        logoMedia: true,
         typologies: {
           where: { ...live() },
           orderBy: [{ sortOrder: 'asc' }, { areaSqmMin: 'asc' }],
@@ -74,11 +79,13 @@ export class DevelopmentService {
 
     // §4.4 — counts and ranges are computed here, never stored.
     const summary = await this.summarise(dev.id);
-    const { paymentPlans, contactPhone, contactEmail, whatsappNumber, whatsappIconVisible, officeAddress, mapsUrl, officeHours, socials, ...rest } = dev;
+    const { paymentPlans, logoMedia, contactPhone, contactEmail, whatsappNumber, whatsappIconVisible, officeAddress, mapsUrl, officeHours, socials, ...rest } = dev;
 
     return {
       ...rest,
       contact: { phone: contactPhone, email: contactEmail, whatsapp: whatsappNumber, whatsappIconVisible, officeAddress, mapsUrl, officeHours, socials: (socials ?? {}) as Record<string, string> },
+      // Property → Logo: the site's mark and favicon. Unpublished or archived files stay private.
+      logo: logoMedia && logoMedia.published && !logoMedia.archivedAt ? this.logoView(logoMedia) : null,
       milestones: paymentPlans[0]?.milestones ?? [],
       typologies: dev.typologies.map(({ units, ...t }) => {
         const available = units.filter((u) => u.status === 'AVAILABLE').map((u) => effectivePriceMinor(u));
@@ -98,6 +105,11 @@ export class DevelopmentService {
       })),
       summary,
     };
+  }
+
+  private logoView(m: Parameters<StorageService['present']>[0]) {
+    const v = this.storage.present(m);
+    return { url: v.url, thumbUrl: v.thumbUrl, altText: v.altText ?? v.title, width: v.width, height: v.height, mimeType: v.mimeType };
   }
 
   /** §4.4 — derived values, computed at query time. */

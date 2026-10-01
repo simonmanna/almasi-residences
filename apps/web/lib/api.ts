@@ -304,6 +304,16 @@ export interface AmenitySummaryDto {
   location: string | null;
 }
 
+/** Property → Logo: the uploaded mark, served from the media origin. */
+export interface LogoDto {
+  url: string;
+  thumbUrl: string;
+  altText: string | null;
+  width: number | null;
+  height: number | null;
+  mimeType: string;
+}
+
 export interface DevelopmentDto {
   id: string;
   slug: string;
@@ -324,6 +334,8 @@ export interface DevelopmentDto {
   contact?: ContactDto;
   /** The look the admin chose: 'blue' | 'wooden' | 'sky'. */
   siteTheme?: string;
+  /** Absent until the admin uploads one; the drawn mark and /icon.svg stand in. */
+  logo?: LogoDto | null;
   typologies: TypologyDto[];
   amenities: AmenitySummaryDto[];
   landmarks: LandmarkDto[];

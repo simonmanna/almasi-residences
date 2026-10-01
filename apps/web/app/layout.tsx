@@ -10,6 +10,7 @@ import { MediaSlotsProvider } from '../components/providers/MediaSlotsProvider';
 import { SmoothScroll } from '../components/layout/SmoothScroll';
 import { InventoryProvider } from '../components/providers/InventoryProvider';
 import { ContactProvider } from '../components/providers/ContactProvider';
+import { BrandProvider } from '../components/providers/BrandProvider';
 import { contactFrom } from '../lib/contact';
 import { EnquiryProvider } from '../components/enquiry/EnquiryProvider';
 import { SiteNav } from '../components/layout/SiteNav';
@@ -103,6 +104,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const values = inventory ? copyTokenValues(summarise(toResidences(inventory)), { handover: dev?.handoverDate ? formatQuarter(dev.handoverDate) : null, name }) : {};
   const fill = (t: string | undefined) => (t ? fillCopyTokens(t, values) : undefined);
   const title = fill(seo?.site?.title) ?? name;
+  // Property → Logo is the favicon too; the drawn mark stands in until one is uploaded.
+  const logo = dev?.logo ?? null;
+  const icon = logo ? logo.thumbUrl || logo.url : '/icon.svg';
   return {
     metadataBase: new URL(SITE),
     title: { default: title, template: name ? `%s — ${name}` : '%s' },
@@ -112,6 +116,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: { type: 'website', siteName: name || undefined, locale: 'en_GB' },
     twitter: { card: 'summary_large_image' },
     robots: { index: true, follow: true },
+    icons: { icon, shortcut: icon, apple: icon },
     // §SEO — the verification tokens the admin pasted in (SEO → accounts).
     // Nothing is printed for an account that was never connected.
     ...(seo?.site?.gscVerification || seo?.site?.bingVerification
@@ -171,7 +176,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const showEnquire = pages.enquirySection?.showEnquireButton !== false;
   // §SEO — who publishes the site, and the site itself. Emitted once here so
   // every page inherits the same identity instead of repeating it.
-  const identity = [organizationJsonLd(dev, seo?.site ?? null, null), dev?.name ? websiteJsonLd(dev.name) : null].filter(Boolean);
+  const identity = [organizationJsonLd(dev, seo?.site ?? null, dev?.logo?.url ?? null), dev?.name ? websiteJsonLd(dev.name) : null].filter(Boolean);
   const ga4 = seo?.site?.ga4MeasurementId ?? null;
   const gtm = seo?.site?.gtmContainerId ?? null;
   const bathrooms = Object.fromEntries((dev?.typologies ?? []).map((t) => [t.slug, t.bathrooms]));
@@ -199,6 +204,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="skip-link">
           Skip to content
         </a>
+        <BrandProvider logo={dev?.logo ?? null}>
         <SmoothScroll>
           <ContactProvider contact={contact}>
             <InventoryProvider initial={inventory} bathrooms={bathrooms} slug={DEVELOPMENT_SLUG}>
@@ -212,6 +218,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </InventoryProvider>
           </ContactProvider>
         </SmoothScroll>
+        </BrandProvider>
         <CursorLabel />
         <PreviewBanner />
         <WhatsAppLauncher contact={contact} />
