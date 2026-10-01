@@ -14,10 +14,10 @@ function BrandMark() {
   if (logo) return <img className="brand-mark brand-logo" src={logo} alt="" />;
   return (
     <svg className="brand-mark" viewBox="0 0 48 40" aria-hidden="true">
-      <path d="M24 2 44 16 24 38 4 16Z" fill="#dcedfc" />
-      <path d="M24 2 34 16 24 38 14 16Z" fill="#8fc5f4" />
-      <path d="M4 16h40M14 16 24 2l10 14" fill="none" stroke="#1b5d98" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M24 2 44 16 24 38 4 16Z" fill="none" stroke="#1b5d98" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M24 2 44 16 24 38 4 16Z" fill="#f0f9ff" />
+      <path d="M24 2 34 16 24 38 14 16Z" fill="#7dd3fc" />
+      <path d="M4 16h40M14 16 24 2l10 14" fill="none" stroke="#0b2545" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M24 2 44 16 24 38 4 16Z" fill="none" stroke="#0b2545" strokeWidth="2" strokeLinejoin="round" />
     </svg>
   );
 }
