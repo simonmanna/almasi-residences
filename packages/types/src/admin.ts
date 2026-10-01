@@ -359,6 +359,17 @@ export function isPageVisible(pageVisibility: Record<string, unknown> | undefine
 export const RESIDENCES_HEADER_TOKEN_HELP =
   'Live figures: {total}, {available} (highlighted), {typeList} (“11 one bedroom apartments, 14 two bedroom apartments, 3 penthouses”), {place} (“Kigali, Rwanda”), {areaMin} and {areaMax} (m², all residences).';
 
+/**
+ * Residence types as the price overrides name them: `residencesPriceOneBedroom`,
+ * `paymentPricePenthouse`… `type` matches the public site's ResidenceType.
+ */
+export const RESIDENCE_PRICE_TYPES = [
+  { type: 'one-bedroom', suffix: 'OneBedroom', label: 'one bedroom' },
+  { type: 'two-bedroom', suffix: 'TwoBedroom', label: 'two bedroom' },
+  { type: 'three-bedroom', suffix: 'ThreeBedroom', label: 'three bedroom' },
+  { type: 'penthouse', suffix: 'Penthouse', label: 'penthouse' },
+] as const;
+
 export const CONTENT_PAGES: ContentPageDef[] = [
   {
     key: 'home',
@@ -424,6 +435,22 @@ export const CONTENT_PAGES: ContentPageDef[] = [
       { key: 'lede', label: 'Description', type: 'textarea' },
       { key: 'note', label: 'Footnote', type: 'text', help: 'Small print beneath the list, e.g. how distances are measured.' },
       { key: 'showNearbyPlaces', label: 'Show nearby places', type: 'boolean', help: 'Toggle to show/hide the nearby places list and map on the homepage and location page.' },
+    ],
+  },
+  {
+    key: 'priceDisplay',
+    title: 'Prices on the website',
+    description: 'The “from” prices on the homepage. Each is calculated from the live inventory unless the manual override is on, when the words written here are shown instead.',
+    fields: [
+      { key: 'heroPriceOverride', label: 'Hero: manual override', type: 'boolean', help: 'Off calculates “Price from” in the hero from the cheapest priced residence.' },
+      { key: 'heroPriceText', label: 'Hero: price text', type: 'text', help: 'Shown as written, e.g. “$99,000”.' },
+      { key: 'buildingPriceOverride', label: 'The Building: manual override', type: 'boolean', help: 'Off calculates the “from” price above the Explore Almasi board.' },
+      { key: 'buildingPriceText', label: 'The Building: price text', type: 'text', help: 'Shown as written, e.g. “$99K”.' },
+      { key: 'residencesPriceOverride', label: 'Residences: manual override', type: 'boolean', help: 'Off calculates each card’s “From” price. On shows the text below; a type left empty stays calculated.' },
+      ...RESIDENCE_PRICE_TYPES.map((t): ContentField => ({ key: `residencesPrice${t.suffix}`, label: `Residences: ${t.label} price text`, type: 'text' })),
+      { key: 'paymentShowPrices', label: 'Payment plan: show prices', type: 'boolean', help: 'Off hides the example amounts and the residence-type buttons; the percentages stay.' },
+      { key: 'paymentPriceOverride', label: 'Payment plan: manual override', type: 'boolean', help: 'Off works the example amounts out from the lowest available price of each type.' },
+      ...RESIDENCE_PRICE_TYPES.map((t): ContentField => ({ key: `paymentPrice${t.suffix}`, label: `Payment plan: ${t.label} price`, type: 'text', help: 'A number, e.g. 99000. Empty stays calculated.' })),
     ],
   },
   {

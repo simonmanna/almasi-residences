@@ -46,6 +46,7 @@ export function ExploreAlmasi({
   lede = 'Turn the building, lift out a floor, and see every residence as it stands today. Lit means available.',
   matchIds = null,
   defaultMode = 'elevation',
+  fromText = null,
 }: {
   id?: string;
   heading?: string;
@@ -53,6 +54,8 @@ export function ExploreAlmasi({
   matchIds?: ReadonlySet<string> | null;
   /** The homepage opens on the sales board; a page that asked for the model opens on it. */
   defaultMode?: 'model' | 'elevation';
+  /** Website → Prices: the board's "from" price as written, or null to calculate it. */
+  fromText?: string | null;
 }) {
   const { residences, floors, summary } = useInventory();
   const { open } = useEnquiry();
@@ -271,6 +274,7 @@ export function ExploreAlmasi({
               onSelect={selectResidence}
               onFocusLevel={chooseFloor}
               onHover={setHoveredId}
+              fromText={fromText}
             />
             <StatusLegend className={styles.legendStatic} />
           </div>

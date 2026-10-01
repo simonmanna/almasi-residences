@@ -14,6 +14,7 @@ import {
 } from '../lib/api';
 import { pageMetadata } from '../lib/page-metadata';
 import { isVisible } from '../lib/page-visibility';
+import { priceDisplay } from '../lib/price-display';
 import { developmentJsonLd } from '../lib/seo';
 import { titleCaseHeading } from '../lib/text';
 import { HeroExperience } from '../components/home/HeroExperience';
@@ -78,6 +79,8 @@ export default async function HomePage() {
   const showFilm = pages.filmSection?.showFilmSection !== false;
   // Website → Enquiry.
   const showEnquiry = pages.enquirySection?.showEnquirySection !== false;
+  // Website → Prices: each "from" price is calculated unless overridden there.
+  const prices = priceDisplay(pages);
   const section = (page: string, key: string) => titleCaseHeading(copy(pages, page, key));
 
   return (
@@ -91,11 +94,12 @@ export default async function HomePage() {
         place={dev ? `${dev.city}, ${dev.country === 'RW' ? 'Rwanda' : dev.country}` : ''}
         primary={primaryCta}
         handover={handover}
+        priceText={prices.hero}
       />
       {isVisible(pages, 'residences') && <MobileQuickNav show3dTour={isVisible(pages, 'design3d')} showLocation={isVisible(pages, 'location')} />}
       <Introduction handover={handover} title={homeHeading('introTitle')} body={home('introBody')} kicker={titleCaseHeading(home('heroKicker'))} developmentName={dev?.name ?? ''} buildingConfig={dev?.buildingConfig} primary={primaryCta} secondary={secondaryCta} />
-      <ExploreAlmasi />
-      <ResidencesPreview cards={cards} kicker={homeHeading('residencesKicker')} title={homeHeading('residencesTitle')} />
+      <ExploreAlmasi fromText={prices.building} />
+      <ResidencesPreview cards={cards} kicker={homeHeading('residencesKicker')} title={homeHeading('residencesTitle')} priceText={prices.residences} />
       {showFeatured && <FeaturedResidences items={featured} />}
       {showExperience && <ExperienceStory stations={story?.stations ?? []} title={section('experienceSection', 'title')} />}
       <AmenityExperience
@@ -118,7 +122,7 @@ export default async function HomePage() {
           limit={6}
         />
       )}
-      <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} ground="quiet" />
+      <PaymentTimeline milestones={dev?.milestones ?? []} handover={handover} ground="quiet" showPrices={prices.payment.show} prices={prices.payment.prices} />
       <ProgressPreview updates={progress} kicker={homeHeading('progressKicker')} title={copyLines(pages, 'home', 'progressTitle').map(titleCaseHeading)} />
       {showFilm && <FilmTeaser kicker={section('filmSection', 'kicker')} title={section('filmSection', 'title')} cta={copy(pages, 'filmSection', 'cta')} />}
       {showEnquiry && <EnquireSection compact ground="quiet" />}

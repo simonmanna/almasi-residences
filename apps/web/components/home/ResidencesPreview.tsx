@@ -11,7 +11,18 @@ import { SceneImage } from '../ui/SceneImage';
 import styles from './ResidencesPreview.module.css';
 
 /** 04 — the residence groups that exist, each with its live count and lowest available price. */
-export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCardDto[]; kicker: string; title: string }) {
+export function ResidencesPreview({
+  cards,
+  kicker,
+  title,
+  priceText = {},
+}: {
+  cards: TypologyCardDto[];
+  kicker: string;
+  title: string;
+  /** Website → Prices: a type's own words; a type absent is calculated. */
+  priceText?: Partial<Record<ResidenceType, string>>;
+}) {
   const { summary, currency } = useInventory();
   const types = typesPresent(summary);
   // A group's words and picture, each from the first residence type of that kind
@@ -75,9 +86,10 @@ export function ResidencesPreview({ cards, kicker, title }: { cards: TypologyCar
                       <div>
                         <dt>From</dt>
                         <dd>
-                          {s.priceFromMinor !== null
+                          {priceText[t] ??
+                            (s.priceFromMinor !== null
                             ? formatMoney({ amountMinor: s.priceFromMinor, currency })
-                            : 'On request'}
+                              : 'On request')}
                         </dd>
                       </div>
                     </dl>

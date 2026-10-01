@@ -81,6 +81,7 @@ export function HeroExperience({
   place,
   primary,
   handover,
+  priceText = null,
 }: {
   kicker: string;
   title: string;
@@ -92,6 +93,8 @@ export function HeroExperience({
   primary: { label: string; href: string };
   /** "Q2 2028" — already formatted by the page. */
   handover?: string | null;
+  /** Website → Prices: the admin's own words, or null to calculate it. */
+  priceText?: string | null;
 }) {
   const [lineA, ...rest] = title.trim().split(/\s+/);
   // When the CMS subtitle already says the tagline, it is set once, as the tagline.
@@ -114,13 +117,17 @@ export function HeroExperience({
   const facts = [
     summary.total ? { icon: 'building' as const, value: String(summary.total), label: 'Residences' } : null,
     bedroomText ? { icon: 'bed' as const, value: bedroomText, label: 'Bedroom units' } : null,
-    priceFrom.length
-      ? {
-          icon: 'tag' as const,
-          value: formatMoney({ amountMinor: Math.min(...priceFrom), currency }),
-          label: 'Price from',
-        }
-      : null,
+    priceText !== null
+      ? priceText
+        ? { icon: 'tag' as const, value: priceText, label: 'Price from' }
+        : null
+      : priceFrom.length
+        ? {
+            icon: 'tag' as const,
+            value: formatMoney({ amountMinor: Math.min(...priceFrom), currency }),
+            label: 'Price from',
+          }
+        : null,
     handover ? { icon: 'calendar' as const, value: handover, label: 'Handover' } : null,
   ].filter((f): f is { icon: keyof typeof icons; value: string; label: string } => f !== null);
   return (

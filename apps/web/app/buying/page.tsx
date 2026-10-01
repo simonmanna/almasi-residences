@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { formatQuarter } from '@avida/types';
 import { copy, copyLines, getDevelopment, getPagesSafe } from '../../lib/api';
+import { priceDisplay } from '../../lib/price-display';
 import { pageMetadata } from '../../lib/page-metadata';
 import { faqJsonLd } from '../../lib/seo';
 import { PageHeader, TitleLines } from '../../components/layout/PageHero';
@@ -39,6 +40,7 @@ export default async function BuyingPage() {
     { role: 'Contractor', name: dev?.contractor },
   ].filter((x): x is { role: string; name: string } => Boolean(x.name));
   const developerBody = copy(pages, 'about', 'developerBody');
+  const { payment } = priceDisplay(pages);
   const architectureBody = copy(pages, 'about', 'architectureBody');
 
   return (
@@ -107,7 +109,7 @@ export default async function BuyingPage() {
         </section>
       )}
 
-      <PaymentTimeline milestones={milestones} handover={handover} ground="quiet" />
+      <PaymentTimeline milestones={milestones} handover={handover} ground="quiet" showPrices={payment.show} prices={payment.prices} />
 
       {dev && dev.faqs.length > 0 && (
         <section className={`section container ground-band ${styles.faq}`} data-ground="night" aria-labelledby="faq-title">

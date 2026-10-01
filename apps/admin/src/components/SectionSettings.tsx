@@ -23,6 +23,10 @@ export interface SectionField {
   /** For `boolean`: the switch's label when on and when off. */
   on?: string;
   off?: string;
+  /** For `boolean`: the value a switch never saved reads as. On unless said otherwise. */
+  initial?: boolean;
+  /** Shown only while this boolean field is on. */
+  showIf?: string;
 }
 
 /**
@@ -43,11 +47,14 @@ export function SectionSettings({ pageKey, title, icon, fields }: { pageKey: str
   if (!data) return <LoadingPage />;
   const editable = can('content.edit');
   const canPublish = can('content.publish');
-  const dirty = JSON.stringify(content) !== JSON.stringify(data.content);
+  // Only this card's keys: several cards may share one page.
+  const own = (c: Record<string, unknown>) => Object.fromEntries(fields.map((f) => [f.key, c[f.key] ?? null]));
+  const dirty = JSON.stringify(own(content)) !== JSON.stringify(own(data.content));
+  const isOn = (f: SectionField | undefined, v: unknown) => (f?.initial === false ? v === true : v !== false);
   const save = async () => {
     setBusy(true);
     try {
-      await put(`/admin/pages/${pageKey}`, { content, ...(canPublish ? { publish: true } : {}) });
+      await put(`/admin/pages/${pageKey}`, { content: own(content), ...(canPublish ? { publish: true } : {}) });
       toast.success(canPublish ? 'Published. The homepage updates straight away.' : 'Draft saved. Someone who can publish must approve it.');
       invalidate(`pages:${pageKey}`, 'pages', 'publishing');
     } catch (e) {
@@ -72,12 +79,13 @@ export function SectionSettings({ pageKey, title, icon, fields }: { pageKey: str
       )}
       <fieldset disabled={!editable} style={{ border: 0, margin: 0 }} className="card-body stack">
         {fields.map((f) => {
+          if (f.showIf && !isOn(fields.find((x) => x.key === f.showIf), content[f.showIf])) return null;
           const v = content[f.key];
           const set = (value: unknown) => setContent({ ...content, [f.key]: value });
           return (
             <Field key={f.key} label={f.label} hint={f.hint}>
               {f.type === 'boolean' ? (
-                <Toggle checked={v !== false} onChange={set} label={v !== false ? (f.on ?? 'Visible on the homepage') : (f.off ?? 'Hidden from the homepage')} />
+                <Toggle checked={isOn(f, v)} onChange={set} label={isOn(f, v) ? (f.on ?? 'Visible on the homepage') : (f.off ?? 'Hidden from the homepage')} />
               ) : f.type === 'textarea' ? (
                 <Textarea rows={4} value={(v as string) ?? ''} onChange={(e) => set(e.target.value)} />
               ) : (

@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { formatCount, formatMoney, formatPercent } from '@avida/types';
+import { formatCount, formatMoney, formatPercent, toMinorUnits } from '@avida/types';
 import type { MilestoneDto } from '../../lib/api';
 import { RESIDENCE_TYPES, TYPE_TEXT, type ResidenceType } from '../../lib/residences';
 import { useIsoLayoutEffect } from '../../lib/motion';
@@ -22,17 +22,27 @@ export function PaymentTimeline({
   handover,
   id = 'payment',
   ground = 'night',
+  showPrices = true,
+  prices = {},
 }: {
   milestones: MilestoneDto[];
   /** "Q2 2028", or null when the property has no handover date. */
   handover: string | null;
   id?: string;
   ground?: 'stone' | 'quiet' | 'night';
+  /** Website → Prices: off shows the percentages alone. */
+  showPrices?: boolean;
+  /** Website → Prices: a type's price set by hand, in major units; a type absent is calculated. */
+  prices?: Partial<Record<ResidenceType, number>>;
 }) {
   const { summary, currency } = useInventory();
-  const priced = RESIDENCE_TYPES.filter((t) => summary.byType[t].priceFromMinor !== null);
+  const priceOf = (t: ResidenceType) => {
+    const major = prices[t];
+    return major !== undefined ? toMinorUnits(major, currency) : summary.byType[t].priceFromMinor;
+  };
+  const priced = showPrices ? RESIDENCE_TYPES.filter((t) => priceOf(t) !== null) : [];
   const [type, setType] = useState<ResidenceType>(priced.includes('one-bedroom') ? 'one-bedroom' : priced[0] ?? 'one-bedroom');
-  const price = summary.byType[type].priceFromMinor;
+  const price = showPrices ? priceOf(type) : null;
   const root = useRef<HTMLElement>(null);
   const stages = [...milestones].sort((a, b) => a.sortOrder - b.sortOrder);
 

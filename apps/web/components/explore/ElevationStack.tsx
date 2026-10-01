@@ -54,6 +54,7 @@ export function ElevationStack({
   onSelect,
   onFocusLevel,
   onHover,
+  fromText = null,
 }: {
   residences: Residence[];
   floors: FloorSummary[];
@@ -63,6 +64,8 @@ export function ElevationStack({
   onSelect: (r: Residence) => void;
   onFocusLevel?: (level: number | null) => void;
   onHover?: (id: string | null) => void;
+  /** Website → Prices: the "from" price as the admin wrote it, or null to calculate it. */
+  fromText?: string | null;
 }) {
   const unitsOn = (level: number) =>
     residences.filter((r) => r.floorLevel === level).sort((a, b) => a.positionIndex - b.positionIndex);
@@ -144,9 +147,9 @@ export function ElevationStack({
               <span className={styles.nowDot} aria-hidden="true" />
               <b className="tabular">{available}</b> available now
             </span>
-            {cheapest && (
+            {(fromText ?? (cheapest && compactPrice(cheapest))) && (
               <span className={styles.from}>
-                from <b className="tabular">{compactPrice(cheapest)}</b>
+                from <b className="tabular">{fromText ?? compactPrice(cheapest!)}</b>
               </span>
             )}
             {gone > 0 && (

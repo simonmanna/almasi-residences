@@ -114,6 +114,7 @@ export const NAV: NavGroup[] = [
       { label: 'Amenities', to: '/amenities', icon: Sparkles, sub: 'Pool, gym, restaurant and the rest of the building' },
       { label: 'Residences', to: '/residences', icon: DoorOpen, needs: 'residence.view', sub: 'Every home: status, price, specifications and media' },
       { label: 'Payment plans', to: '/payment-plans', icon: Wallet, sub: 'Deposit, milestones and instalments' },
+      { label: 'Prices', to: '/price-display', icon: Tag, needs: 'content.view', title: 'Prices on the website', sub: 'Hero, The Building, Residences and Payment plan prices: calculated or written by hand' },
       { label: 'Selected Residence', to: '/selected-residences', icon: Star, needs: 'content.view', title: 'Selected residences', sub: 'Show or hide the selected residences section on the homepage' },
       { label: 'Experience', to: '/experience-section', icon: Sparkles, needs: 'content.view', sub: 'The homepage experience reel: heading, chapters and visibility' },
       { label: 'Film', to: '/film-section', icon: Clapperboard, needs: 'content.view', sub: 'The homepage film section: words, picture and visibility' },
