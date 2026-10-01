@@ -38,7 +38,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(420px, 1.18fr);
+  grid-template-columns: minmax(0, 0.885fr) minmax(400px, 1.115fr);
   align-items: center;
   gap: clamp(40px, 6vw, 104px);
   width: 100%;
@@ -72,7 +72,7 @@
    .title-sm it used to borrow. */
 .title {
   font-family: var(--font-display);
-  font-size: clamp(2.65rem, 1.6rem + 3.5vw, 5.5rem);
+  font-size: clamp(2.2rem, 3.85vw, 4rem);
   font-weight: var(--display-weight);
   line-height: 0.96;
   letter-spacing: calc(-0.026em * var(--display-tracking));
@@ -168,7 +168,7 @@
   position: relative;
   isolation: isolate;
   align-self: stretch;
-  min-height: clamp(380px, 52vh, 600px);
+  min-height: clamp(360px, 66vh, 598px);
   margin-right: calc(var(--page-margin) * -1);
   border: 1px solid rgb(var(--on-media) / 0.16);
   border-right: 0;

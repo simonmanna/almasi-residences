@@ -45,6 +45,10 @@ export function Introduction({
       : null,
   ].filter((x): x is { value: string; label: string } => x !== null);
 
+  // One sentence per line: "A Rare Place. / Thoughtfully Designed." sits on two
+  // lines instead of wrapping to three mid-phrase.
+  const titleLines = title.split(/(?<=[.!?])\s+/).filter(Boolean);
+
   const name = developmentName.split(' ')[0] ?? '';
   const lead =
     name && body.startsWith(`${name} `) ? (
@@ -67,7 +71,7 @@ export function Introduction({
           {/* The count is the eyebrow; the address is the headline. It used to
               be the other way round, which read as an accident. */}
           <p className={`mark ${styles.eyebrow}`}>{summary.total} private residences</p>
-          {title && <RevealText as="h2" id="intro-title" className={styles.title} lines={[title]} />}
+          {title && <RevealText as="h2" id="intro-title" className={styles.title} lines={titleLines} />}
           {body && <p className={styles.lead}>{lead}</p>}
           {(primary || secondary) && (
             <div className={styles.ctas}>
