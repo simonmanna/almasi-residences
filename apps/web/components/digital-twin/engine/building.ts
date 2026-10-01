@@ -3,7 +3,6 @@ import {
   ATRIUM,
   CANOPY,
   CORE,
-  EAST_WING,
   FLOOR_H,
   GALLERY,
   PARTS,
@@ -26,7 +25,7 @@ import {
   type Side,
   type Wall,
 } from '../../../lib/building-model';
-import { Bucket, frameGeometry, pottedPlant, rand, slabGeometry, shrubGeometry, type V3 } from './geometry';
+import { Bucket, pottedPlant, rand, slabGeometry, shrubGeometry, type V3 } from './geometry';
 import type { Materials } from './materials';
 
 const F = FLOOR_H;
@@ -285,15 +284,8 @@ function drawPlan(b: Bucket, plan: LevelPlan) {
   }
 }
 
-/** The frames that give the street face its rhythm: charcoal on the east wing, a rounded white band on the west. */
+/** The rounded white band that gives the west wing's street face its rhythm. */
 function signature(b: Bucket, level: number) {
-  if (level === 2 || level === 4) {
-    const [x0, z0, x1, z1] = EAST_WING;
-    // On the penthouse floor the frame takes in the whole of the south-east terrace.
-    const left = level === 4 ? x0 - 0.85 : x0;
-    b.add('charcoal', frameGeometry(left - 0.2, -0.2, x1 + 0.25, F + 0.15, 0.38, 0.75, z0, z1 - z0 + 0.2));
-    b.box('led', left + 0.5, F - 0.27, z1 - 0.2, x1 - 0.5, F - 0.24, z1);
-  }
   if (level === 1 || level === 3) {
     const [x0, z0, x1, z1] = WEST_WING;
     b.add('plaster', slabGeometry(x0 - 0.2, z0, x1 + 0.1, z1 + 0.3, -0.12, 0.42, 1.0, [true, true, false, false]));
