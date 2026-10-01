@@ -2,8 +2,21 @@ import * as THREE from 'three';
 import { Bucket, canopyGeometry, instanced, palmGeometry, rand, shrubGeometry, type V3 } from './geometry';
 import type { Materials } from './materials';
 import * as T from './textures';
+import { FOOTPRINT, STREET_FACE_Z } from '../../../lib/building-model';
 
-const inSite = (x: number, z: number) => x > -26 && x < 26 && z > -30 && z < 24;
+/**
+ * The plot, from the site plans: 1,276 m², the building a metre off its west
+ * boundary, the basement drive down its east side, planting behind, and the
+ * street — a 4 m reserve, the walkway, then 11.4 m of asphalt — to the south.
+ */
+const PLOT = { x0: -15.6, x1: 18.8, z0: -20.2, z1: 21 } as const;
+const DRIVE = { x0: 14.5, x1: 18.5 } as const;
+const STREET = { walk: 25, kerb: 26.5, far: 37.9, farWalk: 39.4 } as const;
+/** The way in from the street, under the canopy. */
+const GATE = { x0: -6.2, x1: 4 } as const;
+
+const inSite = (x: number, z: number) => x > PLOT.x0 - 1.5 && x < PLOT.x1 + 1.5 && z > PLOT.z0 - 2 && z < STREET.walk;
+const inStreet = (z: number) => z > STREET.walk - 1.5 && z < STREET.farWalk + 2.5;
 
 /** Everything outside the building: grounds, street, gardens, and the hills of Kigali beyond. */
 export class Landscape {
@@ -38,13 +51,18 @@ export class Landscape {
     this.near.add(g);
 
     const b = new Bucket();
-    // Forecourt and paths in pale stone.
-    b.box('paving', -26, -0.04, 10.75, 26, 0.02, 23.5);
-    b.box('paving', -26, -0.04, -30, -19, 0.02, 10.75);
-    b.box('paving', 19, -0.04, -30, 26, 0.02, 10.75);
-    b.box('paving', -19, -0.04, -30, 19, 0.02, -26);
-    // Drive in a darker setts band.
-    b.box('stone', -6, -0.03, 15.6, 6, 0.03, 23.5);
+    const [, , fx1] = FOOTPRINT;
+    // Forecourt in pale stone, from the building to the street's walkway.
+    b.box('paving', PLOT.x0, -0.04, STREET_FACE_Z - 0.5, DRIVE.x0, 0.02, STREET.walk);
+    // The narrow passage down the west boundary, and the walk between the building and the drive.
+    b.box('paving', PLOT.x0, -0.04, PLOT.z0, FOOTPRINT[0] + 0.5, 0.02, STREET_FACE_Z - 0.5);
+    b.box('paving', fx1 - 3, -0.04, PLOT.z0 + 3, DRIVE.x0, 0.02, STREET_FACE_Z - 0.5);
+    // The drive down to the basement, in darker setts.
+    b.box('stone', DRIVE.x0, -0.03, PLOT.z0, DRIVE.x1, 0.03, STREET.kerb);
+    // Boundary walls on three sides.
+    b.box('plaster', PLOT.x0 - 0.2, 0, PLOT.z0 - 0.2, PLOT.x0, 1.6, PLOT.z1);
+    b.box('plaster', PLOT.x0 - 0.2, 0, PLOT.z0 - 0.2, PLOT.x1 + 0.2, 1.6, PLOT.z0);
+    b.box('plaster', PLOT.x1, 0, PLOT.z0 - 0.2, PLOT.x1 + 0.2, 1.6, PLOT.z1);
     b.build(this.near, (k) => this.mats.get(k), { uvScale: (k) => (k === 'paving' ? 0.22 : 0.35) });
   }
 
@@ -53,19 +71,22 @@ export class Landscape {
     asphalt.repeat.set(60, 1.5);
     const rough = T.puddleRoughness();
     rough.repeat.set(24, 1);
+    const width = STREET.far - STREET.kerb;
+    const mid = (STREET.kerb + STREET.far) / 2;
     const road = new THREE.Mesh(
-      new THREE.PlaneGeometry(900, 8).rotateX(-Math.PI / 2),
+      new THREE.PlaneGeometry(900, width).rotateX(-Math.PI / 2),
       this.mats.own(new THREE.MeshStandardMaterial({ map: asphalt, roughnessMap: rough, roughness: 1, color: '#9A9A9A', envMapIntensity: 1.4 }), asphalt),
     );
     this.mats.own(new THREE.MeshBasicMaterial(), rough);
-    road.position.set(0, 0.01, 28);
+    road.position.set(0, 0.01, mid);
     road.receiveShadow = true;
     this.near.add(road);
 
     const b = new Bucket();
-    b.box('paving', -450, -0.04, 32, 450, 0.08, 35);
-    b.box('paving', -450, -0.04, 23.5, 450, 0.06, 24);
-    for (let x = -300; x < 300; x += 7) b.box('potWhite', x, 0.011, 27.92, x + 3.2, 0.02, 28.08);
+    // A 1.5 m walkway either side of the asphalt.
+    b.box('paving', -450, -0.04, STREET.far, 450, 0.08, STREET.farWalk);
+    b.box('paving', -450, -0.04, STREET.walk, 450, 0.06, STREET.kerb);
+    for (let x = -300; x < 300; x += 7) b.box('potWhite', x, 0.011, mid - 0.08, x + 3.2, 0.02, mid + 0.08);
     b.build(this.near, (k) => this.mats.get(k), { uvScale: (k) => (k === 'paving' ? 0.3 : null) });
 
     // The black-and-white striped kerb from the renders.
@@ -73,7 +94,11 @@ export class Landscape {
     const white: { p: V3; s: number }[] = [];
     const black: { p: V3; s: number }[] = [];
     for (let i = -140; i < 140; i++) {
-      for (const z of [24.1, 31.9]) (i % 2 ? white : black).push({ p: [i + 0.5, 0.09, z], s: 1 });
+      for (const z of [STREET.kerb + 0.1, STREET.far - 0.1]) {
+        // The kerb drops where the drive and the entrance meet the street.
+        if (z < mid && ((i > DRIVE.x0 - 1 && i < DRIVE.x1) || (i > GATE.x0 && i < GATE.x1 - 1))) continue;
+        (i % 2 ? white : black).push({ p: [i + 0.5, 0.09, z], s: 1 });
+      }
     }
     this.near.add(instanced(kerb, this.mats.get('potWhite'), white, false));
     this.near.add(instanced(kerb, this.mats.get('black'), black, false));
@@ -82,7 +107,7 @@ export class Landscape {
     const pole = new THREE.CylinderGeometry(0.06, 0.09, 6, 8).translate(0, 3, 0);
     const arm = new THREE.BoxGeometry(1.2, 0.08, 0.12).translate(0.5, 5.95, 0);
     const lamps: { p: V3; s: number; ry: number }[] = [];
-    for (let x = -120; x <= 120; x += 20) lamps.push({ p: [x, 0, 33.4], s: 1, ry: Math.PI / 2 });
+    for (let x = -120; x <= 120; x += 20) lamps.push({ p: [x, 0, STREET.far + 0.9], s: 1, ry: Math.PI / 2 });
     this.near.add(instanced(pole, this.mats.get('frame'), lamps));
     this.near.add(instanced(arm, this.mats.get('frame'), lamps));
     const head = new THREE.BoxGeometry(0.5, 0.06, 0.25).translate(0, 5.88, -1.05);
@@ -90,7 +115,7 @@ export class Landscape {
     const glowMat = this.mats.get('glowSprite');
     for (const l of lamps) {
       const s = new THREE.Mesh(new THREE.PlaneGeometry(9, 9).rotateX(-Math.PI / 2), glowMat);
-      s.position.set(l.p[0], 0.05, 32);
+      s.position.set(l.p[0], 0.05, STREET.far - 1);
       s.renderOrder = 2;
       this.near.add(s);
     }
@@ -98,7 +123,7 @@ export class Landscape {
 
   private gardens(quality: 'high' | 'lite') {
     rand(9001);
-    // Trees: broadleaf canopies scattered around the site and along the street.
+    // Trees: broadleaf canopies in the neighbouring gardens and along the street.
     const canopy = canopyGeometry(quality === 'high' ? 7 : 5, 3, quality === 'high' ? 3 : 2);
     const trunk = new THREE.CylinderGeometry(0.12, 0.2, 1, 7).translate(0, 0.5, 0);
     const trees: { p: V3; s: V3; ry: number; color: THREE.Color; h: number }[] = [];
@@ -106,16 +131,15 @@ export class Landscape {
     while (trees.length < (quality === 'high' ? 90 : 55) && guard++ < 4000) {
       const x = (rand() - 0.5) * 220;
       const z = (rand() - 0.5) * 200 - 10;
-      const garden = x > -52 && x < -20 && z > -32 && z < 30;
-      if (inSite(x, z) || garden || (z > 22 && z < 36)) continue;
+      if (inSite(x, z) || inStreet(z)) continue;
       const s = 2.6 + rand() * 2.6;
       const tint = 0.75 + rand() * 0.35;
       trees.push({ p: [x, 0, z], s: [s, s * (0.9 + rand() * 0.3), s], ry: rand() * 6.28, color: new THREE.Color(0.24 * tint, 0.38 * tint, 0.2 * tint), h: s * 0.9 });
     }
-    // A double row framing the gardens west of the building.
-    for (let z = -26; z <= 12; z += 7) {
+    // A row behind the north boundary, so the building stands against green.
+    for (let x = PLOT.x0 - 2; x <= PLOT.x1 + 4; x += 7) {
       const s = 3 + rand();
-      trees.push({ p: [-54 + rand() * 2, 0, z], s: [s, s, s], ry: rand() * 6, color: new THREE.Color(0.2, 0.34, 0.17), h: s * 0.9 });
+      trees.push({ p: [x + rand() * 2, 0, PLOT.z0 - 4 - rand() * 2], s: [s, s, s], ry: rand() * 6, color: new THREE.Color(0.2, 0.34, 0.17), h: s * 0.9 });
     }
     const canopyMat = this.mats.get('canopy');
     this.near.add(
@@ -127,52 +151,54 @@ export class Landscape {
     );
     this.near.add(instanced(trunk, this.mats.get('bark'), trees.map((t) => ({ p: t.p, s: [t.s[0] * 0.4, t.h + t.s[1] * 0.3, t.s[0] * 0.4] as V3 }))));
 
-    // Palms: along the forecourt, the garden walk and the pool deck.
+    // Palms: either side of the entrance, by the pool, and in the planting behind the building.
+    const front = STREET_FACE_Z + 2.6;
     const palms: { p: V3; s: number; ry: number }[] = [];
-    for (const x of [-22, -16, 16, 22]) palms.push({ p: [x, 0, 21.5], s: 8 + rand() * 2.5, ry: rand() * 6 });
-    for (let i = 0; i < 9; i++) palms.push({ p: [-30 - rand() * 12, 0, -18 + i * 4.6 + rand() * 1.5], s: 6.5 + rand() * 4, ry: rand() * 6 });
-    for (const [x, z] of [[-12.8, -24.6], [12.8, -12.4], [-12.8, -12], [22, -20], [23, -5], [22.5, 6]] as const)
-      palms.push({ p: [x, x > -13 && x < 13 ? 3.4 : 0, z], s: 6 + rand() * 2.5, ry: rand() * 6 });
+    for (const x of [GATE.x0 - 4.4, GATE.x0 - 1, GATE.x1 + 1.2, GATE.x1 + 6]) palms.push({ p: [x, 0, front], s: 4.4 + rand() * 1.4, ry: rand() * 6 });
+    for (let x = PLOT.x0 + 2.5; x < DRIVE.x0 - 2; x += 6.5) palms.push({ p: [x + rand() * 1.5, 0, PLOT.z0 + 1.6], s: 6.5 + rand() * 3.5, ry: rand() * 6 });
     const palm = palmGeometry(5);
     const trunks = instanced(palm.trunk, this.mats.get('bark'), palms);
     const crowns = instanced(palm.crown, this.mats.get('palmLeaf'), palms);
     this.near.add(trunks, crowns);
     this.trackSway(crowns);
 
-    // Clipped hedges along the street, broken for the drive; flowering shrubs among them.
+    // Clipped hedges along the street, broken for the entrance and the drive; flowering shrubs among them.
     const shrub = shrubGeometry(8);
     const hedges: { p: V3; s: V3; ry: number }[] = [];
     const flowers: { p: V3; s: V3; ry: number }[] = [];
+    const open = (x: number) => (x > GATE.x0 && x < GATE.x1) || (x > DRIVE.x0 - 0.6 && x < DRIVE.x1 + 0.6);
     for (let x = -60; x <= 60; x += 1.3) {
-      if (x > -7 && x < 7) continue;
-      hedges.push({ p: [x, 0.1, 23], s: [0.85, 0.75, 0.6], ry: rand() * 6 });
-      if (rand() > 0.72) flowers.push({ p: [x + 0.3, 0.5, 22.6], s: [0.55, 0.45, 0.5], ry: rand() * 6 });
+      if (open(x)) continue;
+      hedges.push({ p: [x, 0.1, PLOT.z1 - 0.45], s: [0.85, 0.75, 0.6], ry: rand() * 6 });
+      if (rand() > 0.86) flowers.push({ p: [x + 0.3, 0.5, PLOT.z1 - 0.85], s: [0.5, 0.4, 0.45], ry: rand() * 6 });
     }
-    for (let i = 0; i < 70; i++) {
-      const x = -24 - rand() * 22;
-      const z = -28 + rand() * 48;
-      const s = 0.5 + rand() * 0.9;
-      (rand() > 0.7 ? flowers : hedges).push({ p: [x, 0.05, z], s: [s, s * 0.8, s], ry: rand() * 6 });
+    // Planting beds in front of the building, left and right of the way in.
+    for (let i = 0; i < 44; i++) {
+      const left = i % 2 === 0;
+      const x = left ? GATE.x0 - 0.4 - rand() * 5.2 : GATE.x1 + 0.4 + rand() * 9;
+      const z = STREET_FACE_Z + 1.2 + rand() * 2.6;
+      const s = 0.45 + rand() * 0.75;
+      (rand() > 0.84 ? flowers : hedges).push({ p: [x, 0.05, z], s: [s, s * 0.8, s], ry: rand() * 6 });
     }
-    for (let i = 0; i < 26; i++) {
+    // The planted strip behind the building.
+    for (let i = 0; i < 40; i++) {
+      const x = PLOT.x0 + 1 + rand() * (DRIVE.x0 - PLOT.x0 - 2);
+      const s = 0.6 + rand() * 0.8;
+      (rand() > 0.8 ? flowers : hedges).push({ p: [x, 0.05, PLOT.z0 + 0.8 + rand() * 2], s: [s, s * 0.8, s], ry: rand() * 6 });
+    }
+    // The neighbours' gardens, beyond the boundary walls.
+    for (let i = 0; i < 60; i++) {
       const side = i % 2 ? 1 : -1;
-      hedges.push({ p: [side * (20 + rand() * 4.5), 0.05, -28 + rand() * 50], s: [0.9, 0.7, 0.9], ry: rand() * 6 });
+      const x = side > 0 ? PLOT.x1 + 2 + rand() * 20 : PLOT.x0 - 2 - rand() * 20;
+      const s = 0.6 + rand() * 0.9;
+      (rand() > 0.9 ? flowers : hedges).push({ p: [x, 0.05, PLOT.z0 + rand() * (PLOT.z1 - PLOT.z0)], s: [s, s * 0.8, s], ry: rand() * 6 });
     }
     this.near.add(instanced(shrub, this.mats.get('hedge'), hedges));
     this.near.add(instanced(shrub, this.mats.get('flower'), flowers));
 
-    // A stepping-stone walk through the western lawns, lit by bollards.
-    const stone = new THREE.CylinderGeometry(0.45, 0.45, 0.06, 18);
-    const steps: { p: V3; s: V3 }[] = [];
+    // Bollards light the forecourt beds; uplights sit under the entrance palms.
     const bollards: { p: V3; s: number }[] = [];
-    for (let i = 0; i < 44; i++) {
-      const t = i / 43;
-      const x = -24 - 12 * Math.sin(t * Math.PI) + (t - 0.5) * 4;
-      const z = 20 - t * 46;
-      steps.push({ p: [x, 0.02, z], s: [1, 1, 0.8] });
-      if (i % 5 === 0) bollards.push({ p: [x + 1.1, 0, z], s: 1 });
-    }
-    this.near.add(instanced(stone, this.mats.get('stone'), steps, false));
+    for (const x of [GATE.x0 - 5, GATE.x0 - 2.2, GATE.x0 - 0.2, GATE.x1 + 0.2, GATE.x1 + 3, GATE.x1 + 6.5]) bollards.push({ p: [x, 0, STREET_FACE_Z + 3.4], s: 1 });
     const bollard = new THREE.CylinderGeometry(0.07, 0.07, 0.7, 10).translate(0, 0.35, 0);
     const cap = new THREE.CylinderGeometry(0.075, 0.075, 0.08, 10).translate(0, 0.62, 0);
     this.near.add(instanced(bollard, this.mats.get('frame'), bollards, false));
@@ -183,22 +209,18 @@ export class Landscape {
       s.position.set(bl.p[0], 0.06, bl.p[2]);
       this.near.add(s);
     }
-    // Uplights under the palms of the forecourt.
     for (const p of palms.slice(0, 4)) {
       const s = new THREE.Mesh(new THREE.PlaneGeometry(4, 4).rotateX(-Math.PI / 2), glowMat);
       s.position.set(p.p[0], 0.07, p.p[2]);
       this.near.add(s);
     }
-    // Benches along the walk.
     const b = new Bucket();
-    for (const [x, z, r] of [[-33, 4, 0.4], [-31, -12, -0.3]] as const) {
-      b.rounded('teak', [x, 0.45, z], [1.8, 0.08, 0.5], 0.02, r);
-      b.rounded('stone', [x, 0.2, z], [1.4, 0.4, 0.35], 0.04, r);
-    }
-    // A low garden wall and gate piers along the street edge.
-    b.box('stone', -60, 0, 23.7, -7, 0.55, 23.95);
-    b.box('stone', 7, 0, 23.7, 60, 0.55, 23.95);
-    for (const x of [-7.4, 7.4]) b.rounded('plaster', [x, 1.2, 23.8], [0.8, 2.4, 0.8], 0.06);
+    // A bench by the planting, looking back at the entrance.
+    b.rounded('teak', [GATE.x1 + 2.2, 0.45, PLOT.z1 - 1.5], [1.8, 0.08, 0.5], 0.02);
+    b.rounded('stone', [GATE.x1 + 2.2, 0.2, PLOT.z1 - 1.5], [1.4, 0.4, 0.35], 0.04);
+    // A low wall along the street, with piers at the entrance and at the drive.
+    for (const [x0, x1] of [[-60, GATE.x0], [GATE.x1, DRIVE.x0 - 0.6], [DRIVE.x1 + 0.6, 60]] as const) b.box('stone', x0, 0, PLOT.z1 - 0.1, x1, 0.55, PLOT.z1 + 0.15);
+    for (const x of [GATE.x0 - 0.4, GATE.x1 + 0.4, DRIVE.x0 - 1, DRIVE.x1 + 1]) b.rounded('plaster', [x, 1.2, PLOT.z1], [0.8, 2.4, 0.8], 0.06);
     b.build(this.near, (k) => this.mats.get(k), { uvScale: () => 0.4 });
   }
 
@@ -236,8 +258,9 @@ export class Landscape {
       b.add('bulb', new THREE.BoxGeometry(0.06, 0.08, 1.5).translate(2.5, 0.72, 0), m);
       b.add('tail', new THREE.BoxGeometry(0.05, 0.07, 1.6).translate(-2.52, 0.8, 0), m);
     };
-    car(-3.2, 19.2, 0.05, 'paint');
-    car(3.4, 17.8, Math.PI - 0.08, 'paintWhite');
+    // One drawn up outside the entrance, one on its way down to the basement.
+    car(GATE.x1 + 3.6, STREET.walk - 1.9, 0.04, 'paintWhite');
+    car((DRIVE.x0 + DRIVE.x1) / 2, 4, Math.PI / 2, 'paint');
     b.build(this.near, (k) => this.mats.get(k));
   }
 

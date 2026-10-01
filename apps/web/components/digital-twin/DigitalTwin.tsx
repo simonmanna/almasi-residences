@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toMajorUnits } from '@avida/types';
@@ -57,6 +58,39 @@ const DOCK_LABEL: Record<Exclude<Place, 'residence'>, string> = {
   garden: 'Gardens',
 };
 
+/** A render of each kind of home, from the site's own media, for the residence card. */
+const TYPE_IMAGE: Record<Residence['type'], { src: string; alt: string }> = {
+  'one-bedroom': { src: '/media/almasi/one-living.jpg', alt: 'A one-bedroom living room at dusk' },
+  'two-bedroom': { src: '/media/almasi/living-2br.jpg', alt: 'A two-bedroom living room at dusk' },
+  'three-bedroom': { src: '/media/almasi/living-2br.jpg', alt: 'A living room at dusk' },
+  penthouse: { src: '/media/almasi/ph-living.jpg', alt: 'A penthouse living room at dusk' },
+};
+
+const GALLERY: readonly (readonly [src: string, caption: string])[] = [
+  ['/media/almasi/aerial.jpg', 'Almasi from above'],
+  ['/media/almasi/living-2br.jpg', 'Two-bedroom living room'],
+  ['/media/almasi/ph-terrace.jpg', 'Penthouse terrace'],
+  ['/media/almasi/pool.jpg', 'The pool'],
+  ['/media/almasi/lobby.jpg', 'Reception'],
+  ['/media/almasi/ph-bedroom.jpg', 'Penthouse primary suite'],
+];
+
+const ICONS = {
+  arrow: 'M4 12h15M13 6l6 6-6 6',
+  close: 'M6 6l12 12M18 6L6 18',
+  plus: 'M12 5v14M5 12h14',
+  minus: 'M5 12h14',
+  chevron: 'M9 6l6 6-6 6',
+} as const;
+
+function Icon({ name }: { name: keyof typeof ICONS }) {
+  return (
+    <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden>
+      <path d={ICONS[name]} />
+    </svg>
+  );
+}
+
 const floorShort = (level: number) => (level === 4 ? 'PH' : level === 0 ? 'G' : String(level));
 
 function detect(): { webgl: boolean; quality: Quality } {
@@ -102,7 +136,7 @@ export function DigitalTwin() {
   const [fading, setFading] = useState(false);
   const [touched, setTouched] = useState(false);
   const [sheet, setSheet] = useState<'none' | 'list' | 'card' | 'rooms'>('none');
-  const [listOpen, setListOpen] = useState(true);
+  const [listOpen, setListOpen] = useState(false);
   const [sound, setSound] = useState(false);
   const deepLink = useRef<{ key: string | null; tour: boolean } | null>(null);
   const [linkWaited, setLinkWaited] = useState(false);
@@ -111,6 +145,7 @@ export function DigitalTwin() {
   const { scene: tour, demo } = sceneFor(selected ? { typologySlug: selected.typologySlug } : null);
   useAmbience(sound, state.place === 'residence');
   const hovered = residences.find((r) => r.id === hoveredId) ?? null;
+  const availableCount = residences.filter((r) => r.publicStatus === 'available').length;
   const inside = state.place === 'residence';
   const floors = useMemo(() => {
     const levels = [...new Set(residences.map((r) => r.floorLevel))].sort((a, b) => b - a);
@@ -281,6 +316,7 @@ export function DigitalTwin() {
 
   const chooseFloor = (level: number | null) => {
     setFocus(level);
+    if (level !== null) setListOpen(true);
     setSelectedId(null);
     setCinematic(false);
     setState((s) => ({ ...s, place: 'exterior' }));
@@ -340,7 +376,7 @@ export function DigitalTwin() {
         ? {
             id: selected.id,
             label: selected.label,
-            summary: `${selected.bedrooms} bedroom · ${selected.areaSqm} m² · ${selected.floorLabel}`,
+            summary: `${selected.bedrooms} bedroom, ${selected.areaSqm} m², ${selected.floorLabel.toLowerCase()}`,
           }
         : undefined,
     });
@@ -370,7 +406,7 @@ export function DigitalTwin() {
   const heading = inside
     ? roomById(tour, pose.room ?? state.room)
     : selected
-      ? { name: `Residence ${selected.label}`, detail: `${TYPE_TEXT[selected.type]} · ${selected.floorLabel}` }
+      ? { name: `Residence ${selected.label}`, detail: `${TYPE_TEXT[selected.type]}, ${selected.floorLabel.toLowerCase()}` }
       : focus !== null
         ? { name: floors.find((f) => f.level === focus)?.label ?? 'Floor', detail: 'Choose a residence on the plan.' }
         : { name: place?.id === 'exterior' ? 'Explore Almasi' : place?.name ?? '', detail: place?.caption ?? '' };
@@ -378,7 +414,9 @@ export function DigitalTwin() {
   // ─── Render ──────────────────────────────────────────────────────────
 
   return (
-    <main id="main" className={styles.page} data-nav-ground="night" data-ground="night" data-hide-sticky-cta>
+    // This page wears the site's Blue theme whatever the admin chose for the rest: the theme on <main>, its night ground inside.
+    <main id="main" data-theme="blue" data-nav-ground="night" data-hide-sticky-cta>
+    <div className={styles.page} data-ground="night">
       <section
         className={styles.stage}
         aria-label="Almasi Residence interactive 3D experience"
@@ -394,7 +432,7 @@ export function DigitalTwin() {
         {/* Hotspots and residence labels, positioned by the engine each frame. */}
         <div className={styles.labels} aria-hidden={phase !== 'ready'}>
           {EXTERIOR_HOTSPOTS.map((h) => (
-            <button key={h.id} ref={labelRef(`place:${h.id}`)} className={styles.hotspot} data-visible="false" onClick={() => goTo(h.id)}>
+            <button key={h.id} ref={labelRef(`place:${h.id}`)} className={styles.hotspot} data-kind="place" data-visible="false" onClick={() => goTo(h.id)}>
               <span className={styles.ring} />
               <span className={styles.hotspotLabel}>{h.label}</span>
             </button>
@@ -419,7 +457,7 @@ export function DigitalTwin() {
             >
               <strong>{r.label}</strong>
               <span>
-                {r.bedrooms} bed · {r.areaSqm} m²
+                {r.bedrooms} bed, {r.areaSqm} m²
               </span>
             </button>
           ))}
@@ -428,7 +466,7 @@ export function DigitalTwin() {
               <>
                 <strong>Residence {hovered.label}</strong>
                 <span>
-                  {TYPE_TEXT[hovered.type]} · {hovered.areaSqm} m² · {hovered.floorLabel}
+                  {TYPE_TEXT[hovered.type]}, {hovered.areaSqm} m², {hovered.floorLabel.toLowerCase()}
                 </span>
                 <em data-status={hovered.publicStatus}>{STATUS_TEXT[hovered.publicStatus]}</em>
               </>
@@ -436,25 +474,26 @@ export function DigitalTwin() {
           </div>
         </div>
 
-        {/* Title and breadcrumb. */}
+        {/* The title: where the visitor is. */}
         <header className={styles.heading} data-hidden={cinematic}>
-          <p className={styles.eyebrow}>
-            <span className={styles.dot} /> Almasi Residence · Kimihurura, Kigali
-          </p>
-          <h1>
+          <h1 key={heading.name} className={styles.title}>
             {heading.name}
-            <small>{heading.detail}</small>
           </h1>
-          <nav className={styles.crumbs} aria-label="You are here">
-            {breadcrumb.map((c, i) => (
-              <span key={i}>
-                {i > 0 && <i aria-hidden>›</i>}
-                {c.go && i < breadcrumb.length - 1 ? <button onClick={c.go}>{c.label}</button> : <b>{c.label}</b>}
-              </span>
-            ))}
-          </nav>
+          <p key={heading.detail} className={styles.lede}>
+            {heading.detail}
+          </p>
+          {breadcrumb.length > 1 && (
+            <nav className={styles.crumbs} aria-label="You are here">
+              {breadcrumb.map((c, i) => (
+                <span key={i}>
+                  {i > 0 && <Icon name="chevron" />}
+                  {c.go && i < breadcrumb.length - 1 ? <button onClick={c.go}>{c.label}</button> : <b>{c.label}</b>}
+                </span>
+              ))}
+            </nav>
+          )}
           {!touched && phase === 'ready' && !inside && (
-            <p className={styles.hint}>Drag to orbit · Scroll to zoom · Select any residence on the building</p>
+            <p className={styles.hint}>Drag to orbit, scroll to zoom, select any residence on the building</p>
           )}
         </header>
 
@@ -469,10 +508,10 @@ export function DigitalTwin() {
           </div>
           <div className={styles.iconRow}>
             <button aria-label="Zoom in" onClick={() => engine.current?.zoom(0.8)}>
-              <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
+              <Icon name="plus" />
             </button>
             <button aria-label="Zoom out" onClick={() => engine.current?.zoom(1.25)}>
-              <svg viewBox="0 0 24 24" aria-hidden><path d="M5 12h14" /></svg>
+              <Icon name="minus" />
             </button>
             {!inside && (
               <button aria-label="Show availability on the building" aria-pressed={availability} onClick={() => setAvailability((a) => !a)}>
@@ -516,13 +555,18 @@ export function DigitalTwin() {
           </nav>
         )}
 
-        {/* Left: the residence selector. */}
+        {/* Left: the residence selector. It opens when a floor is chosen, so the building is first seen whole. */}
         {!inside && (
           <aside className={styles.selector} data-open={listOpen} data-sheet={sheet === 'list'} aria-label="Select a residence">
             <div className={styles.selectorHead}>
               <h2>Select a residence</h2>
+              {residences.length > 0 && (
+                <p className={styles.count}>
+                  {availableCount} of {residences.length} available
+                </p>
+              )}
               <button className={styles.collapse} onClick={() => (sheet === 'list' ? setSheet('none') : setListOpen((o) => !o))} aria-expanded={listOpen} aria-label={listOpen ? 'Hide residences' : 'Show residences'}>
-                {listOpen ? '–' : '+'}
+                <Icon name={listOpen ? 'minus' : 'plus'} />
               </button>
             </div>
             <div className={styles.chips} role="group" aria-label="Floor">
@@ -573,16 +617,19 @@ export function DigitalTwin() {
           </aside>
         )}
 
-        {/* The chosen residence. */}
+        {/* The chosen residence, under a render of its kind of home. */}
         {selected && !inside && (
           <aside className={styles.card} data-sheet={sheet === 'card'} aria-label={`Residence ${selected.label}`}>
+            <div className={styles.cardMedia}>
+              <Image src={TYPE_IMAGE[selected.type].src} alt={TYPE_IMAGE[selected.type].alt} fill sizes="(max-width: 820px) 100vw, 380px" quality={70} />
+              <div className={styles.cardTitle}>
+                <h2>Residence {selected.label}</h2>
+                <p>{selected.floorLabel}</p>
+              </div>
+            </div>
             <button className={styles.close} aria-label="Close residence" onClick={() => { setSheet('none'); onSelect(null); chooseFloor(selected.floorLevel); }}>
-              ×
+              <Icon name="close" />
             </button>
-            <p className={styles.eyebrow}>{selected.floorLabel}</p>
-            <h2>
-              Residence {selected.label}
-            </h2>
             <dl className={styles.facts}>
               <div><dt>Type</dt><dd>{TYPE_TEXT[selected.type]}</dd></div>
               <div><dt>Interior</dt><dd>{selected.areaSqm} m²</dd></div>
@@ -602,7 +649,7 @@ export function DigitalTwin() {
               </p>
             )}
             <button className={styles.primary} onClick={() => enter()}>
-              Enter 3D tour <span aria-hidden>→</span>
+              Enter 3D tour <Icon name="arrow" />
             </button>
             <div className={styles.secondary}>
               <button onClick={showPlan}>Floor plan</button>
@@ -616,13 +663,12 @@ export function DigitalTwin() {
         {inside && phase === 'ready' && (
           <aside className={styles.roomPanel} data-sheet={sheet === 'rooms'} aria-label="Residence and rooms">
             <button className={styles.close} aria-label="Close rooms" onClick={() => setSheet('none')}>
-              ×
+              <Icon name="close" />
             </button>
-            <p className={styles.eyebrow}>{selected ? `Residence ${selected.label}` : 'Almasi Residence'}</p>
             <h2 className={styles.panelTitle}>{selected ? TYPE_TEXT[selected.type] : tour.name}</h2>
             <p className={styles.panelFacts}>
               {selected
-                ? `${selected.bedrooms} bedroom${selected.bedrooms > 1 ? 's' : ''} · ${selected.areaSqm} m² · ${selected.floorLabel}`
+                ? `Residence ${selected.label}, ${selected.bedrooms} bedroom${selected.bedrooms > 1 ? 's' : ''}, ${selected.areaSqm} m², ${selected.floorLabel.toLowerCase()}`
                 : tour.summary}
             </p>
             {demo && selected && (
@@ -661,7 +707,7 @@ export function DigitalTwin() {
               <button className={styles.textLink} onClick={() => enquire()}>Enquire</button>
             </div>
             <button className={styles.primary} onClick={() => enquire('viewing')}>
-              Book a viewing <span aria-hidden>→</span>
+              Book a viewing <Icon name="arrow" />
             </button>
           </aside>
         )}
@@ -675,16 +721,25 @@ export function DigitalTwin() {
         {/* Cinematic caption. */}
         {caption && cinematic && <p className={styles.caption}>{caption}</p>}
 
-        {/* The dock. */}
+        {/* The dock: outside, a strip of stills of this model, one for each place to go. */}
         {phase === 'ready' && (
           <nav className={styles.dock} aria-label="Explore">
             {!inside ? (
               <>
-                {PLACES.map((p) => (
-                  <button key={p.id} aria-pressed={!cinematic && state.place === p.id && (p.id !== 'exterior' || (focus === null && !selected))} onClick={() => goTo(p.id)}>
-                    {DOCK_LABEL[p.id]}
-                  </button>
-                ))}
+                <div className={styles.places}>
+                  {PLACES.map((p) => (
+                    <button
+                      key={p.id}
+                      className={styles.place}
+                      aria-pressed={!cinematic && state.place === p.id && (p.id !== 'exterior' || (focus === null && !selected))}
+                      onClick={() => goTo(p.id)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/media/twin/places/${p.id}.jpg`} alt="" width={480} height={320} decoding="async" />
+                      <span>{DOCK_LABEL[p.id]}</span>
+                    </button>
+                  ))}
+                </div>
                 <span className={styles.sep} aria-hidden />
                 <button aria-pressed={cinematic} onClick={toggleCinematic}>
                   {cinematic ? 'Stop film' : 'Cinematic'}
@@ -723,33 +778,34 @@ export function DigitalTwin() {
 
         <div className={styles.fade} data-on={fading} aria-hidden />
 
-        {phase !== 'ready' && (
-          <div className={styles.loader} data-failed={phase === 'failed'} role="status">
-            <div className={styles.mark}>
-              <svg viewBox="0 0 64 32" aria-hidden><path d="M2 30 L20 6 L32 22 L44 6 L62 30" /></svg>
-              <span>ALMASI</span>
-              <small>RESIDENCE</small>
-            </div>
-            {phase === 'failed' ? (
-              <>
-                <p>Interactive 3D isn’t available on this device.</p>
-                <a href="#gallery" className={styles.textLink}>View the residence gallery ↓</a>
-              </>
-            ) : (
-              <>
-                <p>{progress.step}…</p>
-                <div className={styles.bar}><span style={{ transform: `scaleX(${progress.p / 100})` }} /></div>
-                <small className={styles.pct}>{progress.p}%</small>
-              </>
-            )}
+        {/* The loader stays mounted so it can dissolve into the scene rather than cut to it. */}
+        <div className={styles.loader} data-failed={phase === 'failed'} data-done={phase === 'ready'} role="status" aria-hidden={phase === 'ready'}>
+          {/* A still of this model holds the frame until the live one is ready. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className={styles.poster} src="/media/twin/poster.jpg" alt="" decoding="async" />
+          <div className={styles.mark}>
+            <svg viewBox="0 0 64 32" aria-hidden><path d="M2 30 L20 6 L32 22 L44 6 L62 30" /></svg>
+            <span>ALMASI</span>
+            <small>RESIDENCE</small>
           </div>
-        )}
+          {phase === 'failed' ? (
+            <>
+              <p>Interactive 3D isn’t available on this device.</p>
+              <a href="#gallery" className={styles.textLink}>View the residence gallery</a>
+            </>
+          ) : (
+            <>
+              <p>{progress.step}…</p>
+              <div className={styles.bar}><span style={{ transform: `scaleX(${progress.p / 100})` }} /></div>
+              <small className={styles.pct}>{progress.p}%</small>
+            </>
+          )}
+        </div>
       </section>
 
       {/* Readable, indexable content: the 3D is the immersive layer, not the page. */}
       <section className={styles.details} id="gallery">
         <div className={styles.detailsIntro}>
-          <p className={styles.eyebrow}>The digital twin</p>
           <h2>
             Every residence, <em>before you arrive.</em>
           </h2>
@@ -765,16 +821,11 @@ export function DigitalTwin() {
           </p>
         </div>
         <div className={styles.gallery}>
-          {[
-            ['/media/almasi/aerial.jpg', 'Almasi from above'],
-            ['/media/almasi/living-2br.jpg', 'Two-bedroom living room'],
-            ['/media/almasi/ph-terrace.jpg', 'Penthouse terrace'],
-            ['/media/almasi/pool.jpg', 'The garden-deck pool'],
-            ['/media/almasi/lobby.jpg', 'Reception'],
-            ['/media/almasi/ph-bedroom.jpg', 'Penthouse primary suite'],
-          ].map(([src, alt]) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={src} src={src} alt={alt} loading="lazy" />
+          {GALLERY.map(([src, caption]) => (
+            <figure key={src}>
+              <Image src={src} alt={caption} fill sizes="(max-width: 820px) 100vw, 50vw" quality={70} />
+              <figcaption aria-hidden>{caption}</figcaption>
+            </figure>
           ))}
         </div>
         <div className={styles.index}>
@@ -797,10 +848,12 @@ export function DigitalTwin() {
 
       <dialog ref={planDialog} className={styles.dialog} aria-labelledby="plan-title">
         <div className={styles.dialogTop}>
-          <p className={styles.eyebrow}>{tour.name} · illustrative plan</p>
-          <button aria-label="Close floor plan" onClick={() => planDialog.current?.close()}>×</button>
+          <h2 id="plan-title">Choose a room.</h2>
+          <button aria-label="Close floor plan" onClick={() => planDialog.current?.close()}>
+            <Icon name="close" />
+          </button>
         </div>
-        <h2 id="plan-title">Choose a room.</h2>
+        <p className={styles.dialogSub}>{tour.name}, illustrative plan</p>
         <Plan scene={tour} pose={inside ? pose : null} current={inside ? pose.room ?? state.room : null} onRoom={goRoom} />
         <p className={styles.note}>
           {demo && selected
@@ -811,22 +864,24 @@ export function DigitalTwin() {
 
       <dialog ref={helpDialog} className={styles.dialog} aria-labelledby="help-title">
         <div className={styles.dialogTop}>
-          <p className={styles.eyebrow}>At your own pace</p>
-          <button aria-label="Close help" onClick={() => helpDialog.current?.close()}>×</button>
+          <h2 id="help-title">Make yourself at home.</h2>
+          <button aria-label="Close help" onClick={() => helpDialog.current?.close()}>
+            <Icon name="close" />
+          </button>
         </div>
-        <h2 id="help-title">Make yourself at home.</h2>
         <ul className={styles.helpList}>
           <li><b>Orbit</b> Drag the building. Scroll or pinch to zoom. Arrow keys work too.</li>
           <li><b>Choose</b> Click any residence on the facade, a floor on the right, or a row in the list.</li>
-          <li><b>Step inside</b> Choose Enter 3D tour on any residence, or Penthouse tour. Gold rings lead from room to room.</li>
+          <li><b>Step inside</b> Choose Enter 3D tour on any residence, or Penthouse tour. Rings lead from room to room.</li>
           <li><b>Walk</b> In Walk mode use W A S D, the arrow keys or the on-screen stick; drag to look.</li>
           <li><b>Dollhouse</b> See the whole home from above, then click a room to drop into it.</li>
           <li><b>Light</b> Day, Sunset and Night change the hour; Availability colours every home by status.</li>
         </ul>
         <button className={styles.primary} onClick={() => helpDialog.current?.close()}>
-          Let’s explore <span aria-hidden>→</span>
+          Let’s explore <Icon name="arrow" />
         </button>
       </dialog>
+    </div>
     </main>
   );
 }

@@ -10,17 +10,20 @@ import {
   type MutableRefObject,
 } from 'react';
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { useTheme } from '../layout/useTheme';
+import { Building, type UnitRef } from '../digital-twin/engine/building';
+import { Materials } from '../digital-twin/engine/materials';
 import {
   FLOOR_H,
   LEVELS,
-  parkingBays,
-  PARTS,
+  STREET_FACE_Z,
   TREES,
   levelBase,
+  parkingBays,
   unitAnchor,
+  unitEnvelope,
   unitVolumes,
-  type PartKind,
   type Rect,
   type UnitVolume,
 } from '../../lib/building-model';
@@ -68,12 +71,10 @@ function useFx() {
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
-/** A selected floor stays; floors above lift away and fade; floors below recede. */
+/** A selected floor opens up; the floors above lift away and fade; the building below stays standing. */
 function targetFx(level: number, focus: number | null): LevelFx {
-  if (focus === null) return { y: 0, opacity: 1 };
-  if (level > focus) return { y: 12 + (level - focus) * 3, opacity: 0.05 };
-  if (level < focus) return { y: 0, opacity: level < 0 ? 0.14 : 0.26 };
-  return { y: 0, opacity: 1 };
+  if (focus === null || level <= focus) return { y: 0, opacity: 1 };
+  return { y: 14 + (level - focus) * 3.5, opacity: 0 };
 }
 
 function FxDriver({ focus, reducedMotion }: { focus: number | null; reducedMotion: boolean }) {
@@ -139,64 +140,77 @@ function setOpacity(m: THREE.Material, value: number) {
 
 // ─── Structure ───────────────────────────────────────────────────────────
 
-const KIND_STYLE: Record<
-  PartKind,
-  { color: string; roughness: number; metalness?: number; opacity?: number; emissive?: string; glow?: number }
-> = {
-  slab: { color: '#E6E0D5', roughness: 0.86 },
-  stone: { color: '#D3C9B8', roughness: 0.9 },
-  core: { color: '#A39B8D', roughness: 0.92 },
-  glass: { color: '#A9C1C5', roughness: 0.08, metalness: 0.2, opacity: 0.24 },
-  walnut: { color: '#5B3E2A', roughness: 0.7 },
-  water: { color: '#4FB6C2', roughness: 0.15, emissive: '#1C7C88', glow: 0.75 },
-  amenity: { color: '#E7D3B5', roughness: 0.7, emissive: '#B98246', glow: 0.5 },
-  basement: { color: '#6A675F', roughness: 0.95, opacity: 0.5 },
-};
+/** Dusk, as on the 3D Design page: homes lit from within, lamps and the pool on. */
+const GLOW = { interior: 0.85, lamp: 1, pool: 0.8, sign: 1, garden: 1 } as const;
 
-function LevelParts({ level, shadows }: { level: number; shadows: boolean }) {
+/**
+ * The building itself: the same procedural model the 3D Design page draws, so
+ * both views show one design. Each level keeps its own materials, which is
+ * what lets a floor lift away and fade on its own.
+ */
+function Architecture({ residences, focusLevel }: { residences: Residence[]; focusLevel: number | null }) {
   const fx = useFx();
-  const mats = useMemo(
-    () =>
-      Object.fromEntries(
-        (Object.keys(KIND_STYLE) as PartKind[]).map((kind) => {
-          const s = KIND_STYLE[kind];
-          return [
-            kind,
-            new THREE.MeshStandardMaterial({
-              color: s.color,
-              roughness: s.roughness,
-              metalness: s.metalness ?? 0,
-              emissive: s.emissive ?? '#000000',
-              emissiveIntensity: s.glow ?? 0,
-              transparent: (s.opacity ?? 1) < 1,
-              opacity: s.opacity ?? 1,
-            }),
-          ];
-        }),
-      ) as Record<PartKind, THREE.MeshStandardMaterial>,
-    [],
-  );
-  useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats]);
+  const { gl, scene } = useThree();
+  const model = useMemo(() => {
+    const mats = new Materials(gl.capabilities.getMaxAnisotropy());
+    const building = new Building(mats);
+    building.build({ basement: true });
+    mats.setGlow(GLOW);
+    return { mats, building };
+  }, [gl]);
 
-  useFrame(() => {
-    const o = fx.current[level]?.opacity ?? 1;
-    for (const kind of Object.keys(mats) as PartKind[]) setOpacity(mats[kind], (KIND_STYLE[kind].opacity ?? 1) * o);
+  // Reflections for the glass and the metals, from a neutral studio rather than a sky this view does not draw.
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    scene.environment = env.texture;
+    scene.environmentIntensity = 0.32;
+    return () => {
+      scene.environment = null;
+      env.dispose();
+      pmrem.dispose();
+    };
+  }, [gl, scene]);
+
+  useEffect(
+    () => () => {
+      model.building.root.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+      model.mats.dispose();
+    },
+    [model],
+  );
+
+  // An opened floor shows its homes furnished, as on the 3D Design page.
+  const units = useMemo(
+    () => residences.map((r): UnitRef => ({ id: r.id, code: r.code, floorLevel: r.floorLevel, modelSlot: r.modelSlot, bedrooms: r.bedrooms })),
+    [residences],
+  );
+  const placed = useMemo(() => units.map((u) => `${u.id}:${u.floorLevel}:${u.modelSlot ?? ''}`).join('|'), [units]);
+  useEffect(() => {
+    model.building.setUnits(units);
+    // This view draws its own status overlays; the engine's highlights stay out of it.
+    model.building.unitRoot.visible = false;
+    // `placed` changes only when a home moves in the model, not on every status poll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, placed]);
+  useEffect(() => {
+    model.building.showCutaway(focusLevel !== null && focusLevel >= 0 ? focusLevel : null, units);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, focusLevel, placed]);
+
+  useFrame((state) => {
+    for (const level of LEVELS) {
+      const f = fx.current[level];
+      const g = model.building.levels.get(level);
+      if (!g) continue;
+      g.position.y = levelBase(level) + (f?.y ?? 0);
+      g.visible = (f?.opacity ?? 1) > 0.01;
+      model.mats.setLevelOpacity(level, f?.opacity ?? 1);
+    }
+    model.mats.tick(state.clock.elapsedTime);
   });
 
-  const parts = useMemo(() => PARTS.filter((p) => p.level === level), [level]);
-  return (
-    <>
-      {parts.map((p, i) => {
-        const b = box(p.rect, p.y0, p.y1);
-        const solid = p.kind !== 'glass' && p.kind !== 'water' && p.kind !== 'basement';
-        return (
-          <mesh key={i} position={b.position} material={mats[p.kind]} castShadow={shadows && solid} receiveShadow={shadows}>
-            <boxGeometry args={b.size} />
-          </mesh>
-        );
-      })}
-    </>
-  );
+  return <primitive object={model.building.root} />;
 }
 
 function ParkingCars({ count }: { count: number }) {
@@ -212,7 +226,7 @@ function ParkingCars({ count }: { count: number }) {
     if (!mesh) return;
     const m = new THREE.Matrix4();
     bays.forEach((bay, i) => {
-      m.makeTranslation(bay.x, 0.95, bay.z);
+      m.makeRotationY(bay.turned ? Math.PI / 2 : 0).setPosition(bay.x, 0.95, bay.z);
       mesh.setMatrixAt(i, m);
     });
     mesh.instanceMatrix.needsUpdate = true;
@@ -229,16 +243,16 @@ function ParkingCars({ count }: { count: number }) {
 // ─── Residences ──────────────────────────────────────────────────────────
 
 /**
- * Status reads as light: available homes glow as if lived in, reserved and
- * booked ones are striped, sold ones are dark. The side panel repeats every
- * status in words.
+ * Status reads as light, laid over the real facade: an available home glows as
+ * if lived in, reserved and booked ones are striped, sold ones are veiled dark.
+ * The side panel repeats every status in words.
  */
-const STATUS_STYLE: Record<PublicStatus, { color: string; emissive: string; glow: number; opacity: number }> = {
-  available: { color: '#F1D9B5', emissive: '#D69A57', glow: 0.62, opacity: 1 },
-  reserved: { color: '#FFFFFF', emissive: '#6E5638', glow: 0.16, opacity: 1 },
-  booked: { color: '#C9B48E', emissive: '#5A4527', glow: 0.1, opacity: 1 },
-  sold: { color: '#5D5A53', emissive: '#000000', glow: 0, opacity: 1 },
-  unavailable: { color: '#3E3C37', emissive: '#000000', glow: 0, opacity: 0.7 },
+const STATUS_STYLE: Record<PublicStatus, { color: string; opacity: number; striped?: boolean }> = {
+  available: { color: '#FFC983', opacity: 0.3 },
+  reserved: { color: '#FFFFFF', opacity: 0.5, striped: true },
+  booked: { color: '#D9C39A', opacity: 0.5, striped: true },
+  sold: { color: '#1F1E1B', opacity: 0.66 },
+  unavailable: { color: '#151412', opacity: 0.74 },
 };
 
 let stripes: THREE.CanvasTexture | null = null;
@@ -266,8 +280,10 @@ function stripeTexture(): THREE.CanvasTexture {
 }
 
 interface UnitLook {
-  mesh: THREE.MeshStandardMaterial;
+  mesh: THREE.MeshBasicMaterial;
   edge: THREE.LineBasicMaterial;
+  /** 0…1, how strongly the pointer or the selection lights the home. */
+  hot: number;
 }
 
 function useUnitLooks(residences: Residence[]) {
@@ -281,16 +297,15 @@ function useUnitLooks(residences: Residence[]) {
     map.set(r.id, {
       status: r.publicStatus,
       look: {
-        mesh: new THREE.MeshStandardMaterial({
+        mesh: new THREE.MeshBasicMaterial({
           color: s.color,
-          emissive: s.emissive,
-          emissiveIntensity: s.glow,
-          roughness: 0.6,
-          map: r.publicStatus === 'reserved' || r.publicStatus === 'booked' ? stripeTexture() : null,
-          transparent: s.opacity < 1,
-          opacity: s.opacity,
+          map: s.striped ? stripeTexture() : null,
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
         }),
         edge: prev?.look.edge ?? new THREE.LineBasicMaterial({ color: '#F6E6CC', transparent: true, opacity: 0 }),
+        hot: 0,
       },
     });
   }
@@ -310,7 +325,7 @@ function UnitVolumeMesh({
   residence,
   volume,
   look,
-  shadows,
+  opened,
   interactive,
   onHover,
   onSelect,
@@ -318,12 +333,14 @@ function UnitVolumeMesh({
   residence: Residence;
   volume: UnitVolume;
   look: UnitLook;
-  shadows: boolean;
+  /** Its floor is open: the home shows as a tint on its own floor, over the furniture. */
+  opened: boolean;
   interactive: () => boolean;
   onHover: (id: string | null) => void;
   onSelect: (r: Residence) => void;
 }) {
-  const b = useMemo(() => box(volume.rect, volume.y0, volume.y1, 0.1), [volume]);
+  // The overlay reaches past the home's own walls and balconies, so it sits on the facade.
+  const b = useMemo(() => box(unitEnvelope(volume.level, volume.rect), volume.y0 - 0.1, volume.y1 + 0.2), [volume]);
   const edges = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(...b.size)), [b]);
   useEffect(() => () => edges.dispose(), [edges]);
 
@@ -343,19 +360,28 @@ function UnitVolumeMesh({
     onSelect(residence);
   };
 
-  return (
-    <group position={b.position}>
+  if (opened) {
+    const [x0, z0, x1, z1] = volume.rect;
+    return (
       <mesh
         material={look.mesh}
-        castShadow={shadows}
-        receiveShadow={shadows}
+        renderOrder={5}
+        rotation-x={-Math.PI / 2}
+        position={[(x0 + x1) / 2, volume.y0 + 0.06, (z0 + z1) / 2]}
         onPointerOver={over}
         onPointerOut={out}
         onClick={click}
       >
+        <planeGeometry args={[x1 - x0 - 0.3, z1 - z0 - 0.3]} />
+      </mesh>
+    );
+  }
+  return (
+    <group position={b.position}>
+      <mesh material={look.mesh} renderOrder={5} onPointerOver={over} onPointerOut={out} onClick={click}>
         <boxGeometry args={b.size} />
       </mesh>
-      <lineSegments geometry={edges} material={look.edge} />
+      <lineSegments geometry={edges} material={look.edge} renderOrder={6} />
     </group>
   );
 }
@@ -366,27 +392,34 @@ function UnitAnimator({
   hoveredId,
   selectedId,
   matchIds,
+  focusLevel,
 }: {
   residences: Residence[];
   looks: Map<string, { status: PublicStatus; look: UnitLook }>;
+  focusLevel: number | null;
   hoveredId: string | null;
   selectedId: string | null;
   matchIds: ReadonlySet<string> | null;
 }) {
   const fx = useFx();
+  const white = useMemo(() => new THREE.Color('#FFE9C8'), []);
+  const base = useMemo(() => new THREE.Color(), []);
   useFrame((_, dt) => {
-    const k = 1 - Math.exp(-dt * 10);
+    // Highlights fade in and out rather than switching.
+    const k = 1 - Math.exp(-dt * 8);
     for (const r of residences) {
       const entry = looks.get(r.id);
       if (!entry) continue;
-      const { mesh, edge } = entry.look;
+      const { look } = entry;
       const s = STATUS_STYLE[r.publicStatus];
-      const hot = r.id === selectedId ? 0.75 : r.id === hoveredId ? 0.45 : 0;
-      mesh.emissiveIntensity += (s.glow + hot - mesh.emissiveIntensity) * k;
+      look.hot += ((r.id === selectedId ? 1 : r.id === hoveredId ? 0.6 : 0) - look.hot) * k;
       const level = fx.current[r.floorLevel]?.opacity ?? 1;
       const dim = matchIds && !matchIds.has(r.id) ? 0.2 : 1;
-      setOpacity(mesh, s.opacity * level * dim);
-      edge.opacity += ((hot > 0 ? 0.95 : 0) * level - edge.opacity) * k;
+      look.mesh.color.copy(base.set(s.color)).lerp(white, look.hot * 0.55);
+      // On an opened floor the tint lies over the furniture, so it is lighter.
+      const veil = focusLevel === r.floorLevel ? 0.55 : 1;
+      look.mesh.opacity = Math.min(0.9, s.opacity * veil + look.hot * 0.22) * level * dim;
+      look.edge.opacity = Math.min(1, look.hot * 1.4) * level;
     }
   });
   return null;
@@ -422,25 +455,23 @@ function Site({ focusLevel }: { focusLevel: number | null }) {
     setOpacity(ground, ground.opacity + (target - ground.opacity) * (1 - Math.exp(-dt * 5)));
   });
 
+  // The street: 11.4 m of asphalt beyond the 4 m reserve, as on the site plan.
+  const road = STREET_FACE_Z + 15.5;
   return (
     <group>
-      <mesh rotation-x={-Math.PI / 2} position-y={-0.02} receiveShadow material={ground}>
+      <mesh rotation-x={-Math.PI / 2} position-y={-0.5} receiveShadow material={ground}>
         <circleGeometry args={[160, 72]} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.005, -8]} receiveShadow>
-        <planeGeometry args={[62, 54]} />
-        <meshStandardMaterial color="#23271F" roughness={1} />
-      </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.01, 18.1]} receiveShadow>
-        <planeGeometry args={[13, 10.8]} />
+      <mesh rotation-x={-Math.PI / 2} position={[1.5, -0.48, 1]} receiveShadow>
+        <planeGeometry args={[36, 44]} />
         <meshStandardMaterial color="#2C2B27" roughness={0.9} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.008, 27.5]} receiveShadow>
-        <planeGeometry args={[320, 8]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.47, road]} receiveShadow>
+        <planeGeometry args={[320, 11.4]} />
         <meshStandardMaterial color="#111210" roughness={0.8} />
       </mesh>
       {Array.from({ length: 40 }, (_, i) => (
-        <mesh key={i} rotation-x={-Math.PI / 2} position={[-117 + i * 6, 0.012, 27.5]}>
+        <mesh key={i} rotation-x={-Math.PI / 2} position={[-117 + i * 6, -0.46, road]}>
           <planeGeometry args={[2.4, 0.16]} />
           <meshBasicMaterial color="#6F6C64" />
         </mesh>
@@ -459,7 +490,7 @@ function Site({ focusLevel }: { focusLevel: number | null }) {
 
 // ─── Camera ──────────────────────────────────────────────────────────────
 
-const HOME = { theta: -0.62, phi: 1.08, radius: 96, y: 7 };
+const HOME = { theta: -0.55, phi: 1.12, radius: 92, y: 8.5 };
 const clampPhi = (v: number) => Math.min(1.36, Math.max(0.34, v));
 const clampRadius = (v: number) => Math.min(160, Math.max(38, v));
 
@@ -481,8 +512,9 @@ function CameraRig({
   onInteract?: () => void;
 }) {
   const { camera, gl } = useThree();
-  const cur = useRef({ ...HOME, radius: HOME.radius * 1.35, phi: 1.28, target: new THREE.Vector3(0, HOME.y, -3) });
-  const goal = useRef({ ...HOME, target: new THREE.Vector3(0, HOME.y, -3) });
+  // The first sight: the camera settles in from further out and lower as the building assembles.
+  const cur = useRef({ ...HOME, theta: HOME.theta - 0.5, radius: HOME.radius * 1.45, phi: 1.3, target: new THREE.Vector3(0, HOME.y, 0) });
+  const goal = useRef({ ...HOME, target: new THREE.Vector3(0, HOME.y, 0) });
   const last = useRef(0);
   const interactRef = useRef(onInteract);
   interactRef.current = onInteract;
@@ -497,11 +529,11 @@ function CameraRig({
     if (focusLevel === null) {
       g.phi = HOME.phi;
       g.radius = HOME.radius;
-      g.target.set(0, HOME.y, -3);
+      g.target.set(0, HOME.y, 0);
     } else {
       g.phi = 0.72;
-      g.radius = focusLevel === -1 ? 88 : 74;
-      g.target.set(0, levelBase(focusLevel) + FLOOR_H * 0.4, focusLevel === -1 ? -8 : -1);
+      g.radius = focusLevel === -1 ? 88 : 78;
+      g.target.set(0, levelBase(focusLevel) + FLOOR_H * 0.4, 0);
     }
   }, [focusLevel]);
 
@@ -530,7 +562,7 @@ function CameraRig({
       case 'reset':
         g.theta = HOME.theta;
         g.phi = focusLevel === null ? HOME.phi : 0.72;
-        g.radius = focusLevel === null ? HOME.radius : 74;
+        g.radius = focusLevel === null ? HOME.radius : 78;
         break;
     }
     touch();
@@ -599,7 +631,7 @@ function CameraRig({
     if (!reducedMotion && focusLevel === null && performance.now() - last.current > 6000) {
       g.theta -= dt * 0.045; // idle: the maquette turns slowly on its stand
     }
-    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 4);
+    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 3.2);
     c.theta += (g.theta - c.theta) * k;
     c.phi += (g.phi - c.phi) * k;
     c.radius += (g.radius - c.radius) * k;
@@ -668,7 +700,12 @@ function LabelProjector({
 function Scene(props: Building3DProps) {
   const fx = useRef<FxMap>({});
   const shadows = props.quality === 'high';
+  const { gl } = useThree();
   const looks = useUnitLooks(props.residences);
+  // The exposure the engine's materials are tuned for at dusk.
+  useEffect(() => {
+    gl.toneMappingExposure = 0.74;
+  }, [gl]);
   const focusRef = useRef(props.focusLevel);
   focusRef.current = props.focusLevel;
 
@@ -700,11 +737,11 @@ function Scene(props: Building3DProps) {
         onInteract={props.onInteract}
       />
 
-      <hemisphereLight args={['#FFF1DC', '#1B1A17', 0.8]} />
+      <hemisphereLight args={['#FFD9B8', '#2A221C', 0.5]} />
       <directionalLight
-        position={[-42, 62, 54]}
-        intensity={2.2}
-        color="#FFD9AD"
+        position={[-46, 40, 62]}
+        intensity={2.6}
+        color="#FFC08A"
         castShadow={shadows}
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-60}
@@ -718,10 +755,10 @@ function Scene(props: Building3DProps) {
       <directionalLight position={[46, 30, -42]} intensity={0.5} color="#9DB4FF" />
 
       <Site focusLevel={props.focusLevel} />
+      <Architecture residences={props.residences} focusLevel={props.focusLevel} />
 
       {LEVELS.map((level) => (
         <LevelGroup key={level} level={level}>
-          <LevelParts level={level} shadows={shadows} />
           {(byLevel.get(level) ?? []).map(({ r, v }, i) => {
             const entry = looks.get(r.id);
             if (!entry) return null;
@@ -731,7 +768,7 @@ function Scene(props: Building3DProps) {
                 residence={r}
                 volume={v}
                 look={entry.look}
-                shadows={shadows}
+                opened={props.focusLevel === r.floorLevel}
                 interactive={interactiveFor(r.floorLevel)}
                 onHover={props.onHover}
                 onSelect={props.onSelect}
@@ -745,6 +782,7 @@ function Scene(props: Building3DProps) {
       <UnitAnimator
         residences={props.residences}
         looks={looks}
+        focusLevel={props.focusLevel}
         hoveredId={props.hoveredId}
         selectedId={props.selectedId}
         matchIds={props.matchIds}

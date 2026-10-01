@@ -19,31 +19,31 @@ export const PLACES: readonly { id: Exclude<Place, 'residence'>; name: string; c
     id: 'exterior',
     name: 'The building',
     caption: 'Twenty-eight residences above Kimihurura.',
-    shot: { position: [-58, 34, 74], target: [0, 7, 0] },
+    shot: { position: [-33, 19, 59], target: [0, 8.5, 2] },
   },
   {
     id: 'arrival',
     name: 'The arrival',
-    caption: 'A porte-cochère, warm timber and stone.',
-    shot: { position: [-10.5, 1.7, 36.5], target: [0, 5.5, 11] },
+    caption: 'A curved canopy, warm timber and stone.',
+    shot: { position: [-9, 1.7, 30], target: [-1.1, 4.5, 17] },
   },
   {
     id: 'reception',
     name: 'Reception',
     caption: 'A lobby lit like a hotel at dusk.',
-    shot: { position: [2.6, 1.65, 12.6], target: [-0.6, 1.5, 3.2] },
+    shot: { position: [-3.3, 1.65, 12.4], target: [0.6, 1.4, 8.6] },
   },
   {
     id: 'pool',
     name: 'The pool',
-    caption: 'Fifteen metres of stillness on the garden deck.',
-    shot: { position: [-12.6, 5.4, -13.2], target: [1, 3.2, -21.5] },
+    caption: 'A lap pool that slips beneath the building.',
+    shot: { position: [-19.5, 6.5, 27], target: [-12.5, 1, 11] },
   },
   {
     id: 'garden',
     name: 'The gardens',
-    caption: 'Palms, lawns and lantern-lit paths.',
-    shot: { position: [-38, 2.3, 27], target: [-27, 2.6, 0] },
+    caption: 'Palms and planting along the street front.',
+    shot: { position: [-22, 2.4, 27.5], target: [-6, 3.5, 18] },
   },
 ];
 
@@ -51,21 +51,21 @@ export const placeById = (id: Exclude<Place, 'residence'>) => PLACES.find((p) =>
 
 /** Exterior hotspots: gold rings the visitor can click to travel. */
 export const EXTERIOR_HOTSPOTS: readonly { id: Exclude<Place, 'residence' | 'exterior'>; label: string; position: Point }[] = [
-  { id: 'arrival', label: 'Arrival', position: [0, 4.4, 19.5] },
-  { id: 'reception', label: 'Reception', position: [0, 2.2, 10.9] },
-  { id: 'pool', label: 'Pool deck', position: [-2, 5, -20] },
-  { id: 'garden', label: 'Gardens', position: [-30, 2.5, 6] },
+  { id: 'arrival', label: 'Arrival', position: [-1.1, 4.6, 19.9] },
+  { id: 'reception', label: 'Reception', position: [-1.1, 2.2, 14.7] },
+  { id: 'pool', label: 'Pool', position: [-13.4, 1.6, 18] },
+  { id: 'garden', label: 'Gardens', position: [8, 2.2, 19.6] },
 ];
 
 /** The cinematic reel: exterior aerial → arrival → pool → gardens → a slow sunset orbit. */
 export const CINEMATIC: readonly (Shot & { caption: string; seconds: number })[] = [
-  { position: [-92, 58, 96], target: [0, 8, 0], caption: 'Almasi Residence · Kimihurura, Kigali', seconds: 7 },
-  { position: [-26, 3.2, 44], target: [0, 9, 8], caption: 'A facade of glass, stone and walnut', seconds: 7 },
-  { position: [-10.5, 1.7, 36.5], target: [0, 5.5, 11], caption: 'The arrival', seconds: 6 },
-  { position: [2.6, 1.65, 12.6], target: [-0.6, 1.5, 3.2], caption: 'Reception', seconds: 6 },
-  { position: [-12.6, 5.4, -13.2], target: [1, 3.2, -21.5], caption: 'The garden-deck pool', seconds: 7 },
-  { position: [-38, 2.3, 27], target: [-27, 2.6, 0], caption: 'The gardens', seconds: 7 },
-  { position: [46, 22, 52], target: [0, 9, 0], caption: 'Evening, lit from within', seconds: 8 },
+  { position: [-78, 52, 104], target: [0, 8, 0], caption: 'Almasi Residence, Kimihurura, Kigali', seconds: 7 },
+  { position: [-24, 3.2, 44], target: [0, 9, 14], caption: 'A facade of glass, stone and walnut', seconds: 7 },
+  { position: [-9, 1.7, 30], target: [-1.1, 4.5, 17], caption: 'The arrival', seconds: 6 },
+  { position: [-3.3, 1.65, 12.4], target: [0.6, 1.4, 8.6], caption: 'Reception', seconds: 6 },
+  { position: [-19.5, 6.5, 27], target: [-12.5, 1, 11], caption: 'The pool', seconds: 7 },
+  { position: [-22, 2.4, 27.5], target: [-6, 3.5, 18], caption: 'The gardens', seconds: 7 },
+  { position: [40, 22, 56], target: [0, 9, 0], caption: 'Evening, lit from within', seconds: 8 },
 ];
 
 // ─── Residence tour scenes ───────────────────────────────────────────────
@@ -136,7 +136,8 @@ export const PENTHOUSE: TourScene = {
   name: 'The Penthouse',
   summary: 'Three bedroom suites, a 126 m² great room and a wraparound pool terrace.',
   level: 4,
-  offset: [2, 2.5],
+  // The pool terrace meets the street edge of the building, the sunset terrace its west edge.
+  offset: [0, 6.75],
   ceiling: 3.1,
   bounds: [-14, -9, 12, 10],
   enclosed: [-10, -9, 12, 6],

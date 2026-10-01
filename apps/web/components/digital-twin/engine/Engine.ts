@@ -5,7 +5,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { FLOOR_H, FOOTPRINT, SLAB, levelBase } from '../../../lib/building-model';
+import { FLOOR_H, FOOTPRINT, SLAB, STREET_FACE_Z, levelBase } from '../../../lib/building-model';
 import {
   CINEMATIC,
   EXTERIOR_HOTSPOTS,
@@ -118,6 +118,9 @@ export class TwinEngine {
   private touches = new Map<number, { x: number; y: number }>();
   private pinch = 0;
   private hoverNdc: THREE.Vector2 | null = null;
+  /** What a drag leaves behind: the orbit carries on and settles. */
+  private spin = new THREE.Vector2();
+  private lastDrag = 0;
   private raycaster = new THREE.Raycaster();
   private lastInteract = 0;
   private cine: { i: number; t: number } | null = null;
@@ -186,15 +189,15 @@ export class TwinEngine {
     });
     await step(80, 'Preparing light', () => {
       this.scene.add(this.atmosphere.group, this.landscape.near, this.landscape.far, this.building.root, this.residence.root);
-      for (const [x, z] of [[-12, 30], [0, 34], [12, 30]] as const) {
+      for (const [x, z] of [[-10, 31], [-1, 34], [8, 31]] as const) {
         const s = new THREE.SpotLight('#FFC58A', 0, 70, 0.55, 0.9, 1.4);
         s.position.set(x, 1, z);
-        s.target.position.set(x * 0.6, 11, 10.75);
+        s.target.position.set(x * 0.7, 11, STREET_FACE_Z);
         s.userData.base = 110;
         this.building.root.add(s, s.target);
         this.washes.push(s);
       }
-      for (const [x, z] of [[0.1, 5.4], [2, 8.4]] as const) {
+      for (const [x, z] of [[-1.1, 11.4], [0.2, 13.3]] as const) {
         const l = new THREE.PointLight('#FFC98F', 0, 9, 2);
         l.position.set(x, 2.6, z);
         l.userData.base = 9;
@@ -216,7 +219,7 @@ export class TwinEngine {
     this.cb.progress(100, 'Welcome');
     this.loop();
     // The reveal: a long, slow descent onto the building at golden hour.
-    this.fly(placeById('exterior').shot, this.reducedMotion ? 0.01 : 5.5, 'orbit', { arc: 0 });
+    this.fly(this.homeShot(), this.reducedMotion ? 0.01 : 5.5, 'orbit', { arc: 0 });
   }
 
   private setupComposer() {
@@ -308,11 +311,11 @@ export class TwinEngine {
     this.building.showCutaway(level, this.units);
     if (!fly) return;
     if (level === null) {
-      this.fly(placeById('exterior').shot, 2.4, 'orbit');
+      this.fly(this.homeShot(), 2.4, 'orbit');
       return;
     }
     const y = levelBase(level) + 1;
-    this.flyOrbit(new THREE.Vector3(0, y, -2), -0.55, 0.62, level === 0 ? 62 : 58, 2.4, 0.02);
+    this.flyOrbit(new THREE.Vector3(0, y, 0), -0.55, 0.62, level === 0 ? 68 : 62, 2.4, 0.02);
   }
 
   select(id: string | null) {
@@ -343,7 +346,7 @@ export class TwinEngine {
     this.selected = null;
     this.building.showCutaway(null, this.units);
     const look = place === 'arrival' || place === 'reception';
-    this.fly(placeById(place).shot, place === 'exterior' ? 2.6 : 3.2, look ? 'look' : 'orbit');
+    this.fly(place === 'exterior' ? this.homeShot() : placeById(place).shot, place === 'exterior' ? 2.6 : 3.2, look ? 'look' : 'orbit');
   }
 
   /**
@@ -492,6 +495,14 @@ export class TwinEngine {
 
   // ─── Camera ────────────────────────────────────────────────────────────
 
+  /** The opening view of the building, stood further back on a narrow screen so the whole of it fits. */
+  private homeShot(): Shot {
+    const { position, target } = placeById('exterior').shot;
+    const back = this.camera.aspect < 0.8 ? 1.45 : this.camera.aspect < 1.2 ? 1.2 : 1;
+    const p = v3(position).sub(v3(target)).multiplyScalar(back).add(v3(target));
+    return { position: [p.x, p.y, p.z], target };
+  }
+
   private orbitFrom(pos: THREE.Vector3, target: THREE.Vector3, extra: Partial<Extract<Ctl, { kind: 'orbit' }>> = {}): Ctl {
     const d = pos.clone().sub(target);
     const r = d.length();
@@ -612,6 +623,11 @@ export class TwinEngine {
     const c = this.ctl;
     const idle = performance.now() - this.lastInteract > 5000;
     if (c.kind === 'orbit') {
+      if (!this.pointer.down && !this.reducedMotion && this.spin.lengthSq() > 1e-8) {
+        c.theta += this.spin.x * dt * 60;
+        c.phi += this.spin.y * dt * 60;
+        this.spin.multiplyScalar(Math.exp(-dt * 4.5));
+      }
       if (c.auto && idle) c.theta += dt * c.auto;
       else if (!this.interior && this.focus === null && !this.selected && idle && !this.reducedMotion && this.place === 'exterior') c.theta += dt * 0.035;
       c.phi = clamp(c.phi, c.minPhi, c.maxPhi);
@@ -652,8 +668,8 @@ export class TwinEngine {
   /** A plain roof over the rest of the floor plate, so the terrace never looks down into open rooms. */
   private roofDeck() {
     const [x0, z0, x1, z1] = FOOTPRINT;
-    const g = new THREE.BoxGeometry(x1 - x0 + 3.2, SLAB, z1 - z0 + 2);
-    g.translate((x0 + x1) / 2 - this.origin.x, -SLAB / 2 - 0.04, (z0 + z1) / 2 + 1 - this.origin.z);
+    const g = new THREE.BoxGeometry(x1 - x0 + 0.2, SLAB, z1 - z0 + 0.2);
+    g.translate((x0 + x1) / 2 - this.origin.x, -SLAB / 2 - 0.04, (z0 + z1) / 2 - this.origin.z);
     const uv = g.attributes.uv as THREE.BufferAttribute;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (x1 - x0) * 0.35, uv.getY(i) * (z1 - z0) * 0.35);
     const m = new THREE.Mesh(g, this.mats.get('paving'));
@@ -706,6 +722,7 @@ export class TwinEngine {
       this.pinch = Math.hypot(a.x - b.x, a.y - b.y);
     }
     this.pointer = { down: true, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: 0, id: e.pointerId };
+    this.spin.set(0, 0);
     this.interrupt();
   };
 
@@ -757,6 +774,8 @@ export class TwinEngine {
     if (c.kind === 'orbit') {
       c.theta -= dx * 0.005;
       c.phi = clamp(c.phi - dy * 0.004, c.minPhi, c.maxPhi);
+      this.spin.lerp(new THREE.Vector2(-dx * 0.005, -dy * 0.004), 0.5);
+      this.lastDrag = performance.now();
     } else {
       c.yaw += dx * 0.0042;
       c.pitch = clamp(c.pitch + dy * 0.0036, -0.9, 0.7);
@@ -769,6 +788,8 @@ export class TwinEngine {
     if (this.touches.size < 2) this.pinch = 0;
     if (!this.pointer.down || e.pointerId !== this.pointer.id) return;
     this.pointer.down = false;
+    // A drag that came to rest before the release leaves nothing behind.
+    if (performance.now() - this.lastDrag > 90) this.spin.set(0, 0);
     const click = this.pointer.moved < 6 && performance.now() - this.pointer.t < 600 && e.target === this.renderer.domElement;
     if (click) this.click(e);
   };
@@ -901,7 +922,9 @@ export class TwinEngine {
     this.atmosphere.time(t);
     this.applyGlow();
     this.mats.tick(t);
-    this.landscape.update(t, this.atmosphere.current.night, this.reducedMotion);
+    // The city's lights come on with the lamps, before the sky is fully dark.
+    const p = this.atmosphere.current;
+    this.landscape.update(t, Math.max(p.night, (p.lamp - 0.2) * 0.9), this.reducedMotion);
     // Indoors the low sun sits in the glazing; only lamps and the sun disc itself should bloom.
     this.bloom.strength = this.atmosphere.current.bloom * (this.interior ? 0.6 : 1);
     this.bloom.threshold = this.interior ? 5 : 2.2;
@@ -1018,7 +1041,7 @@ export class TwinEngine {
       return v.center.clone().setY(v.center.y + (fx?.y ?? 0) + FLOOR_H * 0.5 + 0.9);
     }
     if (kind === 'place') {
-      if (this.interior || this.focus !== null || this.cine || this.place !== 'exterior') return null;
+      if (this.interior || this.focus !== null || this.cine || this.flight || this.place !== 'exterior') return null;
       const h = EXTERIOR_HOTSPOTS.find((x) => x.id === id);
       return h ? v3(h.position) : null;
     }

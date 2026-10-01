@@ -1,17 +1,46 @@
+/*
+ * The 3D Design page wears the site's Blue theme. Its <main> carries
+ * data-theme="blue" and this element data-ground="night", so every colour
+ * below is one of that ground's tokens (styles/themes.css) or a mix of them —
+ * nothing here names a colour of its own. On a phone the site's sapphire dress
+ * (styles/mobile.css) takes over, as it does everywhere else.
+ */
 .page {
-  --gold: #dcc08f;
-  --gold-strong: #f0c987;
-  --ink: #f5efe4;
-  --muted: rgba(245, 239, 228, 0.62);
-  --line: rgba(245, 239, 228, 0.16);
-  --glass: rgba(14, 17, 15, 0.52);
-  --glass-strong: rgba(12, 14, 13, 0.78);
+  /* Blue's type pairing, which themes.css sets on the root only. */
+  --font-display: var(--font-cormorant, 'Cormorant Garamond'), 'Iowan Old Style', Georgia, serif;
+  --font-ui: var(--font-manrope, 'Manrope'), ui-sans-serif, system-ui, sans-serif;
+  /* Glass: the night ground, let through; its edge is the accent's light. */
+  --glass: color-mix(in srgb, var(--surface) 58%, transparent);
+  --glass-strong: color-mix(in srgb, var(--surface-sunk) 86%, transparent);
+  --hair: color-mix(in srgb, var(--accent) 20%, transparent);
+  --wash: color-mix(in srgb, var(--ink) 7%, transparent);
+  --tint: color-mix(in srgb, var(--accent) 18%, transparent);
+  --glow: color-mix(in srgb, var(--accent) 42%, transparent);
   --top: 108px;
-  --available: #8fd3a8;
-  --reserved: #e8b660;
-  --sold: #a29c92;
-  background: #0d100e;
+  background: var(--surface-sunk);
   color: var(--ink);
+  font-family: var(--font-ui);
+  font-variant-numeric: lining-nums;
+  caret-color: var(--accent);
+  scrollbar-color: color-mix(in srgb, var(--ink) 24%, transparent) transparent;
+}
+.page ::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.page :is(button, a, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .stage {
@@ -19,8 +48,13 @@
   height: 100svh;
   min-height: 640px;
   overflow: hidden;
-  background: radial-gradient(120% 80% at 50% 0%, #3a2a22 0%, #121512 60%);
+  background: radial-gradient(120% 80% at 50% 0%, var(--surface-raised) 0%, var(--surface-sunk) 60%);
   isolation: isolate;
+  /* How far the dock stands off the bottom edge; every panel above it clears this. */
+  --dock: 110px;
+}
+.stage[data-inside='true'] {
+  --dock: 84px;
 }
 
 .viewport {
@@ -37,28 +71,9 @@
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(8, 10, 9, 0.72) 0%, rgba(8, 10, 9, 0) 22%),
-    linear-gradient(0deg, rgba(8, 10, 9, 0.7) 0%, rgba(8, 10, 9, 0) 24%),
-    linear-gradient(90deg, rgba(8, 10, 9, 0.45) 0%, rgba(8, 10, 9, 0) 30%);
-}
-
-.eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--gold-strong);
-  box-shadow: 0 0 12px var(--gold-strong);
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-sunk) 78%, transparent) 0%, color-mix(in srgb, var(--surface-sunk) 30%, transparent) 16%, transparent 34%),
+    linear-gradient(0deg, color-mix(in srgb, var(--surface-sunk) 82%, transparent) 0%, transparent 26%),
+    linear-gradient(90deg, color-mix(in srgb, var(--surface-sunk) 55%, transparent) 0%, transparent 38%);
 }
 
 /* ── Glass surfaces ───────────────────────────────────────────────── */
@@ -75,16 +90,20 @@
   background: var(--glass);
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hair);
+  box-shadow:
+    inset 0 1px 0 var(--wash),
+    var(--elev);
 }
 
 /* ── Heading ──────────────────────────────────────────────────────── */
 
+/* The title is the one loud thing on the stage: it names where the visitor stands. */
 .heading {
   position: absolute;
   top: var(--top);
   left: clamp(20px, 3.4vw, 56px);
-  max-width: 460px;
+  max-width: min(660px, 48vw);
   pointer-events: none;
   transition: opacity 0.6s ease;
 }
@@ -92,28 +111,40 @@
   opacity: 0;
 }
 .heading h1 {
-  margin: 14px 0 12px;
+  margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(34px, 3.6vw, 56px);
-  line-height: 1.02;
-  letter-spacing: -0.01em;
-  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35);
+  font-size: clamp(44px, 5.6vw, 92px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  text-shadow: 0 2px 44px var(--scrim);
 }
-.heading h1 small {
-  display: block;
-  margin-top: 10px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  letter-spacing: 0.01em;
-  color: var(--muted);
+.title {
+  animation: settle 1s var(--ease-out);
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+    filter: blur(10px);
+  }
+}
+.lede {
+  margin: 16px 0 14px;
+  max-width: 38ch;
+  font-size: clamp(14px, 1.15vw, 17px);
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--ink) 84%, transparent);
+  text-shadow: 0 1px 20px var(--scrim);
+  animation: settle 1s var(--ease-out) 0.08s backwards;
 }
 .crumbs {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--ink-muted);
   pointer-events: auto;
 }
 .crumbs span {
@@ -121,16 +152,17 @@
   gap: 6px;
   align-items: center;
 }
-.crumbs i {
-  font-style: normal;
-  opacity: 0.5;
+.crumbs .icon {
+  width: 11px;
+  height: 11px;
+  opacity: 0.55;
 }
 .crumbs button {
   all: unset;
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(245, 239, 228, 0.35);
+  text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent);
 }
 .crumbs button:hover,
 .crumbs button:focus-visible {
@@ -142,10 +174,10 @@
 }
 .hint {
   margin-top: 18px;
-  font-size: 11px;
+  font-size: 13.5px;
   letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-variant-caps: all-small-caps;
+  color: var(--ink-muted);
   animation: breathe 3.2s ease-in-out infinite;
 }
 @keyframes breathe {
@@ -205,14 +237,14 @@
   border-radius: 999px;
   font-size: 12px;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--ink-muted);
   transition:
     background 0.3s ease,
     color 0.3s ease;
 }
 .segmented button[aria-pressed='true'] {
-  background: var(--ink);
-  color: #16140f;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .iconRow {
   display: flex;
@@ -230,8 +262,8 @@
 }
 .iconRow button:hover,
 .iconRow button[aria-pressed='true'] {
-  border-color: var(--gold);
-  background: rgba(220, 192, 143, 0.18);
+  border-color: var(--accent);
+  background: var(--tint);
 }
 .iconRow svg {
   width: 17px;
@@ -263,15 +295,15 @@
   background: currentColor;
 }
 .page [data-status='available'] {
-  --s: var(--available);
+  --s: var(--status-available);
 }
 .page [data-status='reserved'],
 .page [data-status='booked'] {
-  --s: var(--reserved);
+  --s: var(--status-reserved);
 }
 .page [data-status='sold'],
 .page [data-status='unavailable'] {
-  --s: var(--sold);
+  --s: var(--status-sold);
 }
 .legend li[data-status]::before,
 .status[data-status]::before,
@@ -313,22 +345,22 @@
 .floors button span {
   font-size: 9.5px;
   letter-spacing: 0.08em;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .floors button:hover {
-  background: rgba(245, 239, 228, 0.08);
+  background: var(--wash);
 }
 .floors button[aria-pressed='true'] {
-  background: var(--gold);
-  color: #1a150d;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .floors button[aria-pressed='true'] span {
-  color: rgba(26, 21, 13, 0.7);
+  color: color-mix(in srgb, var(--on-accent) 72%, transparent);
 }
 .floors .floorAll {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-variant-caps: all-small-caps;
   padding: 10px 0;
 }
 
@@ -337,9 +369,9 @@
 .selector {
   position: absolute;
   left: clamp(20px, 3.4vw, 56px);
-  bottom: 100px;
-  width: min(390px, 34vw);
-  max-height: calc(100svh - var(--top) - 330px);
+  bottom: calc(var(--dock) + 18px);
+  width: min(410px, 36vw);
+  max-height: calc(100svh - var(--top) - var(--dock) - 250px);
   min-height: 190px;
   display: flex;
   flex-direction: column;
@@ -355,26 +387,42 @@
 }
 .selectorHead {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 16px 18px 8px;
+  gap: 12px;
+  min-height: 58px;
+  padding: 0 14px 0 20px;
 }
 .selectorHead h2 {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 20px;
+  font-size: 21px;
+  white-space: nowrap;
+}
+.count {
+  margin: 2px 0 0 auto;
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
 }
 .collapse {
-  width: 28px;
-  height: 28px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
   border-radius: 50%;
-  border: 1px solid var(--line);
+  border: 1px solid var(--hair);
   background: transparent;
   color: inherit;
   cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+.collapse:hover {
+  border-color: var(--accent);
+  background: var(--tint);
 }
 .selectorHead,
 .chips {
@@ -388,7 +436,7 @@
   scrollbar-width: none;
 }
 .chips button {
-  border: 1px solid var(--line);
+  border: 1px solid var(--hair);
   background: transparent;
   border-radius: 999px;
   padding: 5px 12px;
@@ -396,15 +444,15 @@
   letter-spacing: 0.06em;
 }
 .chips button[aria-pressed='true'] {
-  background: var(--ink);
-  color: #16140f;
-  border-color: var(--ink);
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
 }
 .table {
   overflow-y: auto;
   padding: 0 8px 10px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(245, 239, 228, 0.2) transparent;
+  scrollbar-color: color-mix(in srgb, var(--ink) 20%, transparent) transparent;
 }
 .row {
   display: grid;
@@ -425,12 +473,12 @@
 }
 .row[data-head] {
   cursor: default;
-  font-size: 9.5px;
+  font-size: 11.5px;
   letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-variant-caps: all-small-caps;
+  color: var(--ink-muted);
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--hair);
   border-radius: 0;
   margin-bottom: 4px;
 }
@@ -442,15 +490,15 @@
 }
 .row small {
   font-size: 10.5px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .row:not([data-head]):hover,
 .row[data-hot='true'] {
-  background: rgba(245, 239, 228, 0.07);
+  background: var(--wash);
 }
 .row[aria-pressed='true'] {
-  background: rgba(220, 192, 143, 0.2);
-  box-shadow: inset 2px 0 0 var(--gold-strong);
+  background: var(--tint);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 .status {
   font-size: 12px;
@@ -459,7 +507,7 @@
 .empty {
   padding: 14px 10px;
   font-size: 13px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 
 /* ── Residence card ──────────────────────────────────────────────── */
@@ -467,54 +515,107 @@
 .card {
   position: absolute;
   right: calc(clamp(20px, 3.4vw, 56px) + 86px);
-  bottom: 100px;
-  width: 330px;
-  padding: 22px 22px 18px;
+  bottom: calc(var(--dock) + 18px);
+  width: 372px;
+  max-height: calc(100svh - 232px - var(--dock));
+  padding: 0 22px 20px;
   border-radius: 22px;
+  overflow: hidden auto;
+  scrollbar-width: thin;
   background: var(--glass-strong);
-  animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation: rise 0.7s var(--ease-out);
 }
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    translate: 0 18px;
   }
 }
-.card h2 {
-  margin: 8px 0 14px;
+/* A render of this kind of home, with the residence named over it. */
+.cardMedia {
+  position: relative;
+  margin: 0 -22px 16px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--surface-raised);
+}
+.cardMedia img {
+  object-fit: cover;
+  animation: develop 1.4s var(--ease-out);
+}
+@keyframes develop {
+  from {
+    scale: 1.08;
+    filter: blur(6px);
+  }
+}
+.cardMedia::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--surface-sunk) 92%, transparent) 0%, color-mix(in srgb, var(--surface-sunk) 20%, transparent) 46%, transparent 70%);
+}
+.cardTitle {
+  position: absolute;
+  left: 22px;
+  right: 60px;
+  bottom: 14px;
+  z-index: 1;
+}
+.cardTitle h2 {
+  margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 34px;
+  font-size: 36px;
   line-height: 1;
+}
+.cardTitle p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
+}
+@media (max-height: 960px) {
+  .cardMedia {
+    aspect-ratio: 5 / 2;
+  }
 }
 .close {
   position: absolute;
   top: 14px;
   right: 14px;
-  width: 30px;
-  height: 30px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 1px solid var(--line);
-  background: transparent;
+  border: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--surface-sunk) 58%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: inherit;
   cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+.close:hover {
+  border-color: var(--accent);
+  background: var(--tint);
 }
 .facts {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px 16px;
-  margin: 0 0 16px;
-  padding: 14px 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  margin: 0 0 14px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
 }
 .facts dt {
-  font-size: 9.5px;
+  font-size: 11.5px;
   letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-variant-caps: all-small-caps;
+  color: var(--ink-muted);
 }
 .facts dd {
   margin: 3px 0 0;
@@ -530,7 +631,7 @@
   font-family: var(--font-display);
   font-weight: 400;
   font-size: 22px;
-  color: var(--gold-strong);
+  color: var(--accent);
 }
 .primary {
   width: 100%;
@@ -540,22 +641,33 @@
   padding: 14px 18px;
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(135deg, #f1d7a8, #caa36a);
-  color: #1c160d;
+  background: var(--accent);
+  color: var(--on-accent);
   font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(202, 163, 106, 0.28);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent),
+    0 10px 30px -8px var(--glow);
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease;
 }
+.primary .icon {
+  width: 18px;
+  height: 18px;
+  transition: translate 0.4s var(--ease-out);
+}
+.primary:hover .icon {
+  translate: 4px 0;
+}
 .primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 38px rgba(202, 163, 106, 0.4);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent),
+    0 14px 38px -8px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 .secondary {
   display: grid;
@@ -566,7 +678,7 @@
 .secondary > * {
   padding: 10px 0;
   border-radius: 999px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--hair);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -576,7 +688,7 @@
   cursor: pointer;
 }
 .secondary > *:hover {
-  border-color: var(--gold);
+  border-color: var(--accent);
 }
 
 /* ── Inside the residence ────────────────────────────────────────── */
@@ -584,15 +696,15 @@
 .roomPanel {
   position: absolute;
   left: clamp(20px, 3.4vw, 56px);
-  bottom: 100px;
+  bottom: calc(var(--dock) + 18px);
   width: 260px;
   padding: 16px;
   border-radius: 20px;
   display: grid;
   gap: 10px;
 }
-@media (max-height: 820px) {
-  .stage[data-inside='true'] .heading h1 small,
+@media (max-height: 960px) {
+  .stage[data-inside='true'] .lede,
   .stage[data-inside='true'] .crumbs {
     display: none;
   }
@@ -614,7 +726,7 @@
   font-family: var(--font-display);
   font-size: 15.5px;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--ink-muted);
   transition:
     color 0.2s ease,
     background 0.2s ease;
@@ -622,36 +734,36 @@
 .rooms button:hover,
 .rooms button:focus-visible {
   color: var(--ink);
-  background: rgba(245, 239, 228, 0.06);
+  background: var(--wash);
 }
 .rooms button[aria-current='true'] {
   color: var(--ink);
-  box-shadow: inset 2px 0 0 var(--gold-strong);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 .finish {
   display: grid;
   gap: 6px;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-variant-caps: all-small-caps;
+  color: var(--ink-muted);
 }
 .finish select {
   padding: 9px 12px;
   border-radius: 10px;
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--surface-sunk) 60%, transparent);
   color: var(--ink);
   font: inherit;
   font-size: 13px;
   letter-spacing: 0;
-  text-transform: none;
+  font-variant-caps: normal;
 }
 .textLink {
   all: unset;
   cursor: pointer;
   font-size: 12.5px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .textLink:hover,
 .textLink:focus-visible {
@@ -661,7 +773,7 @@
 .minimap {
   position: absolute;
   right: clamp(20px, 3.4vw, 56px);
-  bottom: 100px;
+  bottom: calc(var(--dock) + 18px);
   width: 230px;
   padding: 12px;
   border-radius: 18px;
@@ -675,12 +787,12 @@
   height: auto;
 }
 .plan rect {
-  fill: rgba(245, 239, 228, 0.05);
-  stroke: rgba(245, 239, 228, 0.12);
+  fill: color-mix(in srgb, var(--ink) 5%, transparent);
+  stroke: color-mix(in srgb, var(--ink) 12%, transparent);
   stroke-width: 1;
 }
 .plan g[data-active='true'] rect {
-  fill: rgba(220, 192, 143, 0.28);
+  fill: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 .plan text {
   fill: var(--ink);
@@ -693,24 +805,24 @@
 }
 .planRoom:hover rect,
 .planRoom:focus-visible rect {
-  fill: rgba(220, 192, 143, 0.2);
+  fill: color-mix(in srgb, var(--accent) 20%, transparent);
   outline: none;
 }
 .plan .planWall {
-  fill: rgba(245, 239, 228, 0.85);
+  fill: color-mix(in srgb, var(--ink) 85%, transparent);
   stroke: none;
 }
 .planGlass {
-  stroke: #9fd1dc;
+  stroke: var(--accent);
   stroke-width: 3;
   stroke-dasharray: 6 4;
 }
 .planCone {
-  fill: rgba(240, 201, 135, 0.28);
+  fill: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 .planDot {
-  fill: var(--gold-strong);
-  stroke: #1a150d;
+  fill: var(--accent);
+  stroke: var(--surface-sunk);
   stroke-width: 2;
 }
 
@@ -719,18 +831,22 @@
 .dock {
   position: absolute;
   left: 50%;
-  bottom: 28px;
+  bottom: 22px;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 5px;
-  border-radius: 999px;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 22px;
   max-width: calc(100vw - 32px);
   overflow-x: auto;
   scrollbar-width: none;
 }
+.stage[data-inside='true'] .dock {
+  border-radius: 999px;
+}
 .dock button {
+  flex: none;
   border: 0;
   background: transparent;
   padding: 10px 16px;
@@ -738,7 +854,7 @@
   font-size: 12.5px;
   letter-spacing: 0.04em;
   white-space: nowrap;
-  color: var(--muted);
+  color: var(--ink-muted);
   transition:
     background 0.25s ease,
     color 0.25s ease;
@@ -747,13 +863,72 @@
   color: var(--ink);
 }
 .dock button[aria-pressed='true'] {
-  background: rgba(245, 239, 228, 0.92);
-  color: #16140f;
+  background: color-mix(in srgb, var(--ink) 92%, transparent);
+  color: var(--surface-sunk);
+}
+.places {
+  display: flex;
+  gap: 6px;
+}
+/* Each place is shown as it looks in this model, so the strip reads as a storyboard. */
+.dock .place {
+  position: relative;
+  width: 116px;
+  height: 72px;
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--surface-sunk);
+  color: var(--ink);
+  outline: 1.5px solid transparent;
+  outline-offset: -1.5px;
+  transition: outline-color 0.3s ease;
+}
+.place img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.8) brightness(0.78);
+  transition:
+    scale 0.9s var(--ease-out),
+    filter 0.5s ease;
+}
+.place::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--surface-sunk) 86%, transparent) 0%, transparent 58%);
+}
+.place span {
+  position: absolute;
+  left: 11px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 1;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-align: left;
+}
+.place:hover img,
+.place:focus-visible img,
+.place[aria-pressed='true'] img {
+  filter: none;
+}
+.place:hover img {
+  scale: 1.08;
+}
+.dock .place[aria-pressed='true'] {
+  background: var(--surface-sunk);
+  color: var(--ink);
+  outline-color: var(--accent);
 }
 .sep {
   width: 1px;
   height: 20px;
-  background: var(--line);
+  background: var(--hair);
   margin: 0 6px;
   flex: none;
 }
@@ -764,14 +939,14 @@
 .caption {
   position: absolute;
   left: 50%;
-  bottom: 104px;
+  bottom: calc(var(--dock) + 28px);
   transform: translateX(-50%);
   margin: 0;
   font-family: var(--font-display);
   font-style: italic;
   font-size: clamp(20px, 2.2vw, 30px);
   text-align: center;
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 24px var(--scrim);
   animation: captionIn 1.2s ease;
   pointer-events: none;
 }
@@ -789,7 +964,7 @@
   transform: translateX(-50%);
   margin: 0;
   font-size: 11px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 
 /* ── Labels in the scene ─────────────────────────────────────────── */
@@ -831,9 +1006,9 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  border: 1.5px solid var(--gold-strong);
-  background: rgba(240, 201, 135, 0.16);
-  box-shadow: 0 0 22px rgba(240, 201, 135, 0.45);
+  border: 1.5px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: 0 0 22px var(--glow);
   backdrop-filter: blur(6px);
 }
 .ring::after {
@@ -841,14 +1016,14 @@
   position: absolute;
   inset: 9px;
   border-radius: 50%;
-  background: var(--gold-strong);
+  background: var(--accent);
 }
 .ring::before {
   content: '';
   position: absolute;
   inset: -1.5px;
   border-radius: 50%;
-  border: 1.5px solid var(--gold-strong);
+  border: 1.5px solid var(--accent);
   animation: pulse 2.4s ease-out infinite;
 }
 @keyframes pulse {
@@ -860,9 +1035,9 @@
 .hotspotLabel {
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(12, 14, 13, 0.62);
+  background: color-mix(in srgb, var(--surface-sunk) 66%, transparent);
   backdrop-filter: blur(10px);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hair);
   font-size: 12px;
   letter-spacing: 0.06em;
   white-space: nowrap;
@@ -872,7 +1047,7 @@
 .hotspot:hover .hotspotLabel,
 .hotspot:focus-visible .hotspotLabel {
   opacity: 1;
-  border-color: var(--gold);
+  border-color: var(--accent);
 }
 
 .unitPin {
@@ -887,10 +1062,10 @@
   justify-items: center;
   padding: 7px 12px 6px;
   border-radius: 12px;
-  background: rgba(12, 14, 13, 0.7);
+  background: color-mix(in srgb, var(--surface-sunk) 72%, transparent);
   backdrop-filter: blur(10px);
-  border: 1px solid var(--line);
-  box-shadow: inset 0 -2px 0 var(--s, var(--gold));
+  border: 1px solid var(--hair);
+  box-shadow: inset 0 -2px 0 var(--s, var(--accent));
   white-space: nowrap;
 }
 .unitPin::after {
@@ -900,7 +1075,7 @@
   bottom: -7px;
   width: 1px;
   height: 7px;
-  background: var(--line);
+  background: var(--hair);
 }
 .unitPin strong {
   font-family: var(--font-display);
@@ -910,16 +1085,16 @@
 }
 .unitPin span {
   font-size: 10px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .unitPin[data-selected='true'] {
-  background: linear-gradient(135deg, #f1d7a8, #caa36a);
-  color: #1c160d;
+  background: var(--accent);
+  color: var(--on-accent);
   border-color: transparent;
-  box-shadow: 0 10px 30px rgba(202, 163, 106, 0.4);
+  box-shadow: 0 10px 30px -8px var(--glow);
 }
 .unitPin[data-selected='true'] span {
-  color: rgba(28, 22, 13, 0.7);
+  color: color-mix(in srgb, var(--on-accent) 72%, transparent);
 }
 
 .tooltip {
@@ -928,9 +1103,9 @@
   gap: 3px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(12, 14, 13, 0.78);
+  background: var(--glass-strong);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(240, 201, 135, 0.4);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
   white-space: nowrap;
 }
 .tooltip strong {
@@ -940,7 +1115,7 @@
 }
 .tooltip span {
   font-size: 11.5px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .tooltip em {
   font-style: normal;
@@ -952,12 +1127,12 @@
 .joystick {
   position: absolute;
   left: 28px;
-  bottom: 100px;
+  bottom: calc(var(--dock) + 18px);
   width: 110px;
   height: 110px;
   border-radius: 50%;
-  border: 1px solid var(--line);
-  background: rgba(12, 14, 13, 0.4);
+  border: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--surface-sunk) 40%, transparent);
   backdrop-filter: blur(8px);
   touch-action: none;
   display: none;
@@ -970,8 +1145,8 @@
   height: 44px;
   margin: -22px 0 0 -22px;
   border-radius: 50%;
-  background: rgba(245, 239, 228, 0.85);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  background: color-mix(in srgb, var(--ink) 85%, transparent);
+  box-shadow: 0 6px 20px var(--scrim);
 }
 @media (pointer: coarse) {
   .joystick {
@@ -984,7 +1159,7 @@
 .fade {
   position: absolute;
   inset: 0;
-  background: #0b0d0c;
+  background: var(--surface-sunk);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.5s ease;
@@ -1003,9 +1178,54 @@
   justify-items: center;
   gap: 18px;
   background:
-    radial-gradient(90% 70% at 50% 30%, rgba(120, 80, 50, 0.35), transparent 70%),
-    linear-gradient(180deg, #17140f, #0b0d0c);
+    radial-gradient(90% 70% at 50% 30%, color-mix(in srgb, var(--accent-weak) 35%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--surface), var(--surface-sunk));
   text-align: center;
+}
+.poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.34;
+  filter: blur(6px) saturate(0.9);
+  transform: scale(1.04);
+  z-index: -1;
+}
+.loader {
+  isolation: isolate;
+  transition:
+    opacity 1.1s ease,
+    visibility 0s linear 1.1s;
+}
+.loader[data-done='true'] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*
+ * The opening, once: the scene develops out of the poster, the title settles,
+ * and the controls arrive after it, in the order a visitor reaches for them.
+ */
+@keyframes arrive {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+.stage[data-phase='ready'] .tools {
+  animation: arrive 0.9s var(--ease-out) 1.2s backwards;
+}
+.floors {
+  animation: arrive 0.9s var(--ease-out) 1.5s backwards;
+}
+.dock {
+  animation: arrive 0.9s var(--ease-out) 1.8s backwards;
+}
+.stage[data-phase='ready'] .selector {
+  animation: arrive 0.9s var(--ease-out) 2.1s backwards;
 }
 .mark {
   display: grid;
@@ -1015,7 +1235,7 @@
 .mark svg {
   width: 72px;
   fill: none;
-  stroke: var(--gold);
+  stroke: var(--accent);
   stroke-width: 1.4;
   stroke-dasharray: 160;
   stroke-dashoffset: 160;
@@ -1036,32 +1256,32 @@
   font-size: 11px;
   letter-spacing: 0.6em;
   margin-right: -0.6em;
-  color: var(--gold);
+  color: var(--accent);
 }
 .loader p {
   margin: 12px 0 0;
   font-family: var(--font-display);
   font-style: italic;
   font-size: 18px;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .bar {
   width: 220px;
   height: 1px;
-  background: var(--line);
+  background: var(--hair);
   overflow: hidden;
 }
 .bar span {
   display: block;
   height: 100%;
-  background: var(--gold-strong);
+  background: var(--accent);
   transform-origin: left;
   transition: transform 0.6s ease;
 }
 .pct {
   font-size: 11px;
   letter-spacing: 0.2em;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 
 /* ── Below the fold ──────────────────────────────────────────────── */
@@ -1075,42 +1295,77 @@
 }
 .detailsIntro {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px 64px;
-}
-.detailsIntro .eyebrow {
-  grid-column: 1 / -1;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 18px 72px;
+  align-items: start;
 }
 .detailsIntro h2 {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(34px, 4.2vw, 60px);
-  line-height: 1.02;
+  font-size: clamp(40px, 5.2vw, 80px);
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
   grid-row: span 2;
 }
 .detailsIntro h2 em {
-  color: var(--gold);
+  color: var(--accent);
 }
 .detailsIntro p {
   margin: 0;
+  max-width: 62ch;
   line-height: 1.7;
-  color: rgba(245, 239, 228, 0.82);
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
 }
 .note {
   font-size: 13px;
-  color: var(--muted) !important;
+  color: var(--ink-muted) !important;
 }
+/* One wide view, then the rooms: the first picture is given twice the wall. */
 .gallery {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: clamp(150px, 17vw, 260px);
   gap: 12px;
 }
-.gallery img {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+.gallery figure {
+  position: relative;
+  margin: 0;
+  grid-column: span 2;
   border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface-raised);
+}
+.gallery figure:first-child {
+  grid-row: span 2;
+}
+.gallery figure:nth-child(2),
+.gallery figure:nth-child(3) {
+  grid-column: span 1;
+}
+.gallery img {
+  object-fit: cover;
+  transition: scale 1.4s var(--ease-out);
+}
+.gallery figure:hover img {
+  scale: 1.045;
+}
+.gallery figure::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--surface-sunk) 74%, transparent) 0%, transparent 38%);
+  pointer-events: none;
+}
+.gallery figcaption {
+  position: absolute;
+  left: 18px;
+  bottom: 14px;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: clamp(17px, 1.5vw, 22px);
+  text-shadow: 0 1px 14px var(--scrim);
 }
 .index h3 {
   font-family: var(--font-display);
@@ -1122,20 +1377,20 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--hair);
 }
 .index a {
   display: grid;
   grid-template-columns: 1fr 1.4fr 1fr 1.4fr 1fr;
   gap: 12px;
   padding: 14px 4px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--hair);
   color: inherit;
   text-decoration: none;
   font-size: 14px;
 }
 .index a:hover {
-  background: rgba(245, 239, 228, 0.04);
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
 }
 .index strong {
   font-family: var(--font-display);
@@ -1151,36 +1406,50 @@
 .dialog {
   width: min(640px, calc(100vw - 32px));
   padding: 26px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--hair);
   border-radius: 24px;
-  background: rgba(16, 18, 16, 0.94);
+  background: color-mix(in srgb, var(--surface-raised) 95%, transparent);
   color: var(--ink);
   backdrop-filter: blur(20px);
 }
 .dialog::backdrop {
-  background: rgba(5, 6, 5, 0.6);
+  background: var(--scrim);
   backdrop-filter: blur(4px);
 }
 .dialog h2 {
+  margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 32px;
-  margin: 10px 0 18px;
+  font-size: 34px;
+  line-height: 1.05;
 }
 .dialogTop {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 .dialogTop button {
+  display: grid;
+  place-items: center;
   width: 32px;
   height: 32px;
+  flex: none;
   border-radius: 50%;
-  border: 1px solid var(--line);
+  border: 1px solid var(--hair);
   background: transparent;
   color: inherit;
-  font-size: 18px;
   cursor: pointer;
+}
+.dialogTop button:hover {
+  border-color: var(--accent);
+  background: var(--tint);
+}
+.dialogSub {
+  margin: -10px 0 16px;
+  font-size: 13px;
+  color: var(--ink-muted);
 }
 .helpList {
   list-style: none;
@@ -1190,13 +1459,13 @@
   gap: 12px;
   font-size: 14px;
   line-height: 1.55;
-  color: rgba(245, 239, 228, 0.82);
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
 }
 .helpList b {
   display: inline-block;
   min-width: 96px;
   font-weight: 500;
-  color: var(--gold);
+  color: var(--accent);
 }
 
 /* ── Tablet and phone ────────────────────────────────────────────── */
@@ -1204,11 +1473,10 @@
 @media (max-width: 1100px) {
   .card {
     right: clamp(20px, 3.4vw, 56px);
-    bottom: 96px;
   }
   .floors {
     top: auto;
-    bottom: 96px;
+    bottom: calc(var(--dock) + 18px);
     transform: none;
   }
   .card ~ .floors {
@@ -1224,12 +1492,15 @@
     right: 16px;
     left: 16px;
   }
-  .heading h1 {
-    font-size: 30px;
-    margin: 8px 0 6px;
+  .heading {
+    max-width: none;
   }
-  .heading h1 small {
-    font-size: 12.5px;
+  .heading h1 {
+    font-size: 38px;
+  }
+  .lede {
+    margin: 8px 0 0;
+    font-size: 13px;
   }
   .crumbs,
   .hint {
@@ -1237,7 +1508,7 @@
   }
   .tools {
     top: auto;
-    bottom: 76px;
+    bottom: calc(var(--dock) + 8px);
     right: 12px;
     flex-direction: row-reverse;
     align-items: center;
@@ -1309,8 +1580,11 @@
   .card[data-sheet='true'] {
     transform: none;
   }
-  .card h2 {
-    font-size: 28px;
+  .cardMedia {
+    aspect-ratio: 5 / 2;
+  }
+  .cardTitle h2 {
+    font-size: 30px;
   }
   .roomPanel {
     display: none;
@@ -1322,28 +1596,46 @@
     width: 128px;
     padding: 8px;
   }
+  .stage {
+    --dock: 90px;
+  }
+  .stage[data-inside='true'] {
+    --dock: 68px;
+  }
   .dock {
-    bottom: 16px;
+    bottom: 14px;
   }
   .dock button {
     padding: 9px 12px;
     font-size: 12px;
   }
+  .dock .place {
+    width: 92px;
+    height: 58px;
+    border-radius: 13px;
+  }
   .mobileOnly {
     display: inline-block;
   }
+  .hotspot[data-kind='place'] {
+    display: none;
+  }
   .caption {
-    bottom: 150px;
+    bottom: calc(var(--dock) + 66px);
     width: calc(100% - 32px);
   }
   .joystick {
-    bottom: 150px;
+    bottom: calc(var(--dock) + 66px);
   }
   .detailsIntro {
     grid-template-columns: 1fr;
   }
   .gallery {
     grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 42vw;
+  }
+  .gallery figure:first-child {
+    grid-row: span 1;
   }
   .index a {
     grid-template-columns: 1fr 1fr;
@@ -1361,15 +1653,28 @@
   }
   .selector,
   .card {
-    background: rgba(12, 14, 13, 0.94);
+    background: color-mix(in srgb, var(--surface-sunk) 95%, transparent);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ring::before,
   .hint,
+  .title,
+  .lede,
+  .card,
+  .cardMedia img,
+  .caption,
+  .floors,
+  .dock,
+  .stage[data-phase='ready'] .tools,
+  .stage[data-phase='ready'] .selector,
   .mark svg {
     animation: none;
+  }
+  .place img,
+  .gallery img {
+    transition: none;
   }
   .mark svg {
     stroke-dashoffset: 0;
@@ -1380,7 +1685,7 @@
 
 .roomPanel {
   width: 300px;
-  max-height: calc(100svh - 390px);
+  max-height: calc(100svh - var(--top) - var(--dock) - 124px);
   min-height: 0;
   overflow-y: auto;
   gap: 8px;
@@ -1407,25 +1712,25 @@
   margin: 0 0 4px;
   font-size: 12.5px;
   line-height: 1.45;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .demo {
   margin: 0 0 10px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(159, 208, 238, 0.32);
-  background: rgba(159, 208, 238, 0.08);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   font-size: 12px;
   line-height: 1.45;
 }
 .demo b {
   display: block;
   margin-bottom: 3px;
-  font-size: 9.5px;
+  font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: #9fd0ee;
+  font-variant-caps: all-small-caps;
+  color: var(--accent);
 }
 .panelActions {
   display: flex;
@@ -1433,23 +1738,25 @@
   padding: 2px 0 4px;
 }
 .dock .dockAccent {
-  color: #0d1114;
-  background: linear-gradient(180deg, #bfe3f5, #8fc6e4);
+  color: var(--on-accent);
+  background: var(--accent);
+  font-weight: 600;
 }
 .dock .dockAccent:hover {
-  background: #d4edf9;
+  color: var(--on-accent);
+  background: color-mix(in srgb, var(--accent) 82%, var(--ink));
 }
 .plan .planTerrace {
-  fill: rgba(245, 239, 228, 0.02);
-  stroke: rgba(245, 239, 228, 0.1);
+  fill: color-mix(in srgb, var(--ink) 2%, transparent);
+  stroke: color-mix(in srgb, var(--ink) 10%, transparent);
   stroke-dasharray: 3 5;
 }
 .plan g[data-outdoor='true'] rect {
-  fill: rgba(159, 208, 238, 0.05);
+  fill: color-mix(in srgb, var(--accent) 5%, transparent);
   stroke-dasharray: 4 4;
 }
 .planDoor {
-  stroke: rgba(240, 201, 135, 0.55);
+  stroke: color-mix(in srgb, var(--accent) 55%, transparent);
   stroke-width: 2;
 }
 
@@ -1464,7 +1771,7 @@
     padding: 20px 18px calc(18px + env(safe-area-inset-bottom, 0px));
     border-radius: 22px 22px 0 0;
     z-index: 4;
-    background: rgba(12, 14, 13, 0.94);
+    background: color-mix(in srgb, var(--surface-sunk) 95%, transparent);
     transform: translateY(105%);
     transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
   }
@@ -1472,7 +1779,7 @@
     transform: none;
   }
   .roomPanel .close {
-    display: block;
+    display: grid;
   }
   .rooms {
     grid-template-columns: 1fr 1fr;

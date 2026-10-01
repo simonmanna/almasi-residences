@@ -14,7 +14,7 @@ describe('copy tokens', () => {
 describe('3D placement', () => {
   it('derives a volume from the code', () => {
     expect(resolveModelSlot('A2', 2)?.key).toBe('A');
-    expect(resolveModelSlot('PH-C', 4)?.volumes).toHaveLength(3);
+    expect(resolveModelSlot('PH-C', 4)?.volumes).toHaveLength(4);
   });
   it('lets the admin place a code the model does not know', () => {
     expect(isPlacedInModel('Z9', 2)).toBe(false);
