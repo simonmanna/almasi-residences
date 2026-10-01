@@ -89,9 +89,6 @@ const manrope = localFont({
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
-/** First visit on this device, motion allowed, on the home page: hold the frame dark for the intro. */
-const INTRO_SCRIPT = `try{var d=document.documentElement;if(location.pathname==='/'&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&localStorage.getItem('almasi:intro-seen')!=='1'){d.dataset.intro='pending'}}catch(e){}`;
-
 /** Without JavaScript nothing waits to be revealed. */
 const NOSCRIPT_CSS =
   '.reveal .reveal-word{transform:none!important}.reveal-media{clip-path:none!important}.reveal-media>*{transform:none!important}';
@@ -184,8 +181,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en-GB" data-theme={theme} className={`${display.variable} ${ui.variable} ${cormorant.variable} ${dmSerif.variable} ${manrope.variable}`} suppressHydrationWarning>
       <head>
-        {/* Before first paint: decide whether the home page opens with its intro. */}
-        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: MOTION_SCRIPT }} />
         <noscript>
           <style>{NOSCRIPT_CSS}</style>

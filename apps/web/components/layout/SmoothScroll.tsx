@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import type Lenis from 'lenis';
 
@@ -46,10 +46,16 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // A new route starts at its top, unless the URL names an anchor. Keyed on the
+  // route alone: Lenis loads lazily, and resetting when it arrives yanked a
+  // visitor who had already scrolled back to the top of the page.
+  const lastPath = useRef(pathname);
   useEffect(() => {
-    // A new route starts at its top, unless the URL names an anchor.
+    if (lastPath.current === pathname) return;
+    lastPath.current = pathname;
     if (window.location.hash) return;
-    lenis?.scrollTo(0, { immediate: true, force: true });
+    if (lenis) lenis.scrollTo(0, { immediate: true, force: true });
+    else window.scrollTo(0, 0);
   }, [pathname, lenis]);
 
   return <LenisContext.Provider value={lenis}>{children}</LenisContext.Provider>;

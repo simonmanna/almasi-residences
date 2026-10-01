@@ -10,42 +10,12 @@
 .media {
   position: absolute;
   inset: 0;
-  will-change: transform;
 }
 
-.aperture {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  clip-path: inset(0 0 0 0);
-  will-change: clip-path;
-}
-
-/* The wide still is composed for this frame, so the resting view needs no
-   corrective zoom. Motion grows from the building rather than the copy space. */
-.mediaInner {
-  position: absolute;
-  inset: 0;
-  transform: scale(1);
-  transform-origin: 68% 48%;
-  will-change: transform;
-}
-
-/* Never quite still: a slow push in and out across half a minute, kept small
-   enough that the building stays whole at both ends of it. */
-.drift {
-  position: absolute;
-  inset: 0;
-  transform-origin: 68% 48%;
-  animation: drift 32s var(--ease-in-out) infinite alternate;
-  will-change: transform;
-}
-
-/* A small overscan absorbs the pointer parallax without revealing an edge. */
+/* The picture's frame. */
 .parallax {
   position: absolute;
-  inset: -14px;
-  will-change: transform;
+  inset: 0;
 }
 
 /* Purpose-built panoramic art direction: no blur fill or visible seams. */
@@ -62,101 +32,6 @@
   background:
     radial-gradient(80% 68% at 82% 48%, #314967 0%, transparent 74%),
     linear-gradient(to bottom, #10263F 0%, #1D3E61 46%, #3B3240 76%, #16100D 100%);
-}
-
-/* The film sits over the poster and the glows, and appears only once it plays. */
-.film {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 45%;
-  opacity: 0;
-  transition: opacity 1.2s var(--ease-in-out);
-  pointer-events: none;
-}
-
-.film[data-playing] {
-  opacity: 1;
-}
-
-.filmToggle {
-  min-height: 44px;
-  padding: 0 4px;
-  color: var(--ink-muted);
-  font-size: 0.875rem;
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.16em;
-}
-
-@media (hover: hover) {
-  .filmToggle:hover { color: var(--ink); }
-}
-
-/* Light over nothing looks like a stain: the glows wait for the render. */
-.parallax:not([data-loaded]) .windows,
-.parallax:not([data-loaded]) .bloom,
-.parallax:not([data-loaded]) .sun {
-  visibility: hidden;
-}
-
-/* The interiors breathing. One centred pool used to light the middle of the
-   facade and leave both wings dull; this lays warm light along the whole run
-   of the building — left wing, corner, right wing and the lobby beneath it —
-   so the whole thing reads as lit from within. */
-.windows {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  mix-blend-mode: soft-light;
-  background:
-    radial-gradient(46% 44% at 72% 50%, rgba(255, 201, 130, 0.42), rgba(255, 201, 130, 0) 76%),
-    radial-gradient(30% 17% at 68% 78%, rgba(255, 184, 104, 0.48), rgba(255, 184, 104, 0) 74%);
-  animation: breathe 7s var(--ease-in-out) infinite alternate;
-}
-
-/* A second, gentler pass in screen: soft-light alone deepens as much as it
-   lifts, and the far wings needed lifting. */
-.bloom {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  opacity: 0.4;
-  background:
-    radial-gradient(42% 40% at 73% 54%, rgba(255, 186, 112, 0.22), rgba(255, 186, 112, 0) 74%),
-    radial-gradient(24% 16% at 69% 80%, rgba(255, 176, 98, 0.26), rgba(255, 176, 98, 0) 72%);
-  animation: breathe 9s var(--ease-in-out) infinite alternate-reverse;
-}
-
-/* The low sun, off the right shoulder of the building, now that the whole
-   render sits in frame rather than a crop of its middle. */
-.sun {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  background: radial-gradient(18% 24% at 92% 54%, rgba(255, 170, 90, 0.34), rgba(255, 140, 60, 0.08) 46%, rgba(255, 140, 60, 0) 74%);
-  animation: flare 9s var(--ease-in-out) infinite alternate;
-}
-
-/* One band of evening light across the facade as the frame opens. */
-.sheen {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  mix-blend-mode: overlay;
-  transform: translateX(-100%);
-  background: linear-gradient(
-    105deg,
-    rgba(255, 236, 205, 0) 30%,
-    rgba(255, 236, 205, 0.5) 47%,
-    rgba(255, 250, 240, 0.75) 50%,
-    rgba(255, 236, 205, 0.5) 53%,
-    rgba(255, 236, 205, 0) 70%
-  );
 }
 
 /* Legibility. The headline lives in the left column, so that column is given a
@@ -182,82 +57,6 @@
     /* the nav strip — kept shallow so the crown and the name board stay lit */
     linear-gradient(to bottom, rgb(var(--shade) / 0.42) 0%, rgb(var(--shade) / 0) 14%),
     radial-gradient(130% 95% at 62% 45%, rgb(var(--shade) / 0) 66%, rgb(var(--shade) / 0.3) 100%);
-}
-
-/* Film grain, so the CGI sits like a photograph. */
-.grain {
-  position: absolute;
-  inset: -50%;
-  pointer-events: none;
-  opacity: 0.07;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain 1.2s steps(6) infinite;
-}
-
-@keyframes drift {
-  from { transform: scale(1) translate3d(0, 0, 0); }
-  to { transform: scale(1.025) translate3d(-0.5%, 0.4%, 0); }
-}
-
-@keyframes breathe {
-  from { opacity: 0.55; }
-  to { opacity: 1; }
-}
-
-@keyframes flare {
-  from { opacity: 0.6; transform: scale(1); }
-  to { opacity: 1; transform: scale(1.04); }
-}
-
-@keyframes grain {
-  0% { transform: translate(0, 0); }
-  20% { transform: translate(-3%, 2%); }
-  40% { transform: translate(2%, -3%); }
-  60% { transform: translate(-2%, -1%); }
-  80% { transform: translate(3%, 3%); }
-  100% { transform: translate(0, 0); }
-}
-
-.intro {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.introCopy {
-  display: grid;
-  justify-items: center;
-  gap: 20px;
-  text-align: center;
-  padding-inline: 24px;
-}
-
-.introTitle {
-  overflow: hidden;
-  font-family: var(--font-ui);
-  font-size: clamp(1.05rem, 0.85rem + 0.8vw, 1.5rem);
-  font-weight: 500;
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.52em;
-  margin-right: -0.52em;
-  line-height: 1.4;
-}
-
-.introTitle span {
-  display: inline-block;
-}
-
-.introSub {
-  color: var(--ink-muted);
-  font-size: 0.875rem;
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.42em;
-  margin-right: -0.42em;
 }
 
 /* One column, left, bottom-aligned: title, lede, the way in, the four facts.
@@ -425,92 +224,6 @@
   color: var(--ink-muted);
 }
 
-.cue {
-  position: relative;
-  width: 1px;
-  height: 44px;
-  overflow: hidden;
-  background: rgb(var(--on-media) / 0.22);
-}
-
-.cue span {
-  position: absolute;
-  inset: 0;
-  background: var(--ink);
-  animation: cue 2.4s var(--ease-in-out) infinite;
-}
-
-@keyframes cue {
-  0% { transform: translateY(-100%); }
-  60% { transform: translateY(0); }
-  100% { transform: translateY(100%); }
-}
-
-.skip {
-  position: absolute;
-  right: var(--page-margin);
-  bottom: 26px;
-  z-index: 4;
-  min-height: 44px;
-  padding: 0 4px;
-  color: var(--ink-muted);
-  font-size: 0.875rem;
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.16em;
-}
-
-@media (hover: hover) {
-  .skip:hover { color: var(--ink); }
-}
-
-/* Before hydration on a first visit: dark, a closed aperture, the intro copy.
-   If the script never runs, the fallback animations open the frame anyway. */
-:global(html[data-intro='pending']) .intro,
-:global(html[data-intro='playing']) .intro {
-  visibility: visible;
-}
-
-:global(html[data-intro='pending']) .intro {
-  animation: intro-fallback 0.4s 2.2s forwards;
-}
-
-:global(html[data-intro='pending']) .aperture {
-  clip-path: inset(50% 50% 50% 50%);
-  animation: aperture-fallback 0.9s 2.2s var(--ease-in-out) forwards;
-}
-
-:global(html[data-intro='pending']) .content,
-:global(html[data-intro='pending']) .foot {
-  opacity: 0;
-  animation: fade-fallback 0.6s 2.6s forwards;
-}
-
-@keyframes aperture-fallback {
-  to { clip-path: inset(0 0 0 0); }
-}
-
-@keyframes intro-fallback {
-  to { opacity: 0; }
-}
-
-@keyframes fade-fallback {
-  to { opacity: 1; }
-}
-
-/* On a tall screen the cover crop loses the sun; don't paint a glow over sky. */
-@media (max-aspect-ratio: 4/3) {
-  .sun { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .drift,
-  .windows,
-  .bloom,
-  .sun,
-  .grain { animation: none; }
-  .sheen { display: none; }
-}
-
 @media (max-width: 860px) {
   .foot :global(.cgi-note) { display: none; }
 }
@@ -542,7 +255,6 @@
     width: 100%;
     height: var(--band);
     max-height: none;
-    /* The grain overscans by half; in a band that would spill onto the copy. */
     overflow: hidden;
   }
 
@@ -550,11 +262,6 @@
     position: relative;
     inset: auto;
     width: 100%;
-  }
-
-  /* No overscan in the self-contained band. */
-  .parallax {
-    inset: 0;
   }
 
   /* The scrim is a child of the band, so these stops are read against the
@@ -592,10 +299,6 @@
      shortens: it is a hint, and it was the tallest thing down there. */
   .panelWrap {
     inset: auto 0 72px 0;
-  }
-
-  .cue {
-    height: 26px;
   }
 
   .panel {
@@ -680,17 +383,13 @@
 
 /* Phone-only pieces; the wide layout never shows them. */
 .tagline,
-.watchPhone,
-.slider {
+.watchPhone {
   display: none;
 }
 
 /* ─── Phone: the Sapphire frame ───────────────────────────────────
-   A magazine cover in motion. The render goes full bleed behind the words and
-   becomes a slow sequence of four frames — the building at dusk, the pool, the
-   penthouse terrace, the hill from above — each easing in on a long push. The
-   words sit over the darkened left of the frame; the counter and arrows sit
-   bottom right; the glass finder overlaps the foot. */
+   A magazine cover. The render stands behind the words; the words sit over
+   the darkened left of the frame; the glass finder overlaps the foot. */
 @media (max-width: 767px) {
   .hero {
     justify-content: flex-end;
@@ -714,12 +413,10 @@
       linear-gradient(to bottom, #040A1C 0%, #0A1A40 40%, #15306A 72%, #1C3A78 100%);
   }
 
-  /* The stage: every frame stands in the same band across the middle of the
-     screen, tall enough for the whole building, and melts into the painted
-     blue hour above and the sapphire ground below. A full-bleed cover of a
-     panorama would show a third of one wing, soft with enlargement. */
-  .parallax,
-  .slide {
+  /* The stage: the picture stands in a band across the middle of the screen,
+     tall enough for the whole building, and melts into the painted blue hour
+     above and the sapphire ground below. */
+  .parallax {
     inset: auto 0 auto 0;
     top: var(--stage-top);
     height: var(--stage-h);
@@ -729,30 +426,6 @@
 
   .image {
     object-position: 66% 50%;
-    transform-origin: 70% 60%;
-    animation: arrive 2.6s var(--ease-out) both;
-  }
-
-  /* The later frames: stacked over the first, each fading up on its turn with
-     its own long push, so the change reads as a cut in a film, not a swipe. */
-  .slide {
-    position: absolute;
-    opacity: 0;
-    transition: opacity 1.4s var(--ease-in-out);
-  }
-
-  .slide[data-on] {
-    opacity: 1;
-  }
-
-  .slideImage {
-    object-fit: cover;
-    transform: scale(1.04);
-    transform-origin: 50% 60%;
-  }
-
-  .slide[data-on] .slideImage {
-    animation: push 8s linear both;
   }
 
   /* Dark under the words and the nav, open across the middle where the
@@ -770,10 +443,6 @@
         #060F26 100%
       ),
       linear-gradient(to right, rgb(4 10 28 / 0.74) 0%, rgb(4 10 28 / 0.38) 50%, transparent 82%);
-  }
-
-  .grain {
-    opacity: 0.05;
   }
 
   .panelWrap,
@@ -917,128 +586,23 @@
     height: 15px;
   }
 
-  /* A slow ring leaves the button every few seconds: it is the one thing in
-     the frame that asks to be touched. */
-  .play::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border: 1px solid var(--champagne);
-    border-radius: inherit;
-    animation: ring 3.2s var(--ease-out) 1.6s infinite;
-  }
-
-  /* ─── Frame counter, arrows and the running bar ─── */
-  .slider {
-    position: absolute;
-    right: var(--page-margin);
-    bottom: 152px;
-    z-index: 3;
-    display: grid;
-    justify-items: end;
-    gap: 8px;
-    width: 124px;
-  }
-
-  .slideCaption {
-    overflow: hidden;
-    max-width: 100%;
-    color: rgb(var(--on-media) / 0.6);
-    font-size: 0.6875rem;
-    font-variant-caps: all-small-caps;
-    letter-spacing: 0.16em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .slideNav {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    margin-right: -8px;
-  }
-
-  .counter {
-    margin-right: 6px;
-    color: rgb(var(--on-media) / 0.6);
-    font-size: 0.75rem;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.08em;
-  }
-
-  .counter b {
-    color: var(--ink);
-    font-weight: 600;
-  }
-
-  .arrow {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    color: var(--ink);
-    transition: background-color var(--dur-1) var(--ease-standard), transform var(--dur-1) var(--ease-out);
-  }
-
-  .arrow:active {
-    transform: scale(0.9);
-    background: rgb(216 184 120 / 0.18);
-  }
-
-  .arrow:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 1px var(--champagne);
-  }
-
-  .progress {
-    position: relative;
-    width: 100%;
-    height: 2px;
-    overflow: hidden;
-    border-radius: 2px;
-    background: rgb(var(--on-media) / 0.2);
-  }
-
-  .progress > span {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to right, var(--champagne-lo), var(--champagne-hi));
-    transform-origin: 0 50%;
-    transform: scaleX(var(--slide-at, 1));
-  }
-
-  .progress > span[data-run] {
-    animation: run var(--slide-ms, 6500ms) linear both;
-  }
 }
 
-@keyframes arrive {
-  from { transform: scale(1.14); filter: brightness(0.6) saturate(0.8); }
+
+/* The words settle in over half a second — CSS only, so nothing waits on
+   JavaScript. The picture itself is never hidden. */
+.content,
+.panelWrap,
+.foot {
+  animation: settle 0.5s var(--ease-out) both;
 }
 
-@keyframes push {
-  from { transform: scale(1.16); }
-  to { transform: scale(1.04); }
+@keyframes settle {
+  from { opacity: 0; transform: translateY(10px); }
 }
 
-@keyframes run {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-
-@keyframes ring {
-  0% { transform: scale(1); opacity: 0.7; }
-  70%, 100% { transform: scale(1.55); opacity: 0; }
-}
-
-@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
-  .image,
-  .slide[data-on] .slideImage,
-  .play::after {
-    animation: none;
-  }
-  .slide {
-    transition: none;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .content,
+  .panelWrap,
+  .foot { animation: none; }
 }
