@@ -445,6 +445,9 @@ export class ResidencesService {
     if (after.code !== before.code) {
       const fromPath = `/residences/${residenceSlug(before.code)}`;
       const toPath = `/residences/${residenceSlug(after.code)}`;
+      // The new path is a live page now: an old redirect from it would hide the
+      // residence (and point the sitemap at a 301), or loop once repointed below.
+      await this.prisma.client.redirect.deleteMany({ where: { developmentId, fromPath: toPath } });
       await this.prisma.client.redirect.upsert({
         where: { developmentId_fromPath: { developmentId, fromPath } },
         create: { developmentId, fromPath, toPath, statusCode: 301, reason: `${before.code} was renamed ${after.code}`, createdById: actor.id },
