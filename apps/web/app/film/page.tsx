@@ -10,7 +10,7 @@ import { assertPageVisible } from '../../lib/page-visibility';
 export const revalidate = 3600;
 
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/film', { title: 'The film' });
+  return pageMetadata('/film');
 }
 
 /** The film is a library file with chapters, edited in the admin (roadmap item 23). */

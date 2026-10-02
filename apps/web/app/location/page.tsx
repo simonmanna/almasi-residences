@@ -10,7 +10,7 @@ import { assertPageVisible } from '../../lib/page-visibility';
 export const revalidate = 3600;
 
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/location', { title: 'Location' });
+  return pageMetadata('/location');
 }
 
 export default async function LocationPage() {

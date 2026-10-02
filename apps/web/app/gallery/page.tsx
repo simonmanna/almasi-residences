@@ -10,7 +10,7 @@ import { assertPageVisible } from '../../lib/page-visibility';
 export const revalidate = 3600;
 
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/gallery', { title: 'Gallery' });
+  return pageMetadata('/gallery');
 }
 
 /** The galleries are the ones published in the admin (§16), in the admin's order. */

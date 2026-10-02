@@ -13,11 +13,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  PAGE_VISIBILITY,
   SEO_DESCRIPTION_MAX,
   SEO_ENTITY_LABELS,
   SEO_ENTITY_TYPES,
   SEO_ROUTES,
   SEO_TITLE_MAX,
+  isPageVisible,
   normalisePath,
   seoEntityPath,
   seoScore,
@@ -275,8 +277,9 @@ export class SeoController {
   @RequirePermission('content.view')
   async auditReport() {
     const developmentId = await this.dev.id();
-    const [site, seoPages, entities, units, typologies, locations, posts, images, videos, redirects] = await Promise.all([
+    const [site, visibilityRow, seoPages, entities, units, typologies, locations, posts, images, videos, redirects] = await Promise.all([
       this.prisma.client.seoMeta.findUnique({ where: { developmentId } }),
+      this.prisma.client.contentPage.findUnique({ where: { developmentId_key: { developmentId, key: 'pageVisibility' } } }),
       this.prisma.client.seoPage.findMany({ where: { developmentId } }),
       this.prisma.client.seoEntity.findMany({ where: { developmentId } }),
       this.prisma.client.unit.findMany({ where: { developmentId, archivedAt: null, published: true }, select: { id: true, code: true, shortDescription: true } }),
@@ -292,24 +295,28 @@ export class SeoController {
     const titles = new Map<string, string[]>();
     const descriptions = new Map<string, string[]>();
 
-    // The pages that exist whatever the inventory holds.
-    for (const route of SEO_ROUTES) {
+    // A page the admin switched off answers "page not found" and leaves the
+    // sitemap (Website → Pages and navigation): nothing about it is crawled.
+    const visibility = (visibilityRow?.published === false ? {} : (visibilityRow?.content ?? {})) as Record<string, unknown>;
+    const shown = (path: string) => {
+      const def = PAGE_VISIBILITY.find((p) => path === p.path || path.startsWith(`${p.path}/`));
+      return !def || isPageVisible(visibility, def.key);
+    };
+    const routes = SEO_ROUTES.filter((r) => shown(r.path));
+    /** Every address that answers with a page — what a redirect must never shadow. */
+    const livePaths = new Set<string>(routes.map((r) => r.path));
+
+    // The pages that exist whatever the inventory holds. The website names each
+    // one (SEO_ROUTES) and shares the site-wide image when the admin set none,
+    // so only what the admin wrote, or the site-wide fallback, is judged here.
+    for (const route of routes) {
       const row = seoPages.find((p) => p.path === route.path);
-      const title = row?.title ?? site?.title ?? '';
-      const description = row?.description ?? site?.description ?? '';
-      if (!row?.title) {
-        issues.push({
-          kind: 'missing-title',
-          path: route.path,
-          label: route.label,
-          severity: site?.title ? 'warning' : 'error',
-          detail: site?.title ? 'Falls back to the site-wide title.' : undefined,
-        });
-      }
-      if (!row?.description && !site?.description) issues.push({ kind: 'missing-description', path: route.path, label: route.label, severity: 'error' });
+      const title = row?.title || route.title || site?.title || '';
+      const description = row?.description || route.description || site?.description || '';
+      if (!title) issues.push({ kind: 'missing-title', path: route.path, label: route.label, severity: 'error' });
+      if (!description) issues.push({ kind: 'missing-description', path: route.path, label: route.label, severity: 'error' });
       if (title.length > SEO_TITLE_MAX) issues.push({ kind: 'title-too-long', path: route.path, label: route.label, severity: 'warning', detail: `${title.length} characters` });
       if (description.length > SEO_DESCRIPTION_MAX) issues.push({ kind: 'description-too-long', path: route.path, label: route.label, severity: 'warning', detail: `${description.length} characters` });
-      if (!row?.ogImageId) issues.push({ kind: 'missing-og-image', path: route.path, label: route.label, severity: 'warning' });
       if (row?.noindex) issues.push({ kind: 'noindex', path: route.path, label: route.label, severity: 'warning' });
       if (title) titles.set(title, [...(titles.get(title) ?? []), route.path]);
       if (description) descriptions.set(description, [...(descriptions.get(description) ?? []), route.path]);
@@ -321,10 +328,11 @@ export class SeoController {
       ...typologies.map((t) => ({ type: 'TYPOLOGY' as const, id: t.id, label: t.name, slug: residenceTypeKey(t.isPenthouse, t.bedrooms), published: true, derivable: true })),
       ...locations.map((l) => ({ type: 'LOCATION_PAGE' as const, id: l.id, label: l.name, slug: l.slug, published: l.published, derivable: Boolean(l.lede?.trim()) })),
       ...posts.map((p) => ({ type: 'POST' as const, id: p.id, label: p.title, slug: p.slug, published: p.published, derivable: Boolean(p.excerpt?.trim()) })),
-    ];
+    ].filter((rec) => shown(seoEntityPath(rec.type, rec.slug)));
     for (const rec of records) {
       const row = entities.find((e) => e.entityType === rec.type && e.entityId === rec.id);
       const path = seoEntityPath(rec.type, rec.slug);
+      if (rec.published) livePaths.add(path);
       if (row?.title) {
         if (row.title.length > SEO_TITLE_MAX) issues.push({ kind: 'title-too-long', path, label: rec.label, severity: 'warning', detail: `${row.title.length} characters` });
         titles.set(row.title, [...(titles.get(row.title) ?? []), path]);
@@ -347,19 +355,23 @@ export class SeoController {
     for (const m of missingAlt.slice(0, 50)) issues.push({ kind: 'missing-alt-text', path: '/media', label: m.title ?? m.storageKey.split('/').pop() ?? m.id, severity: 'warning' });
     for (const v of videos.filter((x) => !x.transcript?.trim())) issues.push({ kind: 'missing-transcript', path: '/film', label: v.label, severity: 'warning' });
 
+    // The website applies a redirect before it looks for a page, so one whose
+    // source is a live address makes that page unreachable.
     const targets = new Set(redirects.map((r) => r.toPath));
     for (const r of redirects) {
-      if (r.fromPath === r.toPath || targets.has(r.fromPath)) {
+      if (livePaths.has(r.fromPath)) {
+        issues.push({ kind: 'redirect-hides-page', path: r.fromPath, label: r.fromPath, severity: 'error', detail: `sends visitors to ${r.toPath} instead` });
+      } else if (r.fromPath === r.toPath || targets.has(r.fromPath)) {
         issues.push({ kind: 'redirect-loop', path: r.fromPath, label: r.fromPath, severity: 'error', detail: `points at ${r.toPath}` });
       }
     }
 
-    const pages = SEO_ROUTES.length + records.filter((r) => r.published).length;
+    const pages = routes.length + records.filter((r) => r.published).length;
     return {
       score: seoScore(issues, pages),
       counts: {
         pages,
-        staticRoutes: SEO_ROUTES.length,
+        staticRoutes: routes.length,
         residences: units.length,
         types: typologies.length,
         locationPages: locations.filter((l) => l.published).length,

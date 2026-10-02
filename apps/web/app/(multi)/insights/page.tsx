@@ -12,7 +12,7 @@ import styles from './insights.module.css';
 export const revalidate = 3600;
 
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/insights', { title: 'Insights' });
+  return pageMetadata('/insights');
 }
 
 /**

@@ -1,13 +1,11 @@
 import type { Metadata } from 'next';
 import { DigitalTwin } from '../../components/digital-twin/DigitalTwin';
+import { pageMetadata } from '../../lib/page-metadata';
 import { assertPageVisible } from '../../lib/page-visibility';
 
-export const metadata: Metadata = {
-  title: '3D Design | Explore Almasi',
-  description:
-    'Step inside Almasi in Kimihurura, Kigali. Explore the architecture, pool, reception and a furnished reference residence in interactive 3D.',
-  alternates: { canonical: '/3d-design' },
-};
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('/3d-design');
+}
 
 export default async function DesignPage() {
   await assertPageVisible('design3d');

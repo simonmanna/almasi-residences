@@ -47,6 +47,7 @@ const FIX_AT: Partial<Record<SeoIssueKind, { to: string; label: string }>> = {
   'missing-alt-text': { to: '/media', label: 'Images' },
   'missing-transcript': { to: '/film', label: 'Film' },
   'redirect-loop': { to: '/seo/redirects', label: 'Redirects' },
+  'redirect-hides-page': { to: '/seo/redirects', label: 'Redirects' },
 };
 
 const scoreTone = (score: number) => (score >= 90 ? 'green' : score >= 70 ? 'amber' : 'red');
@@ -104,7 +105,7 @@ export default function SeoHealth() {
         <CardHead title="What to fix" sub={`${errors.length} problems, ${warnings.length} warnings`} icon={<AlertTriangle size={18} />} />
         {data.issues.length === 0 ? (
           <Empty title="Nothing to fix" icon={<CheckCircle2 size={32} />}>
-            Every page has a title, a description and a share image, and no two pages claim the same words.
+            Every page has a title and a description, no two pages claim the same words, and every redirect arrives somewhere.
           </Empty>
         ) : (
           <div className="table-wrap" style={{ padding: '0 14px 14px' }}>

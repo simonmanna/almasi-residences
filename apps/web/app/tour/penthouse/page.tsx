@@ -7,7 +7,7 @@ import { assertPageVisible } from '../../../lib/page-visibility';
 export const revalidate = 3600;
 
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/tour/penthouse', { title: 'The penthouse tour' });
+  return pageMetadata('/tour/penthouse');
 }
 
 /** The stations are a walkthrough edited in the admin (Website → Tours, roadmap item 22). */

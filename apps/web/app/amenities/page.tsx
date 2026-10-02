@@ -10,7 +10,7 @@ import { assertPageVisible } from '../../lib/page-visibility';
 export const revalidate = 3600;
 
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/amenities', { title: 'Amenities' });
+  return pageMetadata('/amenities');
 }
 
 /** The amenities are managed in the admin (§19); the heading is CMS copy, the header image a placement. */

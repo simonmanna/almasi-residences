@@ -71,7 +71,8 @@ export type SeoIssueKind =
   | 'missing-alt-text'
   | 'missing-transcript'
   | 'orphan-page'
-  | 'redirect-loop';
+  | 'redirect-loop'
+  | 'redirect-hides-page';
 
 export interface SeoIssue {
   kind: SeoIssueKind;
@@ -94,7 +95,8 @@ export const SEO_ISSUE_LABELS: Record<SeoIssueKind, string> = {
   'missing-alt-text': 'Image without alt text',
   'missing-transcript': 'Video without transcript',
   'orphan-page': 'Nothing links to it',
-  'redirect-loop': 'Redirect points at itself',
+  'redirect-loop': 'Redirect chain or loop',
+  'redirect-hides-page': 'Redirect hides a live page',
 };
 
 /** An error costs more than a warning; a page with neither scores 100. */

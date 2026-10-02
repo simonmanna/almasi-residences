@@ -83,23 +83,43 @@ export type TourLevelKey = (typeof TOUR_LEVELS)[number]['key'];
 
 // ─── SEO (§5.6) ──────────────────────────────────────────────────────────
 
+export interface SeoRoute {
+  path: string;
+  label: string;
+  /**
+   * What the page is called when the admin has written no title — the website
+   * prints it and the SEO audit judges it. The homepage has none: its title is
+   * the site-wide one.
+   */
+  title?: string;
+  /** Only where the page ships its own; otherwise the site-wide description stands in. */
+  description?: string;
+}
+
 /** Every public route whose metadata the admin owns. */
-export const SEO_ROUTES = [
+export const SEO_ROUTES: readonly SeoRoute[] = [
   { path: '/', label: 'Homepage' },
-  { path: '/residences', label: 'Residences' },
-  { path: '/amenities', label: 'Amenities' },
-  { path: '/location', label: 'Location' },
-  { path: '/gallery', label: 'Gallery' },
-  { path: '/3d-design', label: '3D design' },
-  { path: '/buying', label: 'Buying' },
-  { path: '/progress', label: 'Construction progress' },
-  { path: '/film', label: 'Film' },
-  { path: '/tour', label: 'Building tour' },
-  { path: '/tour/penthouse', label: 'Penthouse tour' },
-  { path: '/locations', label: 'Neighbourhoods' },
-  { path: '/insights', label: 'Insights' },
-  { path: '/enquire', label: 'Enquire' },
-] as const;
+  { path: '/residences', label: 'Residences', title: 'Residences' },
+  { path: '/amenities', label: 'Amenities', title: 'Amenities' },
+  { path: '/location', label: 'Location', title: 'Location' },
+  { path: '/gallery', label: 'Gallery', title: 'Gallery' },
+  {
+    path: '/3d-design',
+    label: '3D design',
+    title: '3D Design | Explore Almasi',
+    description: 'Step inside Almasi in Kimihurura, Kigali. Explore the architecture, pool, reception and furnished one-bedroom, two-bedroom and penthouse homes in interactive 3D.',
+  },
+  { path: '/buying', label: 'Buying', title: 'Buying' },
+  { path: '/progress', label: 'Construction progress', title: 'Construction progress' },
+  { path: '/film', label: 'Film', title: 'The film' },
+  { path: '/tour', label: 'Building tour', title: 'The 3D tour' },
+  { path: '/tour/penthouse', label: 'Penthouse tour', title: 'The penthouse tour' },
+  { path: '/locations', label: 'Neighbourhoods', title: 'Locations' },
+  { path: '/insights', label: 'Insights', title: 'Insights' },
+  { path: '/enquire', label: 'Enquire', title: 'Enquire or book a viewing' },
+];
+
+export const seoRoute = (path: string): SeoRoute | undefined => SEO_ROUTES.find((r) => r.path === path);
 
 export const SEO_TITLE_MAX = 70;
 export const SEO_DESCRIPTION_MAX = 170;

@@ -10,7 +10,7 @@ import { assertPageVisible } from '../../../lib/page-visibility';
 export const revalidate = 3600;
 
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/progress', { title: 'Construction progress' });
+  return pageMetadata('/progress');
 }
 
 /**

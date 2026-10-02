@@ -11,7 +11,7 @@ import styles from './locations.module.css';
 export const revalidate = 3600;
 
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/locations', { title: 'Locations' });
+  return pageMetadata('/locations');
 }
 
 /**

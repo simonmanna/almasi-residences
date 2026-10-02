@@ -8,7 +8,7 @@ import { assertPageVisible } from '../../../lib/page-visibility';
 
 /** The admin's metadata for /residences (Website → SEO); live counts fill any {tokens} in it. */
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/residences', { title: 'Residences' });
+  return pageMetadata('/residences');
 }
 
 /**

@@ -14,7 +14,7 @@ import { assertPageVisible } from '../../lib/page-visibility';
 export const revalidate = 3600;
 
 export function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('/buying', { title: 'Buying' });
+  return pageMetadata('/buying');
 }
 
 type Step = { title: string; body: string };

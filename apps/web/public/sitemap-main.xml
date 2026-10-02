@@ -67,6 +67,42 @@
     <priority>0.2</priority>
   </url>
   <url>
+    <loc>https://almasiresidence.com/residences/b</loc>
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://storage.almasiresidence.com/avida-media/media/2026/09/3cabd958-7e5e-4f5a-b7ca-2777490192da/w1600.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://almasiresidence.com/residences/c</loc>
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://storage.almasiresidence.com/avida-media/media/2026/09/3cabd958-7e5e-4f5a-b7ca-2777490192da/w1600.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://almasiresidence.com/residences/d</loc>
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://storage.almasiresidence.com/avida-media/media/2026/09/3cabd958-7e5e-4f5a-b7ca-2777490192da/w1600.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://almasiresidence.com/residences/e</loc>
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://storage.almasiresidence.com/avida-media/media/2026/09/c3f704f1-f5ba-46b9-bb05-b315c584eccf/w1600.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://almasiresidence.com/residences/a1</loc>
     <lastmod>2026-10-02</lastmod>
     <changefreq>weekly</changefreq>
