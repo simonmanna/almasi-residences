@@ -137,10 +137,30 @@ export const SEO_ROUTES: readonly SeoRoute[] = [
   },
   { path: '/progress', label: 'Construction progress', title: 'Construction progress' },
   { path: '/film', label: 'Film', title: 'The film' },
-  { path: '/tour', label: 'Building tour', title: 'The 3D tour' },
-  { path: '/tour/penthouse', label: 'Penthouse tour', title: 'The penthouse tour' },
-  { path: '/locations', label: 'Neighbourhoods', title: 'Locations' },
-  { path: '/insights', label: 'Insights', title: 'Insights' },
+  {
+    path: '/tour',
+    label: 'Building tour',
+    title: 'The 3D tour',
+    description: 'Walk through Almasi in Kimihurura, Kigali: the entrance, reception, pool, gym, sauna and co-working, then a furnished residence and its balcony view.',
+  },
+  {
+    path: '/tour/penthouse',
+    label: 'Penthouse tour',
+    title: 'The penthouse tour',
+    description: 'The top floor of Almasi, room by room: the living room, kitchen, master suite and en-suite, then the terrace and its view over Kigali.',
+  },
+  {
+    path: '/locations',
+    label: 'Neighbourhoods',
+    title: 'Locations',
+    description: 'Kigali neighbourhood by neighbourhood: what is within walking distance of Almasi, what is a short drive, and how each area around Kimihurura feels.',
+  },
+  {
+    path: '/insights',
+    label: 'Insights',
+    title: 'Insights',
+    description: 'Guides to buying and living in Kigali: what buying a home involves, what each neighbourhood is like, and how the Almasi building is progressing.',
+  },
   { path: '/enquire', label: 'Enquire', title: 'Enquire or book a viewing' },
 ];
 
