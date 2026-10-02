@@ -298,6 +298,7 @@ export class ResidencesService {
     if (dto.status && dto.status !== 'AVAILABLE') assertCan(actor, 'residence.status');
     this.assertPricingSane({ priceMinor: dto.priceMinor, discountMinor: dto.discountMinor, promoPriceMinor: dto.promoPriceMinor });
 
+    await this.assertModelSlotFree(floor.id, floor.level, code, dto.modelSlot);
     const max = await this.prisma.client.unit.aggregate({ where: { floorId: floor.id }, _max: { positionIndex: true } });
     const unit = await this.prisma.client.unit
       .create({
@@ -434,6 +435,14 @@ export class ResidencesService {
         modelSlot: dto.modelSlot === undefined ? undefined : dto.modelSlot?.trim().toUpperCase() || null,
       }),
     );
+
+    // Only a change to what places the residence is checked, so an existing clash never blocks a price edit.
+    if (data.code !== undefined || data.floorId !== undefined || data.modelSlot !== undefined) {
+      const floorId = (data.floorId as string | undefined) ?? before.floorId;
+      const floor = await this.ownedFloor(floorId, developmentId);
+      const slot = data.modelSlot === undefined ? before.modelSlot : (data.modelSlot as string | null);
+      await this.assertModelSlotFree(floorId, floor.level, (data.code as string | undefined) ?? before.code, slot, id);
+    }
 
     const after = await this.prisma.client
       .$transaction(async (tx) => {
@@ -790,6 +799,23 @@ export class ResidencesService {
       select: { code: true, archivedAt: true },
     });
     if (clash) throw new ConflictException(`Residence code ${clash.code} is already in use${clash.archivedAt ? ' by an archived residence' : ''}.`);
+  }
+
+  /**
+   * Two residences in one 3D position draw as one volume and one of them
+   * vanishes from the building, so a position belongs to one residence per floor.
+   */
+  private async assertModelSlotFree(floorId: string, level: number, code: string, modelSlot: string | null | undefined, exceptId?: string) {
+    const slot = resolveModelSlot(code, level, modelSlot);
+    if (!slot) return;
+    const others = await this.prisma.client.unit.findMany({
+      where: { floorId, archivedAt: null, ...(exceptId ? { id: { not: exceptId } } : {}) },
+      select: { code: true, modelSlot: true },
+    });
+    const clash = others.find((o) => resolveModelSlot(o.code, level, o.modelSlot)?.key === slot.key);
+    if (clash) {
+      throw new ConflictException(`${clash.code} already stands in the 3D position ${slot.key} (${slot.label}). Choose another position for one of them.`);
+    }
   }
 
   private async ownedFloor(id: string, developmentId: string) {

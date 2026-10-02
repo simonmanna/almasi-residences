@@ -688,10 +688,6 @@ export function DigitalTwin() {
               <span className={styles.status} data-status={selected.publicStatus}>{STATUS_TEXT[selected.publicStatus]}</span>
               {price(selected) && <strong>{price(selected)}</strong>}
             </div>
-            <p className={styles.demo}>
-              <b>3D layout</b>
-              {layoutNote}
-            </p>
             <button className={styles.primary} onClick={() => enter()}>
               Enter 3D tour <Icon name="arrow" />
             </button>
