@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { FacadeRun, TourScene } from '../../../lib/digital-twin';
 import { Bucket } from './geometry';
 import type { Materials } from './materials';
+import { furnishOneBedroom, furnishTwoBedroom } from './apartments';
 import { furnishPenthouse, type Furnish } from './penthouse';
 
 const UV: Record<string, number> = {
@@ -11,7 +12,11 @@ const UV: Record<string, number> = {
 const NO_SHADOW = new Set(['clearGlass', 'balustrade', 'bulb', 'led', 'downlight', 'curtain', 'lampShade', 'fire', 'ceiling', 'globe', 'water', 'smoked']);
 
 /** Furnishing per scene id; a scene with a GLB `model` needs none. */
-const FURNISH: Record<string, Furnish> = { penthouse: furnishPenthouse };
+const FURNISH: Record<string, Furnish> = {
+  penthouse: furnishPenthouse,
+  'one-bedroom': furnishOneBedroom,
+  'two-bedroom': furnishTwoBedroom,
+};
 
 export interface InteriorLight {
   p: [number, number, number];
@@ -282,6 +287,15 @@ export class ResidenceInterior {
     put('balustrade', 0, 1.08, 0.012);
     put('frame', 1.06, 1.1, 0.03);
     put('frame', -0.02, 0.05, 0.03);
+  }
+
+  /** Frees the interior's geometry; materials belong to the shared library. */
+  dispose() {
+    this.root.removeFromParent();
+    this.root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) m.geometry.dispose();
+    });
   }
 
   setLights(level: number) {

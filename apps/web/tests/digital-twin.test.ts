@@ -3,29 +3,34 @@ import {
   CINEMATIC,
   EXTERIOR_HOTSPOTS,
   INITIAL_TWIN,
+  ONE_BEDROOM,
   PENTHOUSE,
   PLACES,
+  TWO_BEDROOM,
   canWalk,
   roomAt,
   routeBetween,
   sceneFor,
+  sceneKey,
 } from '../lib/digital-twin';
 
 const S = PENTHOUSE;
+const SCENES = [PENTHOUSE, ONE_BEDROOM, TWO_BEDROOM];
 
 describe('3D design data', () => {
-  it('starts every room camera where a visitor can stand, inside that room', () => {
-    for (const room of S.rooms) {
-      expect(canWalk(S, room.position[0], room.position[2]), room.id).toBe(true);
-      expect(roomAt(S, room.position[0], room.position[2]), room.id).toBe(room.id);
+  it.each(SCENES.map((s) => [s.id, s] as const))('%s: starts every room camera where a visitor can stand, inside that room', (_, scene) => {
+    for (const room of scene.rooms) {
+      expect(canWalk(scene, room.position[0], room.position[2]), room.id).toBe(true);
+      expect(roomAt(scene, room.position[0], room.position[2]), room.id).toBe(room.id);
     }
   });
 
-  it('routes every room through walkable doors', () => {
-    for (const room of S.rooms) {
-      for (const [x, z] of room.route ?? []) expect(canWalk(S, x, z), `${room.id} ${x},${z}`).toBe(true);
+  it.each(SCENES.map((s) => [s.id, s] as const))('%s: routes every room through walkable doors', (_, scene) => {
+    for (const room of scene.rooms) {
+      for (const [x, z] of room.route ?? []) expect(canWalk(scene, x, z), `${room.id} ${x},${z}`).toBe(true);
     }
-    expect(canWalk(S, S.entry.position[0], S.entry.position[2])).toBe(true);
+    expect(canWalk(scene, scene.entry.position[0], scene.entry.position[2])).toBe(true);
+    expect(scene.rooms.some((r) => r.id === scene.startRoom)).toBe(true);
   });
 
   it('blocks walls, furniture, the glazing and the pool, but not the doors', () => {
@@ -46,9 +51,29 @@ describe('3D design data', () => {
     expect(routeBetween(S, 'living', 'kitchen')).toEqual([]);
   });
 
-  it('previews the penthouse for every residence until one has its own scene', () => {
-    expect(sceneFor({ typologySlug: 'one-bedroom' })).toEqual({ scene: PENTHOUSE, demo: true });
+  it('opens each residence onto the layout of its kind', () => {
+    const r = { code: 'A2', floorLevel: 2, modelSlot: null };
+    expect(sceneFor({ ...r, type: 'one-bedroom', bedrooms: 1 }).scene.id).toBe('one-bedroom');
+    expect(sceneFor({ ...r, type: 'two-bedroom', bedrooms: 2 }).scene.id).toBe('two-bedroom');
+    expect(sceneFor({ ...r, type: 'three-bedroom', bedrooms: 3 }).scene.id).toBe('two-bedroom');
+    expect(sceneFor({ code: 'PH-A', floorLevel: 4, modelSlot: null, type: 'penthouse', bedrooms: 3 }).scene).toBe(PENTHOUSE);
     expect(sceneFor(null).scene).toBe(PENTHOUSE);
+  });
+
+  it('sets a typical layout on the residence floor, facing the way its home does', () => {
+    const west = sceneFor({ code: 'A2', floorLevel: 2, modelSlot: null, type: 'one-bedroom', bedrooms: 1 }).scene;
+    expect(west.level).toBe(2);
+    expect(west.yaw).toBeCloseTo(-Math.PI / 2);
+    const east = sceneFor({ code: 'B3', floorLevel: 3, modelSlot: null, type: 'one-bedroom', bedrooms: 1 }).scene;
+    expect(east.yaw).toBeCloseTo(Math.PI / 2);
+    const street = sceneFor({ code: 'D1', floorLevel: 1, modelSlot: null, type: 'two-bedroom', bedrooms: 2 }).scene;
+    expect(street.yaw).toBe(0);
+    const north = sceneFor({ code: 'E1', floorLevel: 1, modelSlot: null, type: 'two-bedroom', bedrooms: 2 }).scene;
+    expect(north.yaw).toBeCloseTo(Math.PI);
+    // The admin's chosen position wins over the code, and moves the interior with it.
+    const moved = sceneFor({ code: 'X9', floorLevel: 1, modelSlot: 'E', type: 'two-bedroom', bedrooms: 2 }).scene;
+    expect(sceneKey(moved)).toBe(sceneKey(north));
+    expect(sceneKey(west)).not.toBe(sceneKey(east));
   });
 
   it('gives every exterior hotspot a destination with a camera shot', () => {

@@ -21,7 +21,7 @@ export type Furnish = (ctx: FurnishContext) => void;
 
 // ─── A tiny local-frame kit: every piece is modelled facing +z, then placed ─
 
-function at(b: Bucket, x: number, z: number, ry = 0, y = 0) {
+export function at(b: Bucket, x: number, z: number, ry = 0, y = 0) {
   const m = new THREE.Matrix4().makeRotationY(ry).setPosition(x, y, z);
   const put = (key: string, g: THREE.BufferGeometry) => b.add(key, g, m);
   return {
@@ -50,13 +50,13 @@ function at(b: Bucket, x: number, z: number, ry = 0, y = 0) {
     },
   };
 }
-type Kit = ReturnType<typeof at>;
+export type Kit = ReturnType<typeof at>;
 
-function legs(k: Kit, key: string, w: number, d: number, h: number, r = 0.018) {
+export function legs(k: Kit, key: string, w: number, d: number, h: number, r = 0.018) {
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.cyl(key, [sx * w, h / 2, sz * d], r * 0.7, r, h, 8);
 }
 
-function armchair(k: Kit, fabric: string, accent = 'olive') {
+export function armchair(k: Kit, fabric: string, accent = 'olive') {
   k.rounded(fabric, [0, 0.24, 0], [0.82, 0.18, 0.8], 0.07);
   k.rounded(fabric, [0, 0.38, 0.05], [0.64, 0.12, 0.66], 0.06);
   k.rounded(fabric, [0, 0.56, -0.33], [0.82, 0.5, 0.16], 0.08);
@@ -65,14 +65,14 @@ function armchair(k: Kit, fabric: string, accent = 'olive') {
   legs(k, 'walnut', 0.33, 0.31, 0.15);
 }
 
-function diningChair(k: Kit, fabric: string) {
+export function diningChair(k: Kit, fabric: string) {
   k.rounded(fabric, [0, 0.46, 0.02], [0.5, 0.09, 0.48], 0.04);
   k.rounded(fabric, [0, 0.77, -0.21], [0.5, 0.52, 0.08], 0.04);
   for (const s of [-1, 1]) k.rounded(fabric, [s * 0.22, 0.6, -0.12], [0.06, 0.22, 0.22], 0.03);
   legs(k, 'walnut', 0.2, 0.19, 0.42, 0.016);
 }
 
-function stool(k: Kit) {
+export function stool(k: Kit) {
   k.rounded('olive', [0, 0.76, 0], [0.44, 0.08, 0.4], 0.04);
   k.rounded('olive', [0, 0.92, -0.17], [0.42, 0.22, 0.06], 0.03);
   legs(k, 'bronze', 0.17, 0.15, 0.72, 0.012);
@@ -82,7 +82,7 @@ function stool(k: Kit) {
   k.add('bronze', ring);
 }
 
-function sofa(k: Kit, L: number, fabric: string, arms = true) {
+export function sofa(k: Kit, L: number, fabric: string, arms = true) {
   k.box('black', -L / 2 + 0.06, 0, -0.43, L / 2 - 0.06, 0.08, 0.43);
   k.rounded(fabric, [0, 0.24, 0], [L, 0.3, 0.98], 0.06);
   const n = Math.max(1, Math.round(L / 0.95));
@@ -97,7 +97,7 @@ function sofa(k: Kit, L: number, fabric: string, arms = true) {
 }
 
 /** Headboard against the wall at local z = 0; the bed runs toward +z. */
-function bed(k: Kit, W: number, len: number, headboard = 'taupe', bench = true) {
+export function bed(k: Kit, W: number, len: number, headboard = 'taupe', bench = true) {
   const panels = Math.round((W + 0.5) / 0.22);
   const pw = (W + 0.5) / panels;
   for (let i = 0; i < panels; i++) k.rounded(headboard, [-(W + 0.5) / 2 + pw * (i + 0.5), 0.72, 0.07], [pw - 0.012, 1.28, 0.12], 0.04);
@@ -120,7 +120,7 @@ function bed(k: Kit, W: number, len: number, headboard = 'taupe', bench = true) 
   }
 }
 
-function nightstand(k: Kit, lamp = true) {
+export function nightstand(k: Kit, lamp = true) {
   k.rounded('walnut', [0, 0.32, 0], [0.56, 0.48, 0.42], 0.015);
   k.box('black', -0.26, 0.31, 0.209, 0.26, 0.316, 0.212);
   k.box('brass', -0.08, 0.43, 0.21, 0.08, 0.44, 0.225);
@@ -132,20 +132,20 @@ function nightstand(k: Kit, lamp = true) {
   k.cyl('lampShade', [0.05, 1.02, -0.05], 0.14, 0.18, 0.24, 24);
 }
 
-function tableLamp(k: Kit, x: number, y: number, z: number) {
+export function tableLamp(k: Kit, x: number, y: number, z: number) {
   k.sphere('ceramic', [x, y + 0.14, z], 0.11, [1, 1.3, 1]);
   k.cyl('brass', [x, y + 0.34, z], 0.01, 0.01, 0.14, 6);
   k.cyl('lampShade', [x, y + 0.46, z], 0.12, 0.16, 0.22, 24);
 }
 
-function floorLamp(k: Kit, x: number, z: number) {
+export function floorLamp(k: Kit, x: number, z: number) {
   k.cyl('marbleDark', [x, 0.015, z], 0.17, 0.17, 0.03, 24);
   k.cyl('bronze', [x, 0.75, z], 0.012, 0.012, 1.45, 8);
   k.cyl('lampShade', [x, 1.58, z], 0.2, 0.24, 0.32, 24);
 }
 
 /** A glass globe on a bronze rod down from the ceiling (ceiling bucket). */
-function globe(c: Bucket, x: number, y: number, z: number, r: number, H: number) {
+export function globe(c: Bucket, x: number, y: number, z: number, r: number, H: number) {
   c.cylinder('bronze', [x, (y + r + H) / 2, z], 0.005, 0.005, H - y - r, 6);
   const g = new THREE.SphereGeometry(r, 24, 16);
   g.translate(x, y, z);
@@ -156,7 +156,7 @@ function globe(c: Bucket, x: number, y: number, z: number, r: number, H: number)
   c.cylinder('bronze', [x, y + r + 0.02, z], 0.035, 0.035, 0.04, 12);
 }
 
-function olive(b: Bucket, x: number, z: number, s = 1, seed = 55) {
+export function olive(b: Bucket, x: number, z: number, s = 1, seed = 55) {
   b.cylinder('potDark', [x, 0.3 * s, z], 0.34 * s, 0.26 * s, 0.6 * s, 24);
   b.cylinder('bark', [x, 1.05 * s, z], 0.035 * s, 0.06 * s, 1.1 * s, 8);
   rand(seed);
@@ -168,7 +168,7 @@ function olive(b: Bucket, x: number, z: number, s = 1, seed = 55) {
   }
 }
 
-function books(k: Kit, x: number, y: number, z: number) {
+export function books(k: Kit, x: number, y: number, z: number) {
   const keys = ['terracotta', 'linen', 'olive', 'taupe'];
   let h = y;
   for (let i = 0; i < 3; i++) {
@@ -177,7 +177,7 @@ function books(k: Kit, x: number, y: number, z: number) {
   }
 }
 
-function flowers(k: Kit, x: number, y: number, z: number, seed: number) {
+export function flowers(k: Kit, x: number, y: number, z: number, seed: number) {
   k.cyl('ceramic', [x, y + 0.13, z], 0.09, 0.07, 0.26, 20);
   rand(seed);
   for (let i = 0; i < 11; i++) {
@@ -187,7 +187,7 @@ function flowers(k: Kit, x: number, y: number, z: number, seed: number) {
   }
 }
 
-function curtain(b: Bucket, mats: Materials, root: THREE.Group, x: number, z: number, w: number, ry: number, H: number) {
+export function curtain(b: Bucket, mats: Materials, root: THREE.Group, x: number, z: number, w: number, ry: number, H: number) {
   const g = new THREE.PlaneGeometry(w, H - 0.14, 28, 1);
   const p = g.attributes.position!;
   for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin((p.getX(i) / w) * Math.PI * 10) * 0.045);
@@ -202,7 +202,7 @@ function curtain(b: Bucket, mats: Materials, root: THREE.Group, x: number, z: nu
   else b.box('bronze', x - 0.015, H - 0.2, z - w / 2 - 0.1, x + 0.015, H - 0.17, z + w / 2 + 0.1);
 }
 
-function art(root: THREE.Group, mats: Materials, p: V3, w: number, h: number, ry: number, seed: number) {
+export function art(root: THREE.Group, mats: Materials, p: V3, w: number, h: number, ry: number, seed: number) {
   const t = artTexture(seed);
   const m = mats.own(new THREE.MeshStandardMaterial({ map: t, roughness: 0.85 }), t);
   const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.07, h + 0.07, 0.045), mats.get('bronze'));
@@ -216,7 +216,7 @@ function art(root: THREE.Group, mats: Materials, p: V3, w: number, h: number, ry
 }
 
 /** Marble-clad walls around a bathroom, leaving door gaps along the given side. */
-function clad(b: Bucket, [x0, z0, x1, z1]: readonly [number, number, number, number], H: number, gaps: { side: 'n' | 's' | 'e' | 'w'; from: number; to: number }[] = []) {
+export function clad(b: Bucket, [x0, z0, x1, z1]: readonly [number, number, number, number], H: number, gaps: { side: 'n' | 's' | 'e' | 'w'; from: number; to: number }[] = []) {
   const t = 0.018;
   const run = (side: 'n' | 's' | 'e' | 'w', lo: number, hi: number) => {
     const g = gaps.filter((q) => q.side === side).sort((a, c) => a.from - c.from);
@@ -240,7 +240,7 @@ function clad(b: Bucket, [x0, z0, x1, z1]: readonly [number, number, number, num
   run('e', z0, z1);
 }
 
-function tub(b: Bucket, x: number, z: number) {
+export function tub(b: Bucket, x: number, z: number) {
   const g = new THREE.LatheGeometry(
     [
       new THREE.Vector2(0.001, 0.0),
@@ -258,18 +258,18 @@ function tub(b: Bucket, x: number, z: number) {
   b.add('ceramic', g);
 }
 
-function basin(k: Kit, x: number, y: number, z: number) {
+export function basin(k: Kit, x: number, y: number, z: number) {
   k.sphere('ceramic', [x, y + 0.06, z], 0.2, [1, 0.38, 0.72], 28);
 }
 
-function wc(k: Kit) {
+export function wc(k: Kit) {
   k.rounded('ceramic', [0, 0.4, 0.26], [0.38, 0.3, 0.52], 0.12);
   k.box('ceramic', -0.2, 0.5, 0.0, 0.2, 0.9, 0.04);
   k.box('brass', -0.12, 1.0, 0.0, 0.12, 1.14, 0.012);
 }
 
 /** A walnut ceiling panel with a hidden LED reveal round its edge; optional fine slats. */
-function coffer(c: Bucket, H: number, x0: number, z0: number, x1: number, z1: number, slats: boolean) {
+export function coffer(c: Bucket, H: number, x0: number, z0: number, x1: number, z1: number, slats: boolean) {
   c.box('walnut', x0, H - 0.035, z0, x1, H - 0.004, z1);
   const t = 0.035;
   c.box('led', x0 - t, H - 0.012, z0 - t, x1 + t, H - 0.006, z0);

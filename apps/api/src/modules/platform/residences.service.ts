@@ -13,6 +13,7 @@ import {
   effectivePriceMinor,
   isPlacedInModel,
   modelSlotsForLevel,
+  resolveModelSlot,
   isSaleReversal,
   pricePerSqmMinor,
   STATUS_LABEL,
@@ -370,6 +371,14 @@ export class ResidencesService {
     if (dto.code !== undefined && dto.code.trim() !== before.code) {
       await this.assertCodeFree(developmentId, dto.code.trim(), id);
       data.code = dto.code.trim();
+      // The 3D building places a residence by its code letter until a position is
+      // chosen, so a rename on the same floor pins the position it already had.
+      const sameFloor = dto.floorId === undefined || dto.floorId === before.floorId;
+      if (sameFloor && dto.modelSlot === undefined && !before.modelSlot) {
+        const floor = await this.ownedFloor(before.floorId, developmentId);
+        const slot = resolveModelSlot(before.code, floor.level);
+        if (slot && resolveModelSlot(data.code, floor.level)?.key !== slot.key) data.modelSlot = slot.key;
+      }
     }
     if (dto.floorId !== undefined && dto.floorId !== before.floorId) {
       const floor = await this.ownedFloor(dto.floorId, developmentId);

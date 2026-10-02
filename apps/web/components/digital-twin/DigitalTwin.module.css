@@ -1785,3 +1785,33 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* The residence's own approved plan, above the 3D layout's room map. */
+.ownPlan {
+  margin: 0 0 6px;
+}
+.ownPlan img {
+  display: block;
+  width: 100%;
+  max-height: 46vh;
+  object-fit: contain;
+  border-radius: 14px;
+  background: var(--surface-raised);
+}
+.ownPlan figcaption {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.ownPlan figcaption a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ownPlan + .dialogSub {
+  margin-top: 18px;
+}
+.dialog:has(.ownPlan) {
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}

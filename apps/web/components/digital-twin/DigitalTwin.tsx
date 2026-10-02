@@ -6,14 +6,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toMajorUnits } from '@avida/types';
 import { useInventory } from '../providers/InventoryProvider';
 import { useEnquiry } from '../enquiry/EnquiryProvider';
-import { STATUS_TEXT, TYPE_TEXT, visiblePriceMinor, type Residence } from '../../lib/residences';
+import { STATUS_TEXT, TYPE_TEXT, typesPresent, visiblePriceMinor, type Residence } from '../../lib/residences';
 import { track } from '../../lib/analytics';
+import type { PublicMediaDto, ResidencePageDto } from '../../lib/api';
 import {
   EXTERIOR_HOTSPOTS,
   INITIAL_TWIN,
   PLACES,
   roomById,
   sceneFor,
+  sceneKey,
   type Environment,
   type InteriorMode,
   type Place,
@@ -48,6 +50,14 @@ function price(r: Residence): string | null {
     priceFmt.set(r.currency, f);
   }
   return f.format(toMajorUnits(minor, r.currency));
+}
+
+/** What the 3D interior shows for a residence, said plainly beside its own figures. */
+function layoutText(r: Residence): string {
+  if (r.type === 'penthouse') return `Our penthouse design, furnished. Residence ${r.label} is ${r.areaSqm} m² with ${r.bedrooms} bedrooms; its own plan is under Floor plan.`;
+  const layout = r.bedrooms <= 1 ? 'one-bedroom' : 'two-bedroom';
+  const kind = r.bedrooms > 2 ? `The closest typical layout (${layout})` : `The typical ${layout} layout`;
+  return `${kind} from the approved plans, set where Residence ${r.label} sits on the building. Residence ${r.label} is ${r.areaSqm} m²; its own plan is under Floor plan.`;
 }
 
 const DOCK_LABEL: Record<Exclude<Place, 'residence'>, string> = {
@@ -116,7 +126,15 @@ function emit(action: string, detail: Record<string, unknown> = {}) {
 }
 
 export function DigitalTwin() {
-  const { residences, ready } = useInventory();
+  const { residences, ready, summary } = useInventory();
+  // Counts and areas from live inventory, so the copy changes when the admin does.
+  const intro = useMemo(() => {
+    if (!residences.length) return '';
+    const kinds = typesPresent(summary).map((t) => TYPE_TEXT[t].toLowerCase().replace(' ', '-'));
+    const list = kinds.length > 1 ? `${kinds.slice(0, -1).join(', ')} and ${kinds[kinds.length - 1]}` : kinds[0] ?? '';
+    const areas = residences.map((r) => r.areaSqm);
+    return `${residences.length} residences — ${list} homes — from ${Math.min(...areas)} m² to ${Math.max(...areas)} m²`;
+  }, [residences, summary]);
   const { open } = useEnquiry();
   const host = useRef<HTMLDivElement>(null);
   const engine = useRef<TwinEngine | null>(null);
@@ -142,7 +160,13 @@ export function DigitalTwin() {
   const [linkWaited, setLinkWaited] = useState(false);
 
   const selected = residences.find((r) => r.id === selectedId) ?? null;
-  const { scene: tour, demo } = sceneFor(selected ? { typologySlug: selected.typologySlug } : null);
+  // The interior follows the residence: its kind of layout, on its floor, facing its way.
+  const placed = selected ? sceneFor(selected).scene : sceneFor(null).scene;
+  const tourKey = sceneKey(placed);
+  const tourRef = useRef(placed);
+  if (sceneKey(tourRef.current) !== tourKey) tourRef.current = placed;
+  const tour = tourRef.current;
+  const layoutNote = selected ? layoutText(selected) : null;
   useAmbience(sound, state.place === 'residence');
   const hovered = residences.find((r) => r.id === hoveredId) ?? null;
   const availableCount = residences.filter((r) => r.publicStatus === 'available').length;
@@ -271,6 +295,30 @@ export function DigitalTwin() {
   }, [phase, residences, ready, linkWaited, onSelect]);
 
   useEffect(() => engine.current?.setUnits(units), [units, phase]);
+  useEffect(() => {
+    if (phase === 'ready') void engine.current?.setInterior(tourRef.current);
+  }, [tourKey, phase]);
+  // The residence's own approved plan, as its page shows it, for the Floor plan dialog.
+  const [plans, setPlans] = useState<Record<string, PublicMediaDto | null>>({});
+  const selectedSlug = selected?.slug ?? null;
+  useEffect(() => {
+    if (!selectedSlug || selectedSlug in plans) return;
+    let stop = false;
+    fetch(`/api/v1/residence-pages/${encodeURIComponent(selectedSlug)}`)
+      .then((r) => (r.ok ? (r.json() as Promise<ResidencePageDto>) : null))
+      .then((d) => {
+        if (stop) return;
+        const image = d?.residence.floorPlans.find((m) => m.kind === 'IMAGE') ?? null;
+        setPlans((p) => ({ ...p, [selectedSlug]: image }));
+      })
+      .catch(() => {
+        if (!stop) setPlans((p) => ({ ...p, [selectedSlug]: null }));
+      });
+    return () => {
+      stop = true;
+    };
+  }, [selectedSlug, plans]);
+  const planImage = selectedSlug ? plans[selectedSlug] ?? null : null;
   useEffect(() => engine.current?.setAvailability(availability), [availability, phase]);
   useEffect(() => {
     const t = window.setTimeout(() => setTouched(true), 9000);
@@ -330,7 +378,7 @@ export function DigitalTwin() {
     setSheet('none');
     setCinematic(false);
     engine.current?.enterResidence(room);
-    emit('residence_entered', { residence: selected?.code ?? tour.id, scene: tour.id, demo });
+    emit('residence_entered', { residence: selected?.code ?? tour.id, scene: tour.id, typical: !!selected });
   };
   enterRef.current = enter;
 
@@ -409,7 +457,7 @@ export function DigitalTwin() {
       ? { name: `Residence ${selected.label}`, detail: `${TYPE_TEXT[selected.type]}, ${selected.floorLabel.toLowerCase()}` }
       : focus !== null
         ? { name: floors.find((f) => f.level === focus)?.label ?? 'Floor', detail: 'Choose a residence on the plan.' }
-        : { name: place?.id === 'exterior' ? 'Explore Almasi' : place?.name ?? '', detail: place?.caption ?? '' };
+        : { name: place?.id === 'exterior' ? 'Explore Almasi' : place?.name ?? '', detail: place?.id === 'exterior' && residences.length ? `${residences.length} residences above Kimihurura.` : place?.caption ?? '' };
 
   // ─── Render ──────────────────────────────────────────────────────────
 
@@ -640,14 +688,10 @@ export function DigitalTwin() {
               <span className={styles.status} data-status={selected.publicStatus}>{STATUS_TEXT[selected.publicStatus]}</span>
               {price(selected) && <strong>{price(selected)}</strong>}
             </div>
-            {demo && (
-              <p className={styles.demo}>
-                <b>3D demo</b>
-                {selected.type === 'penthouse'
-                  ? 'Interactive tour of our reference penthouse design.'
-                  : 'Interactive 3D preview currently showing our penthouse design.'}
-              </p>
-            )}
+            <p className={styles.demo}>
+              <b>3D layout</b>
+              {layoutNote}
+            </p>
             <button className={styles.primary} onClick={() => enter()}>
               Enter 3D tour <Icon name="arrow" />
             </button>
@@ -671,12 +715,10 @@ export function DigitalTwin() {
                 ? `Residence ${selected.label}, ${selected.bedrooms} bedroom${selected.bedrooms > 1 ? 's' : ''}, ${selected.areaSqm} m², ${selected.floorLabel.toLowerCase()}`
                 : tour.summary}
             </p>
-            {demo && selected && (
+            {selected && (
               <p className={styles.demo}>
-                <b>3D demo</b>
-                {selected.type === 'penthouse'
-                  ? 'Our reference penthouse design. Each penthouse has its own approved layout.'
-                  : `Showing our penthouse design. Residence ${selected.label} has its own layout — ask for its plan.`}
+                <b>3D layout</b>
+                {layoutNote}
               </p>
             )}
             <ul className={styles.rooms}>
@@ -810,14 +852,12 @@ export function DigitalTwin() {
             Every residence, <em>before you arrive.</em>
           </h2>
           <p>
-            Almasi rises five storeys above Kimihurura: twenty-eight residences of one, two and three bedrooms, from 65 m² garden
-            homes to penthouses of up to 390 m² with private roof terraces. Explore the building, open any floor, and step into a
-            fully furnished penthouse — three bedroom suites, a marble great room, and a pool terrace above the Kigali hills.
+            Almasi rises five storeys above Kimihurura{intro ? `: ${intro}` : ''}. Explore the building, open any floor, and step
+            inside a furnished home — the one-bedroom, two-bedroom and penthouse layouts of the approved plans.
           </p>
           <p className={styles.note}>
-            An architectural interpretation for illustration. The furnished interior is our reference penthouse design, shown as a
-            3D preview for every residence; layouts, finishes and views vary by residence. Ask our team for the approved plans of
-            any home.
+            An architectural interpretation for illustration. Each residence opens onto the typical layout of its kind, placed where
+            it sits in the building; its own approved plan, area and price are shown beside it and on its page.
           </p>
         </div>
         <div className={styles.gallery}>
@@ -848,17 +888,28 @@ export function DigitalTwin() {
 
       <dialog ref={planDialog} className={styles.dialog} aria-labelledby="plan-title">
         <div className={styles.dialogTop}>
-          <h2 id="plan-title">Choose a room.</h2>
+          <h2 id="plan-title">{selected ? `Residence ${selected.label}` : 'Choose a room.'}</h2>
           <button aria-label="Close floor plan" onClick={() => planDialog.current?.close()}>
             <Icon name="close" />
           </button>
         </div>
-        <p className={styles.dialogSub}>{tour.name}, illustrative plan</p>
+        {selected && (
+          <figure className={styles.ownPlan}>
+            {planImage ? (
+              <img src={planImage.url} alt={planImage.altText ?? `Floor plan of Residence ${selected.label}`} />
+            ) : (
+              <p className={styles.note}>The approved plan for Residence {selected.label} is on its page, or ask our team for it.</p>
+            )}
+            <figcaption>
+              Residence {selected.label}, {TYPE_TEXT[selected.type].toLowerCase()}, {selected.areaSqm} m², {selected.floorLabel.toLowerCase()}.{' '}
+              <Link href={`/residences/${selected.slug}`}>Residence details</Link>
+            </figcaption>
+          </figure>
+        )}
+        <p className={styles.dialogSub}>{tour.name}: the 3D layout, room by room</p>
         <Plan scene={tour} pose={inside ? pose : null} current={inside ? pose.room ?? state.room : null} onRoom={goRoom} />
         <p className={styles.note}>
-          {demo && selected
-            ? `Our penthouse design, shown for Residence ${selected.label}. Its own approved plan is available from our team.`
-            : 'Illustrative, not to scale. Each residence has its own approved plan — ask our team for yours.'}
+          {selected ? layoutNote : 'Illustrative, not to scale. Each residence has its own approved plan — choose one to see it.'}
         </p>
       </dialog>
 
@@ -908,6 +959,8 @@ function Plan({
   const PZ = (z: number) => (z - bz0) * S;
   const w = PX(bx1);
   const h = PZ(bz1);
+  // Labels keep one size on screen whatever the home's width; the plan scales to fit the dialog.
+  const fontSize = 11 * Math.max(0.45, Math.min(1, (bx1 - bx0) / 26));
   const solid = [
     ...scene.partitions,
     ...scene.facade.filter((f) => f.kind === 'wall').map(({ from, to }) => [Math.min(from[0], to[0]) - 0.1, Math.min(from[1], to[1]) - 0.1, Math.max(from[0], to[0]) + 0.1, Math.max(from[1], to[1]) + 0.1] as const),
@@ -941,7 +994,7 @@ function Plan({
           >
             <rect x={PX(x0)} y={PZ(z0)} width={(x1 - x0) * S} height={(z1 - z0) * S} />
             {!compact && (
-              <text x={PX((x0 + x1) / 2)} y={PZ((z0 + z1) / 2) + 4} textAnchor="middle">
+              <text x={PX((x0 + x1) / 2)} y={PZ((z0 + z1) / 2) + fontSize * 0.36} textAnchor="middle" style={{ fontSize }}>
                 {r.name}
               </text>
             )}

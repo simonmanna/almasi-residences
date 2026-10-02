@@ -14,6 +14,7 @@ import {
   roomAt,
   roomById,
   routeBetween,
+  sceneKey,
   type Environment,
   type InteriorMode,
   type Place,
@@ -74,6 +75,9 @@ const GOLD = new THREE.Color('#F0C987');
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const v3 = (p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]);
+const UP = new THREE.Vector3(0, 1, 0);
+/** Where a scene's frame origin lands in the world: its level's finished floor, at its plan offset. */
+const originOf = (s: TourScene) => new THREE.Vector3(s.offset[0], levelBase(s.level) + SLAB, s.offset[1]);
 
 export class TwinEngine {
   private renderer: THREE.WebGLRenderer;
@@ -91,6 +95,14 @@ export class TwinEngine {
   private tour: TourScene;
   /** The residence frame's origin in the world: its level's finished floor, at the scene's plan offset. */
   private origin: THREE.Vector3;
+  /** The scene frame's turn about the vertical. */
+  private yaw = 0;
+  /** Settles once the interior for the current residence is built; every entry waits on it. */
+  private interiorReady: Promise<void>;
+  private interiorKey: string;
+  /** An interior is being furnished; an entry asked for now waits behind the fade. */
+  private furnishing = false;
+  private loaded!: () => void;
   private timer = new THREE.Timer();
   private raf = 0;
   private disposed = false;
@@ -143,7 +155,10 @@ export class TwinEngine {
   ) {
     this.tour = opts.scene;
     this.room = opts.scene.startRoom;
-    this.origin = new THREE.Vector3(opts.scene.offset[0], levelBase(opts.scene.level) + SLAB, opts.scene.offset[1]);
+    this.origin = originOf(opts.scene);
+    this.yaw = opts.scene.yaw ?? 0;
+    this.interiorKey = sceneKey(opts.scene);
+    this.interiorReady = new Promise((r) => (this.loaded = r));
     this.quality = opts.quality;
     this.reducedMotion = opts.reducedMotion;
     this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', stencil: false });
@@ -183,9 +198,9 @@ export class TwinEngine {
     await step(6, 'Preparing materials', () => this.atmosphere.set('sunset', true));
     await step(18, 'Loading architecture', () => this.building.build());
     await step(42, 'Planting the gardens', () => this.landscape.build(this.quality));
-    await step(64, 'Furnishing the penthouse', async () => {
+    await step(64, 'Furnishing the residence', async () => {
       await this.residence.build(this.quality);
-      this.roofDeck();
+      this.roofDeck(this.residence);
     });
     await step(80, 'Preparing light', () => {
       this.scene.add(this.atmosphere.group, this.landscape.near, this.landscape.far, this.building.root, this.residence.root);
@@ -205,6 +220,7 @@ export class TwinEngine {
         this.washes.push(l);
       }
       this.residence.root.position.copy(this.origin);
+      this.residence.root.rotation.y = this.yaw;
       this.residence.root.visible = false;
       this.setupComposer();
       this.resize();
@@ -216,6 +232,7 @@ export class TwinEngine {
       this.residence.root.visible = false;
     });
     this.bindInput();
+    this.loaded();
     this.cb.progress(100, 'Welcome');
     this.loop();
     // The reveal: a long, slow descent onto the building at golden hour.
@@ -350,10 +367,68 @@ export class TwinEngine {
   }
 
   /**
-   * Into the residence: approach the facade, fade, arrive on the terrace, then
-   * glide through the open slider into the room, as if walking in.
+   * Furnish the interior for another residence: its kind of layout, on its own
+   * floor, turned to face the way it does. Entries wait until it is built.
    */
-  enterResidence(room: RoomId = this.tour.startRoom) {
+  setInterior(scene: TourScene): Promise<void> {
+    const key = sceneKey(scene);
+    if (key === this.interiorKey) return this.interiorReady;
+    this.interiorKey = key;
+    const run = async () => {
+      if (this.disposed || this.interiorKey !== key) return;
+      this.furnishing = true;
+      const next = new ResidenceInterior(this.mats, scene);
+      await next.build(this.quality).finally(() => (this.furnishing = false));
+      if (this.disposed || this.interiorKey !== key) {
+        next.dispose();
+        return;
+      }
+      if (this.interior) this.leaveInterior();
+      const old = this.residence;
+      this.tour = scene;
+      this.room = scene.startRoom;
+      this.origin = originOf(scene);
+      this.yaw = scene.yaw ?? 0;
+      this.residence = next;
+      this.roofDeck(next);
+      next.root.position.copy(this.origin);
+      next.root.rotation.y = this.yaw;
+      this.scene.add(next.root);
+      old.dispose();
+      // A different lamp count changes every lit shader: compile now, not on the first frame inside.
+      this.renderer.compile(this.scene, this.camera);
+      next.root.visible = false;
+    };
+    this.interiorReady = this.interiorReady.then(run, run);
+    return this.interiorReady;
+  }
+
+  /** A point in the residence's frame, in the world. */
+  private toWorld(p: readonly number[]): THREE.Vector3 {
+    return v3(p).applyAxisAngle(UP, this.yaw).add(this.origin);
+  }
+
+  /** A world point, in the residence's frame. */
+  private toLocal(v: THREE.Vector3): THREE.Vector3 {
+    return v.clone().sub(this.origin).applyAxisAngle(UP, -this.yaw);
+  }
+
+  /**
+   * Into the residence: approach the facade, fade, arrive on the terrace, then
+   * glide through the open slider into the room, as if walking in. Waits for
+   * the interior the current residence needs.
+   */
+  enterResidence(room?: RoomId) {
+    // Still furnishing: fade now, and arrive straight on the terrace once it is built.
+    const waiting = this.furnishing && !this.interior;
+    if (waiting) this.cb.fade(true);
+    void this.interiorReady.then(() => {
+      if (this.disposed) return;
+      this.enterNow(room && this.tour.rooms.some((r) => r.id === room) ? room : this.tour.startRoom, waiting);
+    });
+  }
+
+  private enterNow(room: RoomId, direct = false) {
     this.stopCinematic();
     const go = () => {
       this.cb.fade(true);
@@ -362,8 +437,8 @@ export class TwinEngine {
         this.entering = false;
         this.showInterior(true);
         const e = this.tour.entry;
-        const pos = v3(e.position).add(this.origin);
-        const target = v3(e.target).add(this.origin);
+        const pos = this.toWorld(e.position);
+        const target = this.toWorld(e.target);
         this.camera.position.copy(pos);
         this.lookAt.copy(target);
         this.camera.lookAt(target);
@@ -384,10 +459,11 @@ export class TwinEngine {
     }
     this.entering = true;
     const vis = this.selected ? this.building.units.get(this.selected) : null;
-    const c = vis?.center ?? this.origin.clone().add(new THREE.Vector3(-3, 1.6, 7));
+    const c = vis?.center ?? this.toWorld([0, 1.6, this.tour.enclosed[3]]);
     const out = new THREE.Vector3(c.x, 0, c.z).normalize();
     if (!Number.isFinite(out.x)) out.set(0, 0, 1);
-    this.fly({ position: c.clone().addScaledVector(out, 9).toArray() as Shot['position'], target: c.toArray() as Shot['target'] }, this.reducedMotion ? 0.01 : 1.3, 'look', { arc: 0, done: go });
+    if (direct) go();
+    else this.fly({ position: c.clone().addScaledVector(out, 9).toArray() as Shot['position'], target: c.toArray() as Shot['target'] }, this.reducedMotion ? 0.01 : 1.3, 'look', { arc: 0, done: go });
   }
 
   exitResidence() {
@@ -412,27 +488,26 @@ export class TwinEngine {
       this.mode = 'tour';
       this.residence.ceiling.visible = true;
     }
-    const o = this.origin;
-    const from = this.camera.position.clone().sub(o);
+    const from = this.toLocal(this.camera.position);
     const wasDoll = from.y > 4;
     const fromRoom = roomAt(this.tour, from.x, from.z) ?? this.room;
     const r = roomById(this.tour, id);
     const pts: THREE.Vector3[] = [from.clone().setY(EYE)];
     for (const [x, z] of routeBetween(this.tour, fromRoom, id)) pts.push(new THREE.Vector3(x, EYE, z));
     pts.push(v3(r.position));
-    const path = pts.map((p) => p.add(o));
+    const path = pts.map((p) => this.toWorld(p.toArray()));
     const len = path.reduce((s, p, i) => (i ? s + p.distanceTo(path[i - 1]!) : 0), 0);
     this.room = id;
     this.flight = {
       fromPos: this.camera.position.clone(),
       fromTarget: this.lookAt.clone(),
-      toPos: v3(r.position).add(o),
-      toTarget: v3(r.target).add(o),
+      toPos: this.toWorld(r.position),
+      toTarget: this.toWorld(r.target),
       path: wasDoll || path.length < 3 ? null : new THREE.CatmullRomCurve3(path, false, 'centripetal'),
       t: 0,
       duration: this.reducedMotion ? 0.01 : duration ?? clamp(len / 2.6, 1.2, 4.2),
       arc: 0,
-      then: this.lookFrom(v3(r.position).add(o), v3(r.target).add(o)),
+      then: this.lookFrom(this.toWorld(r.position), this.toWorld(r.target)),
     };
     this.camera.fov = 62;
     this.camera.updateProjectionMatrix();
@@ -448,13 +523,13 @@ export class TwinEngine {
     this.camera.updateProjectionMatrix();
     if (mode === 'dollhouse') {
       const [x0, z0, x1, z1] = this.tour.bounds;
-      const target = this.origin.clone().add(new THREE.Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2));
+      const target = this.toWorld([(x0 + x1) / 2, 0, (z0 + z1) / 2]);
       const span = Math.max(x1 - x0, z1 - z0);
       this.flyOrbit(target, -0.5, 0.7, span * 1.35, fly ? 2 : 0.01, this.reducedMotion ? 0 : 0.04, { minR: span * 0.5, maxR: span * 2.6, maxPhi: 1.2 });
     } else if (this.ctl.kind !== 'look' || fly) {
       const r = roomById(this.tour, this.room);
-      this.fly({ position: r.position, target: r.target }, fly ? 1.8 : 0.01, 'look', {
-        offset: this.origin,
+      const at = (p: readonly number[]) => this.toWorld(p).toArray() as Shot['position'];
+      this.fly({ position: at(r.position), target: at(r.target) }, fly ? 1.8 : 0.01, 'look', {
         arc: 0,
         done: () => {
           this.residence.ceiling.visible = true;
@@ -649,9 +724,12 @@ export class TwinEngine {
         const dir = new THREE.Vector3(Math.sin(c.yaw), 0, Math.cos(c.yaw));
         const right = new THREE.Vector3(-dir.z, 0, dir.x);
         const step = dir.multiplyScalar(fwd * speed).addScaledVector(right, side * speed);
-        const local = c.pos.clone().sub(this.origin);
-        if (canWalk(this.tour, local.x + step.x, local.z)) c.pos.x += step.x;
-        if (canWalk(this.tour, c.pos.x - this.origin.x, local.z + step.z)) c.pos.z += step.z;
+        // Colliders live in the residence's frame: slide along walls there, one axis at a time.
+        const local = this.toLocal(c.pos);
+        const ls = step.applyAxisAngle(UP, -this.yaw);
+        const dx = canWalk(this.tour, local.x + ls.x, local.z) ? ls.x : 0;
+        const dz = canWalk(this.tour, local.x + dx, local.z + ls.z) ? ls.z : 0;
+        c.pos.copy(this.toWorld([local.x + dx, local.y, local.z + dz]));
         this.touch();
       }
       c.pitch = clamp(c.pitch, -0.9, 0.7);
@@ -666,15 +744,17 @@ export class TwinEngine {
   // ─── Interior ──────────────────────────────────────────────────────────
 
   /** A plain roof over the rest of the floor plate, so the terrace never looks down into open rooms. */
-  private roofDeck() {
+  private roofDeck(target: ResidenceInterior) {
     const [x0, z0, x1, z1] = FOOTPRINT;
     const g = new THREE.BoxGeometry(x1 - x0 + 0.2, SLAB, z1 - z0 + 0.2);
-    g.translate((x0 + x1) / 2 - this.origin.x, -SLAB / 2 - 0.04, (z0 + z1) / 2 - this.origin.z);
     const uv = g.attributes.uv as THREE.BufferAttribute;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (x1 - x0) * 0.35, uv.getY(i) * (z1 - z0) * 0.35);
     const m = new THREE.Mesh(g, this.mats.get('paving'));
     m.receiveShadow = true;
-    this.residence.root.add(m);
+    // Laid square to the building, whichever way the residence frame is turned.
+    m.position.copy(this.toLocal(new THREE.Vector3((x0 + x1) / 2, this.origin.y - SLAB / 2 - 0.04, (z0 + z1) / 2)));
+    m.rotation.y = -this.yaw;
+    target.root.add(m);
   }
 
   private showInterior(on: boolean) {
@@ -682,7 +762,7 @@ export class TwinEngine {
     this.residence.root.visible = on;
     this.building.unitRoot.visible = !on;
     const [x0, z0, x1, z1] = this.tour.bounds;
-    const center = on ? this.origin.clone().add(new THREE.Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2)) : new THREE.Vector3();
+    const center = on ? this.toWorld([(x0 + x1) / 2, 0, (z0 + z1) / 2]) : new THREE.Vector3();
     this.atmosphere.aimShadow(on ? 'interior' : 'exterior', center, on ? Math.max(x1 - x0, z1 - z0) * 0.72 : undefined);
     this.atmosphere.reaim();
     this.camera.fov = on ? 62 : this.fov;
@@ -849,7 +929,7 @@ export class TwinEngine {
       const p = this.floorPoint(ndc);
       if (p && canWalk(this.tour, p.x, p.z) && this.ctl.kind === 'look') {
         const c = this.ctl;
-        const to = new THREE.Vector3(p.x, EYE, p.z).add(this.origin);
+        const to = this.toWorld([p.x, EYE, p.z]);
         const look = to.clone().add(new THREE.Vector3(Math.sin(c.yaw), Math.sin(c.pitch), Math.cos(c.yaw)));
         this.fly({ position: to.toArray() as Shot['position'], target: look.toArray() as Shot['target'] }, 0.9, 'look', { arc: 0 });
         const room = roomAt(this.tour, p.x, p.z);
@@ -874,7 +954,7 @@ export class TwinEngine {
       return !m.transparent;
     });
     if (first && first.distance < this.raycaster.ray.origin.distanceTo(hit) - 0.05 && first.point.y - this.origin.y > 0.3) return null;
-    return hit.sub(this.origin);
+    return this.toLocal(hit);
   }
 
   private pickUnit(ndc: THREE.Vector2): string | null {
@@ -939,9 +1019,9 @@ export class TwinEngine {
     this.poseClock += dt;
     if (this.interior && this.poseClock > 0.12) {
       this.poseClock = 0;
-      const p = this.camera.position.clone().sub(this.origin);
-      this.residence.focus(this.mode === 'dollhouse' ? this.lookAt.clone().sub(this.origin) : p);
-      const d = this.lookAt.clone().sub(this.camera.position);
+      const p = this.toLocal(this.camera.position);
+      this.residence.focus(this.mode === 'dollhouse' ? this.toLocal(this.lookAt) : p);
+      const d = this.lookAt.clone().sub(this.camera.position).applyAxisAngle(UP, -this.yaw);
       if (this.mode === 'walk') this.room = roomAt(this.tour, p.x, p.z) ?? this.room;
       this.cb.pose({ x: p.x, z: p.z, yaw: Math.atan2(d.x, d.z), room: this.room });
     }
@@ -969,7 +1049,10 @@ export class TwinEngine {
         const g = this.building.levels.get(level);
         if (g) {
           g.position.y = levelBase(level);
-          g.visible = level < this.tour.level;
+          // A penthouse opens to the sky; a home lower down keeps the floors above it overhead,
+          // until the dollhouse lifts them off to look in from above.
+          const above = this.tour.placement === 'slot' && this.mode !== 'dollhouse';
+          g.visible = level < this.tour.level || (above && level > this.tour.level);
         }
         this.mats.setLevelOpacity(level, 1);
       }
@@ -1051,7 +1134,7 @@ export class TwinEngine {
       const r = this.tour.rooms.find((x) => x.id === id);
       if (!r) return null;
       const [x0, z0, x1, z1] = r.rect;
-      return new THREE.Vector3((x0 + x1) / 2, this.mode === 'dollhouse' ? 0.4 : 1.0, (z0 + z1) / 2).add(this.origin);
+      return this.toWorld([(x0 + x1) / 2, this.mode === 'dollhouse' ? 0.4 : 1.0, (z0 + z1) / 2]);
     }
     return null;
   }
