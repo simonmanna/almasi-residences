@@ -99,17 +99,42 @@ export interface SeoRoute {
 /** Every public route whose metadata the admin owns. */
 export const SEO_ROUTES: readonly SeoRoute[] = [
   { path: '/', label: 'Homepage' },
-  { path: '/residences', label: 'Residences', title: 'Residences' },
-  { path: '/amenities', label: 'Amenities', title: 'Amenities' },
-  { path: '/location', label: 'Location', title: 'Location' },
-  { path: '/gallery', label: 'Gallery', title: 'Gallery' },
+  {
+    path: '/residences',
+    label: 'Residences',
+    title: 'Residences',
+    description: 'Every home at Almasi, Kimihurura: {total} one-bedroom, two-bedroom and penthouse residences, with live availability, floor plans and prices.',
+  },
+  {
+    path: '/amenities',
+    label: 'Amenities',
+    title: 'Amenities',
+    description: 'Life at Almasi: a pool, gym, sauna and massage, co-working, a residents’ meeting room, gardens and basement parking, all within the building in Kimihurura.',
+  },
+  {
+    path: '/location',
+    label: 'Location',
+    title: 'Location',
+    description: 'Almasi sits in Kimihurura, Kigali: minutes from the city centre, embassies, schools, restaurants and the convention centre. See it on the map.',
+  },
+  {
+    path: '/gallery',
+    label: 'Gallery',
+    title: 'Gallery',
+    description: 'Photographs and renders of Almasi: the facade, pool, reception, and furnished one-bedroom, two-bedroom and penthouse interiors in Kimihurura, Kigali.',
+  },
   {
     path: '/3d-design',
     label: '3D design',
     title: '3D Design | Explore Almasi',
     description: 'Step inside Almasi in Kimihurura, Kigali. Explore the architecture, pool, reception and furnished one-bedroom, two-bedroom and penthouse homes in interactive 3D.',
   },
-  { path: '/buying', label: 'Buying', title: 'Buying' },
+  {
+    path: '/buying',
+    label: 'Buying',
+    title: 'Buying',
+    description: 'How to buy a home at Almasi: reserve, sign and pay in stages through a clear payment plan, with what each step costs and when it falls due.',
+  },
   { path: '/progress', label: 'Construction progress', title: 'Construction progress' },
   { path: '/film', label: 'Film', title: 'The film' },
   { path: '/tour', label: 'Building tour', title: 'The 3D tour' },

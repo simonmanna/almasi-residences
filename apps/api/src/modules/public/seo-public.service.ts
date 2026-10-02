@@ -3,7 +3,7 @@ import { SEO_ENTITY_SCHEMA_DEFAULT, type SeoEntityType } from '@avida/types';
 import { CurrentDevelopment } from '../../common/current-development.service.js';
 import { previewing } from '../../common/preview.js';
 import { PrismaService } from '../../common/prisma.service.js';
-import { PublicService } from './public.service.js';
+import { PublicService, residenceSlug } from './public.service.js';
 
 /**
  * §SEO — what the website needs to render a findable page: the metadata of one
@@ -21,15 +21,24 @@ export class SeoPublicService {
     private readonly pub: PublicService,
   ) {}
 
-  /** Every enabled redirect, small enough for the website to hold in memory. */
+  /**
+   * Every enabled redirect, small enough for the website to hold in memory —
+   * except one whose source is a live residence's page. The website applies a
+   * redirect before it looks for a page, so such a row (left by a rename chain)
+   * would hide a home that is for sale; the live page wins until it is deleted.
+   */
   async redirects() {
     const developmentId = await this.dev.id();
-    const rows = await this.prisma.client.redirect.findMany({
-      where: { developmentId, enabled: true },
-      orderBy: { fromPath: 'asc' },
-      select: { fromPath: true, toPath: true, statusCode: true },
-    });
-    return rows;
+    const [rows, units] = await Promise.all([
+      this.prisma.client.redirect.findMany({
+        where: { developmentId, enabled: true },
+        orderBy: { fromPath: 'asc' },
+        select: { fromPath: true, toPath: true, statusCode: true },
+      }),
+      this.prisma.client.unit.findMany({ where: { developmentId, archivedAt: null, published: true }, select: { code: true } }),
+    ]);
+    const live = new Set(units.map((u) => `/residences/${residenceSlug(u.code)}`));
+    return rows.filter((r) => !live.has(r.fromPath));
   }
 
   /** Counted when the website actually serves one, so dead rules are visible. */

@@ -186,6 +186,9 @@ export class SeoController {
     const toPath = dto.toPath.startsWith('http') ? dto.toPath.trim() : normalisePath(dto.toPath);
     if (fromPath === toPath) throw new BadRequestException('A redirect cannot point at itself.');
     if (fromPath === '/') throw new BadRequestException('The homepage cannot be redirected away.');
+    const units = await this.prisma.client.unit.findMany({ where: { developmentId, archivedAt: null, published: true }, select: { code: true } });
+    const hidden = units.find((u) => `/residences/${residenceSlug(u.code)}` === fromPath);
+    if (hidden) throw new BadRequestException(`${fromPath} is the live page of residence ${hidden.code}; a redirect from it would hide that home.`);
     const row = await this.prisma.client.redirect.upsert({
       where: { developmentId_fromPath: { developmentId, fromPath } },
       create: { developmentId, fromPath, toPath, statusCode: dto.statusCode ?? 301, reason: dto.reason?.trim() || null, enabled: dto.enabled ?? true, createdById: actorOf(req).id },
@@ -356,10 +359,15 @@ export class SeoController {
     for (const v of videos.filter((x) => !x.transcript?.trim())) issues.push({ kind: 'missing-transcript', path: '/film', label: v.label, severity: 'warning' });
 
     // The website applies a redirect before it looks for a page, so one whose
-    // source is a live address makes that page unreachable.
+    // source is a live address makes that page unreachable — except a live
+    // residence's page, whose redirect the website ignores: that one is dead
+    // weight to delete, not a broken page.
     const targets = new Set(redirects.map((r) => r.toPath));
+    const residencePaths = new Set(units.map((u) => `/residences/${residenceSlug(u.code)}`));
     for (const r of redirects) {
-      if (livePaths.has(r.fromPath)) {
+      if (residencePaths.has(r.fromPath)) {
+        issues.push({ kind: 'redirect-hides-page', path: r.fromPath, label: r.fromPath, severity: 'warning', detail: `ignored, the live residence page wins; delete it (it pointed to ${r.toPath})` });
+      } else if (livePaths.has(r.fromPath)) {
         issues.push({ kind: 'redirect-hides-page', path: r.fromPath, label: r.fromPath, severity: 'error', detail: `sends visitors to ${r.toPath} instead` });
       } else if (r.fromPath === r.toPath || targets.has(r.fromPath)) {
         issues.push({ kind: 'redirect-loop', path: r.fromPath, label: r.fromPath, severity: 'error', detail: `points at ${r.toPath}` });
